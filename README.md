@@ -1,2 +1,2 @@
 # PostKit
-A MimeKit powered implementation of the Postmark API.
+A MimeKit infused implementation of the Postmark API.

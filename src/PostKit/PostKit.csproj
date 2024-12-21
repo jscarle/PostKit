@@ -1,0 +1,81 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- Compilation -->
+    <PropertyGroup>
+        <RootNamespace>PostKit</RootNamespace>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+
+    <!-- Analysis -->
+    <PropertyGroup>
+        <!--<AnalysisLevel>latest-all</AnalysisLevel>
+        <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>-->
+    </PropertyGroup>
+
+    <!-- References -->
+    <ItemGroup>
+        <PackageReference Include="LightResults" Version="9.0.0-preview.16" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
+        <PackageReference Include="MimeKit" Version="4.9.0" />
+    </ItemGroup>
+
+    <!-- Output -->
+    <PropertyGroup>
+        <AssemblyName>PostKit</AssemblyName>
+        <Version>9.0.0-preview.1</Version>
+        <AssemblyVersion>9.0.0.0</AssemblyVersion>
+        <FileVersion>9.0.0.0</FileVersion>
+        <NeutralLanguage>en-US</NeutralLanguage>
+        <Optimize>true</Optimize>
+        <!--<IsAotCompatible>true</IsAotCompatible>-->
+        <!--<DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>-->
+    </PropertyGroup>
+
+    <!-- Package -->
+    <PropertyGroup>
+        <IsPackable>true</IsPackable>
+        <PackageId>PostKit</PackageId>
+        <Title>PostKit</Title>
+        <Description>A MimeKit infused implementation of the Postmark API.</Description>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageProjectUrl>https://github.com/jscarle/PostKit</PackageProjectUrl>
+        <PackageTags>postmark</PackageTags>
+        <RepositoryUrl>https://github.com/jscarle/PostKit</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <Authors>Jean-Sebastien Carle</Authors>
+        <Copyright>Copyright © Jean-Sebastien Carle 2024</Copyright>
+        <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+        <!--<PackageIcon>Icon.png</PackageIcon>-->
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false"/>
+        <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" Visible="false"/>
+        <!--<None Include="..\..\Icon.png" Pack="true" PackagePath="\" Visible="false"/>-->
+    </ItemGroup>
+
+    <!-- Content -->
+    <ItemGroup>
+        <Compile Update="EmailBuilder.Bcc.cs">
+            <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.Cc.cs">
+            <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.From.cs">
+            <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.Template.cs">
+            <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.To.cs">
+            <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+    </ItemGroup>
+
+</Project>
