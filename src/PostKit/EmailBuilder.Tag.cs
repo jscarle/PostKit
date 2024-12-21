@@ -1,6 +1,4 @@
-﻿using MimeKit;
-
-namespace PostKit;
+﻿namespace PostKit;
 
 partial class EmailBuilder
 {
@@ -10,7 +8,7 @@ partial class EmailBuilder
     {
         if (tag.Length > 1000)
             throw new ArgumentException("Tag cannot be longer than 1000 characters.", nameof(tag));
-        
+
         _tag = tag;
         return this;
     }

@@ -1,6 +1,4 @@
-﻿using MimeKit;
-
-namespace PostKit;
+﻿namespace PostKit;
 
 partial class EmailBuilder
 {

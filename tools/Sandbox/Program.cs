@@ -2,18 +2,23 @@ using PostKit;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.Configure<PostKitOptions>(builder.Configuration.GetSection("PostKit"));
-
 builder.Services.AddPostKit();
 
 var app = builder.Build();
 
 var scope = app.Services.CreateScope();
 var client = scope.ServiceProvider.GetRequiredService<IPostKitClient>();
+var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
+var defaultSender = configuration.GetValue<string>("PostKit:DefaultSender");
+ArgumentNullException.ThrowIfNull(defaultSender);
+
+var testRecipient = configuration.GetValue<string>("PostKit:TestRecipient");
+ArgumentNullException.ThrowIfNull(testRecipient);
 
 var email = Email.CreateBuilder()
-    .From("")
-    .To("")
+    .From(defaultSender)
+    .To(testRecipient)
     .WithSubject("Development Test Message")
     .WithTextBody("This is a development test message.")
     .Build();
