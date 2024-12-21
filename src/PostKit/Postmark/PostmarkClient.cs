@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LightResults;
+using Microsoft.Extensions.Options;
+using PostKit.Configuration;
 using PostKit.Errors;
 using PostKit.Postmark.Email;
 
@@ -20,17 +22,17 @@ internal sealed class PostmarkClient : IPostmarkClient
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public PostmarkClient(HttpClient httpClient, PostKitOptions options)
+    public PostmarkClient(HttpClient httpClient, IOptions<PostKitOptions> options)
     {
         _httpClient = httpClient;
 
-        if (string.IsNullOrWhiteSpace(options.ServerApiToken))
+        if (string.IsNullOrWhiteSpace(options.Value.ServerApiToken))
             throw new InvalidOperationException("The server API token has not been set.");
 
         _httpClient.BaseAddress = new Uri("https://api.postmarkapp.com/");
         _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         _httpClient.DefaultRequestHeaders.Add("User-Agent", $"{nameof(PostKit)} {Version}");
-        _httpClient.DefaultRequestHeaders.Add("X-Postmark-Server-Token", options.ServerApiToken);
+        _httpClient.DefaultRequestHeaders.Add("X-Postmark-Server-Token", options.Value.ServerApiToken);
     }
 
     public async Task<Result<TResponse>> SendAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)

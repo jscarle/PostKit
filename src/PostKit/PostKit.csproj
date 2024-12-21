@@ -11,21 +11,23 @@
 
     <!-- Analysis -->
     <PropertyGroup>
-        <!--<AnalysisLevel>latest-all</AnalysisLevel>
-        <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>-->
+        <AnalysisLevel>latest-Recommended</AnalysisLevel>
+        <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
     </PropertyGroup>
 
     <!-- References -->
     <ItemGroup>
-        <PackageReference Include="LightResults" Version="9.0.0-preview.16" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
-        <PackageReference Include="MimeKit" Version="4.9.0" />
+        <PackageReference Include="JetBrains.Annotations" Version="2024.3.0"/>
+        <PackageReference Include="LightResults" Version="9.0.0-preview.16"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="9.0.0"/>
+        <PackageReference Include="MimeKit" Version="4.9.0"/>
     </ItemGroup>
 
     <!-- Output -->
     <PropertyGroup>
         <AssemblyName>PostKit</AssemblyName>
-        <Version>9.0.0-preview.1</Version>
+        <Version>9.0.0-preview.2</Version>
         <AssemblyVersion>9.0.0.0</AssemblyVersion>
         <FileVersion>9.0.0.0</FileVersion>
         <NeutralLanguage>en-US</NeutralLanguage>
@@ -74,6 +76,18 @@
             <DependentUpon>EmailBuilder.cs</DependentUpon>
         </Compile>
         <Compile Update="EmailBuilder.To.cs">
+            <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.Body.cs">
+            <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.ReplyTo.cs">
+            <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.Subject.cs">
+            <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.Tag.cs">
             <DependentUpon>EmailBuilder.cs</DependentUpon>
         </Compile>
     </ItemGroup>

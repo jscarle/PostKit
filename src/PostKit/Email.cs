@@ -17,7 +17,7 @@ public sealed class Email
     public string? Subject { get; init; }
 
     public string? HtmlBody { get; init; }
-    
+
     public string? TextBody { get; init; }
 
     internal Email()

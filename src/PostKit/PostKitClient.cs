@@ -1,26 +1,13 @@
 ﻿using LightResults;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using PostKit.Errors;
+using MimeKit;
 using PostKit.Postmark;
 using PostKit.Postmark.Email;
 
 namespace PostKit;
 
-internal sealed class PostKitClient : IPostKitClient
+internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<PostKitClient> logger) : IPostKitClient
 {
-    private readonly IPostmarkClient _postmark;
-    private readonly PostKitOptions _options;
-    private readonly ILogger<PostKitClient> _logger;
-
-    internal PostKitClient(IPostmarkClient postmark, PostKitOptions options, ILogger<PostKitClient> logger)
-    {
-        _postmark = postmark;
-        _options = options;
-        _logger = logger;
-    }
-
     public async Task SendEmailAsync(Email email, MessageStream messageStream = MessageStream.Transactional, CancellationToken cancellationToken = default)
     {
         var from = email.From.ToString(true);
@@ -28,7 +15,7 @@ internal sealed class PostKitClient : IPostKitClient
         var to = string.Join(",", email.To.Select(x => x.GetAddress(true)));
         var cc = email.Cc is not null ? string.Join(",", email.Cc.Select(x => x.GetAddress(true))) : null;
         var bcc = email.Bcc is not null ? string.Join(",", email.Bcc.Select(x => x.GetAddress(true))) : null;
-        
+
         var request = new EmailRequest
         {
             From = from,
@@ -45,53 +32,29 @@ internal sealed class PostKitClient : IPostKitClient
         Result<EmailResponse> response;
         try
         {
-            response = await _postmark.SendAsync<EmailRequest, EmailResponse>("/email", request, cancellationToken);
+            response = await postmark.SendAsync<EmailRequest, EmailResponse>("/email", request, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An exception occurred while attempting to send the email.");
+            LogException(ex);
             return;
         }
 
         if (response.IsFailure(out var error, out var emailResponse))
-            switch (error)
-            {
-                case PostmarkError postmarkError:
-                    _logger.LogError("Failed to send email. {Message} HttpStatusCode: {HttpStatusCode}. PostmarkError: {PostmarkError}", postmarkError.Message, postmarkError.StatusCode, postmarkError.ErrorCode);
-                    return;
-                case HttpError httpError:
-                    _logger.LogError("Failed to send email. {Message} HttpStatusCode: {HttpStatusCode}", httpError.Message, httpError.StatusCode);
-                    return;
-                default:
-                    _logger.LogError("Failed to send email. {Message}", error.Message);
-                    return;
-            }
+        {
+            LogError(error.Message, error);
+            return;
+        }
 
-        _logger.LogInformation("Sent email to {To}. {Message} {MessageId} {SubmittedAt}", email.To, emailResponse.Message, emailResponse.MessageId, emailResponse.SubmittedAt);
+        LogEmailSent(email.To, emailResponse);
     }
-}
 
-public static class PostmarkServiceExtensions
-{
-    public static void AddPostKit(this IServiceCollection services)
-    {
-        services.AddHttpClient();
+    [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to send the email.")]
+    private partial void LogException(Exception ex);
 
-        services.AddTransient<IPostmarkClient, PostmarkClient>(sp =>
-            {
-                var httpClient = sp.GetRequiredService<HttpClient>();
-                var options = sp.GetRequiredService<IOptions<PostKitOptions>>();
-                return new PostmarkClient(httpClient, options.Value);
-            }
-        );
+    [LoggerMessage(LogLevel.Error, "Failed to send email. {Message}")]
+    private partial void LogError(string message, [LogProperties] IError error);
 
-        services.AddTransient<IPostKitClient, PostKitClient>(sp =>
-            {
-                var httpClient = sp.GetRequiredService<IPostmarkClient>();
-                var options = sp.GetRequiredService<IOptions<PostKitOptions>>();
-                var logger = sp.GetRequiredService<ILogger<PostKitClient>>();
-                return new PostKitClient(httpClient, options.Value, logger);
-            }
-        );
-    }
+    [LoggerMessage(LogLevel.Information, "Sent email to {To}.")]
+    private partial void LogEmailSent(IReadOnlyCollection<MailboxAddress> to, [LogProperties] EmailResponse emailResponse);
 }

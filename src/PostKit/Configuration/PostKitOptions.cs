@@ -1,4 +1,4 @@
-﻿namespace PostKit;
+﻿namespace PostKit.Configuration;
 
 public sealed class PostKitOptions
 {
