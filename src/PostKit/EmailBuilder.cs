@@ -1,6 +1,6 @@
 ﻿namespace PostKit;
 
-public sealed partial class EmailBuilder
+public sealed partial class EmailBuilder : IEmailBuilder
 {
     internal EmailBuilder()
     {
@@ -11,10 +11,10 @@ public sealed partial class EmailBuilder
         if (_from is null)
             throw new InvalidOperationException("From address is required.");
 
-        if (_to.Count == 0)
-            throw new InvalidOperationException("A To address is required.");
+        if (_to is null && _cc is null && _bcc is null)
+            throw new InvalidOperationException("At least one recipient is required.");
 
-        var totalRecipients = _to.Count + (_cc?.Count ?? 0) + (_bcc?.Count ?? 0);
+        var totalRecipients = (_to?.Count ?? 0) + (_cc?.Count ?? 0) + (_bcc?.Count ?? 0);
         if (totalRecipients > 50)
             throw new InvalidOperationException("There are too many recipients. Postmark implements a limit of 50 recipients per message. The recipient count includes all To, Cc, and Bcc recipients combined.");
 
@@ -24,13 +24,18 @@ public sealed partial class EmailBuilder
         var email = new Email
         {
             From = _from,
-            ReplyTo = _replyTo,
-            To = _to,
-            Cc = _cc,
-            Bcc = _bcc,
+            ReplyTo = _replyTo?.AsReadOnly(),
+            To = _to?.AsReadOnly(),
+            Cc = _cc?.AsReadOnly(),
+            Bcc = _bcc?.AsReadOnly(),
             Subject = _subject,
             HtmlBody = _htmlBody,
             TextBody = _textBody,
+            Tag = _tag,
+            Headers = _headers?.AsReadOnly(),
+            Metadata = _metadata?.AsReadOnly(),
+            LinkTracking = _linkTracking,
+            MessageStream = _messageStream,
         };
 
         return email;

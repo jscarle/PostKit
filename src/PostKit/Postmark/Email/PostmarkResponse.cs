@@ -2,7 +2,7 @@
 
 namespace PostKit.Postmark.Email;
 
-internal sealed class ErrorResponse
+internal class PostmarkResponse
 {
     [JsonPropertyName("ErrorCode")]
     public required int ErrorCode { get; init; }

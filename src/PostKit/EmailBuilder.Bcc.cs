@@ -1,54 +1,98 @@
 ﻿using MimeKit;
+using PostKit.Common;
+using PostKit.Validation;
 
 namespace PostKit;
 
-partial class EmailBuilder
+partial class EmailBuilder : IEmailBccBuilder
 {
-    private List<MailboxAddress>? _bcc;
+    private IList<MailboxAddress>? _bcc;
 
-    public EmailBuilder Bcc(string address)
+    public IEmailBccBuilder Bcc(string address)
     {
-        var mailboxAddress = MailboxAddress.Parse(address);
-        _bcc ??= [];
-        _bcc.Add(mailboxAddress);
+        _bcc.EnsureNotSet(nameof(Email.Bcc));
+
+        _bcc = address.ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder Bcc(string name, string address)
+    public IEmailBccBuilder Bcc(string name, string address)
     {
-        var mailboxAddress = new MailboxAddress(name, address);
-        _bcc ??= [];
-        _bcc.Add(mailboxAddress);
+        _bcc.EnsureNotSet(nameof(Email.Bcc));
+
+        _bcc = (name, address).ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder Bcc(MailboxAddress mailboxAddress)
+    public IEmailBccBuilder Bcc(MailboxAddress mailboxAddress)
     {
-        _bcc ??= [];
-        _bcc.Add(mailboxAddress);
+        _bcc.EnsureNotSet(nameof(Email.Bcc));
+
+        _bcc = mailboxAddress.ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder Bcc(params IEnumerable<string> addresses)
+    public IEmailBccBuilder Bcc(IEnumerable<string> addresses)
     {
-        var mailboxAddresses = addresses.Select(MailboxAddress.Parse);
-        _bcc ??= [];
-        _bcc.AddRange(mailboxAddresses);
+        _bcc.EnsureNotSet(nameof(Email.Bcc));
+
+        _bcc = addresses.ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder Bcc(params IEnumerable<(string Name, string Address)> addresses)
+    public IEmailBccBuilder Bcc(IList<MailboxAddress> mailboxAddresses)
     {
-        var mailboxAddresses = addresses.Select(x => new MailboxAddress(x.Name, x.Address));
-        _bcc ??= [];
-        _bcc.AddRange(mailboxAddresses);
+        _bcc.EnsureNotSet(nameof(Email.Bcc));
+
+        _bcc = mailboxAddresses;
+
+        return this;
+    }
+    
+    public IEmailBccBuilder AlsoBcc(string address)
+    {
+        var mailboxAddresses = address.ToAddressList();
+
+        _bcc!.AddRange(mailboxAddresses);
+
         return this;
     }
 
-    public EmailBuilder Bcc(params IEnumerable<MailboxAddress> mailboxAddresses)
+    public IEmailBccBuilder AlsoBcc(string name, string address)
     {
-        _bcc ??= [];
-        _bcc.AddRange(mailboxAddresses);
+        var mailboxAddresses = (name, address).ToAddressList();
+
+        _bcc!.AddRange(mailboxAddresses);
+
+        return this;
+    }
+
+    public IEmailBccBuilder AlsoBcc(MailboxAddress mailboxAddress)
+    {
+        var mailboxAddresses = mailboxAddress.ToAddressList();
+
+        _bcc!.AddRange(mailboxAddresses);
+        
+        return this;
+    }
+
+    public IEmailBccBuilder AlsoBcc(IEnumerable<string> addresses)
+    {
+        var mailboxAddresses = addresses.ToAddressList();
+
+        _bcc!.AddRange(mailboxAddresses);
+
+        return this;
+    }
+
+    public IEmailBccBuilder AlsoBcc(IList<MailboxAddress> mailboxAddresses)
+    {
+        _bcc!.AddRange(mailboxAddresses);
+
         return this;
     }
 }

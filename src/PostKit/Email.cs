@@ -4,21 +4,33 @@ namespace PostKit;
 
 public sealed class Email
 {
-    public required MailboxAddress From { get; init; }
+    public MailboxAddress? From { get; internal init; }
 
-    public IReadOnlyCollection<MailboxAddress>? ReplyTo { get; init; }
+    public IReadOnlyCollection<MailboxAddress>? ReplyTo { get; internal init; }
 
-    public required IReadOnlyCollection<MailboxAddress> To { get; init; }
+    public IReadOnlyCollection<MailboxAddress>? To { get; internal init; }
 
-    public IReadOnlyCollection<MailboxAddress>? Cc { get; init; }
+    public IReadOnlyCollection<MailboxAddress>? Cc { get; internal init; }
 
-    public IReadOnlyCollection<MailboxAddress>? Bcc { get; init; }
+    public IReadOnlyCollection<MailboxAddress>? Bcc { get; internal init; }
 
-    public string? Subject { get; init; }
+    public string? Subject { get; internal init; }
 
-    public string? HtmlBody { get; init; }
+    public string? HtmlBody { get; internal init; }
 
-    public string? TextBody { get; init; }
+    public string? TextBody { get; internal init; }
+
+    public string? Tag { get; internal init; }
+
+    public IReadOnlyDictionary<string, string>? Headers { get; internal init; }
+
+    public IReadOnlyDictionary<string, string>? Metadata { get; internal init; }
+
+    public bool? OpenTracking { get; internal init; }
+
+    public LinkTracking? LinkTracking { get; internal init; }
+
+    public string? MessageStream { get; internal init; }
 
     internal Email()
     {
