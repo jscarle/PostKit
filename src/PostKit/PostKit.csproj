@@ -72,9 +72,6 @@
         <Compile Update="EmailBuilder.From.cs">
             <DependentUpon>EmailBuilder.cs</DependentUpon>
         </Compile>
-        <Compile Update="EmailBuilder.Template.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
         <Compile Update="EmailBuilder.To.cs">
             <DependentUpon>EmailBuilder.cs</DependentUpon>
         </Compile>
@@ -88,6 +85,9 @@
             <DependentUpon>EmailBuilder.cs</DependentUpon>
         </Compile>
         <Compile Update="EmailBuilder.Tag.cs">
+            <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.Header.cs">
             <DependentUpon>EmailBuilder.cs</DependentUpon>
         </Compile>
     </ItemGroup>

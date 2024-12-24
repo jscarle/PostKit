@@ -1,54 +1,98 @@
 ﻿using MimeKit;
+using PostKit.Common;
+using PostKit.Validation;
 
 namespace PostKit;
 
-partial class EmailBuilder
+partial class EmailBuilder : IEmailReplyToBuilder
 {
-    private List<MailboxAddress>? _replyTo;
+    private IList<MailboxAddress>? _replyTo;
 
-    public EmailBuilder ReplyTo(string address)
+    public IEmailReplyToBuilder ReplyTo(string address)
     {
-        var mailboxAddress = MailboxAddress.Parse(address);
-        _replyTo ??= [];
-        _replyTo.Add(mailboxAddress);
+        _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
+
+        _replyTo = address.ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder ReplyTo(string name, string address)
+    public IEmailReplyToBuilder ReplyTo(string name, string address)
     {
-        var mailboxAddress = new MailboxAddress(name, address);
-        _replyTo ??= [];
-        _replyTo.Add(mailboxAddress);
+        _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
+
+        _replyTo = (name, address).ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder ReplyTo(MailboxAddress mailboxAddress)
+    public IEmailReplyToBuilder ReplyTo(MailboxAddress mailboxAddress)
     {
-        _replyTo ??= [];
-        _replyTo.Add(mailboxAddress);
+        _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
+
+        _replyTo = mailboxAddress.ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder ReplyTo(params IEnumerable<string> addresses)
+    public IEmailReplyToBuilder ReplyTo(IEnumerable<string> addresses)
     {
-        var mailboxAddresses = addresses.Select(MailboxAddress.Parse);
-        _replyTo ??= [];
-        _replyTo.AddRange(mailboxAddresses);
+        _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
+
+        _replyTo = addresses.ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder ReplyTo(params IEnumerable<(string Name, string Address)> addresses)
+    public IEmailReplyToBuilder ReplyTo(IList<MailboxAddress> mailboxAddresses)
     {
-        var mailboxAddresses = addresses.Select(x => new MailboxAddress(x.Name, x.Address));
-        _replyTo ??= [];
-        _replyTo.AddRange(mailboxAddresses);
+        _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
+
+        _replyTo = mailboxAddresses;
+
+        return this;
+    }
+    
+    public IEmailReplyToBuilder AlsoReplyTo(string address)
+    {
+        var mailboxAddresses = address.ToAddressList();
+
+        _replyTo!.AddRange(mailboxAddresses);
+
         return this;
     }
 
-    public EmailBuilder ReplyTo(params IEnumerable<MailboxAddress> mailboxAddresses)
+    public IEmailReplyToBuilder AlsoReplyTo(string name, string address)
     {
-        _replyTo ??= [];
-        _replyTo.AddRange(mailboxAddresses);
+        var mailboxAddresses = (name, address).ToAddressList();
+
+        _replyTo!.AddRange(mailboxAddresses);
+
+        return this;
+    }
+
+    public IEmailReplyToBuilder AlsoReplyTo(MailboxAddress mailboxAddress)
+    {
+        var mailboxAddresses = mailboxAddress.ToAddressList();
+
+        _replyTo!.AddRange(mailboxAddresses);
+        
+        return this;
+    }
+
+    public IEmailReplyToBuilder AlsoReplyTo(IEnumerable<string> addresses)
+    {
+        var mailboxAddresses = addresses.ToAddressList();
+
+        _replyTo!.AddRange(mailboxAddresses);
+
+        return this;
+    }
+
+    public IEmailReplyToBuilder AlsoReplyTo(IList<MailboxAddress> mailboxAddresses)
+    {
+        _replyTo!.AddRange(mailboxAddresses);
+
         return this;
     }
 }

@@ -5,47 +5,47 @@ namespace PostKit.Postmark.Email;
 internal sealed class EmailRequest
 {
     [JsonPropertyName("From")]
-    public string? From { get; init; }
+    public required string From { get; init; }
 
     [JsonPropertyName("ReplyTo")]
-    public string? ReplyTo { get; set; }
+    public string? ReplyTo { get; init; }
 
     [JsonPropertyName("To")]
     public string? To { get; init; }
 
     [JsonPropertyName("Cc")]
-    public string? Cc { get; set; }
+    public string? Cc { get; init; }
 
     [JsonPropertyName("Bcc")]
-    public string? Bcc { get; set; }
+    public string? Bcc { get; init; }
 
     [JsonPropertyName("Subject")]
-    public string? Subject { get; set; }
+    public string? Subject { get; init; }
 
     [JsonPropertyName("HtmlBody")]
-    public string? HtmlBody { get; set; }
+    public string? HtmlBody { get; init; }
 
     [JsonPropertyName("TextBody")]
-    public string? TextBody { get; set; }
+    public string? TextBody { get; init; }
 
     [JsonPropertyName("Attachments")]
-    public List<EmailAttachmentRequest>? Attachments { get; set; }
+    public List<EmailAttachmentRequest>? Attachments { get; init; }
 
     [JsonPropertyName("Tag")]
-    public string? Tag { get; set; }
+    public string? Tag { get; init; }
 
     [JsonPropertyName("Headers")]
-    public List<EmailHeaderRequest>? Headers { get; set; }
+    public IReadOnlyList<KeyValuePair<string, string>>? Headers { get; init; }
 
     [JsonPropertyName("Metadata")]
-    public Dictionary<string, string>? Metadata { get; set; }
+    public IReadOnlyDictionary<string, string>? Metadata { get; init; }
 
     [JsonPropertyName("TrackOpens")]
-    public bool? TrackOpens { get; set; }
+    public bool? TrackOpens { get; init; }
 
     [JsonPropertyName("TrackLinks")]
-    public string? TrackLinks { get; set; }
+    public string? TrackLinks { get; init; }
 
     [JsonPropertyName("MessageStream")]
-    public string? MessageStream { get; set; }
+    public string? MessageStream { get; init; }
 }

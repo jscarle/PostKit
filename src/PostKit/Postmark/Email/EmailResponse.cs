@@ -2,20 +2,14 @@
 
 namespace PostKit.Postmark.Email;
 
-internal sealed class EmailResponse
+internal sealed class EmailResponse : PostmarkResponse
 {
-    [JsonPropertyName("To")]
-    public required string To { get; init; }
+    [JsonPropertyName("MessageID")]
+    public string? MessageId { get; init; }
 
     [JsonPropertyName("SubmittedAt")]
-    public required DateTimeOffset SubmittedAt { get; init; }
+    public DateTimeOffset? SubmittedAt { get; init; }
 
-    [JsonPropertyName("MessageID")]
-    public required string MessageId { get; init; }
-
-    [JsonPropertyName("ErrorCode")]
-    public required int ErrorCode { get; init; }
-
-    [JsonPropertyName("Message")]
-    public required string Message { get; init; }
+    [JsonPropertyName("To")]
+    public string? To { get; init; }
 }

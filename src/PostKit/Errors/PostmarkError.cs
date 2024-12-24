@@ -9,7 +9,7 @@ internal sealed class PostmarkError : HttpError
 
     private static readonly int[] ValidErrorCodes = (int[])Enum.GetValuesAsUnderlyingType<PostmarkErrorCode>();
 
-    public PostmarkError(ErrorResponse response)
+    public PostmarkError(PostmarkResponse response)
         : base(HttpStatusCode.UnprocessableEntity, response.Message)
     {
         if (!ValidErrorCodes.Contains(response.ErrorCode))

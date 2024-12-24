@@ -1,6 +1,7 @@
 ﻿using LightResults;
 using Microsoft.Extensions.Logging;
 using MimeKit;
+using PostKit.Common;
 using PostKit.Postmark;
 using PostKit.Postmark.Email;
 
@@ -8,26 +9,9 @@ namespace PostKit;
 
 internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<PostKitClient> logger) : IPostKitClient
 {
-    public async Task SendEmailAsync(Email email, MessageStream messageStream = MessageStream.Transactional, CancellationToken cancellationToken = default)
+    public async Task SendEmailAsync(Email email, CancellationToken cancellationToken = default)
     {
-        var from = email.From.ToString(true);
-        var replyTo = email.ReplyTo is not null ? string.Join(",", email.ReplyTo.Select(x => x.ToString(true))) : null;
-        var to = string.Join(",", email.To.Select(x => x.GetAddress(true)));
-        var cc = email.Cc is not null ? string.Join(",", email.Cc.Select(x => x.GetAddress(true))) : null;
-        var bcc = email.Bcc is not null ? string.Join(",", email.Bcc.Select(x => x.GetAddress(true))) : null;
-
-        var request = new EmailRequest
-        {
-            From = from,
-            ReplyTo = replyTo,
-            To = to,
-            Cc = cc,
-            Bcc = bcc,
-            Subject = email.Subject,
-            HtmlBody = email.HtmlBody,
-            TextBody = email.TextBody,
-            MessageStream = messageStream == MessageStream.Broadcast ? "broadcast" : "outbound",
-        };
+        var request = email.ToEmailRequest();
 
         Result<EmailResponse> response;
         try
@@ -46,7 +30,12 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
             return;
         }
 
-        LogEmailSent(email.To, emailResponse);
+        if (email.To is not null)
+            LogEmailSent(email.To, emailResponse);
+        else if (email.Cc is not null)
+            LogEmailSent(email.Cc, emailResponse);
+        else if (email.Bcc is not null)
+            LogEmailSent(email.Bcc, emailResponse);
     }
 
     [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to send the email.")]

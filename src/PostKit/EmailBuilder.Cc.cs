@@ -1,54 +1,98 @@
 ﻿using MimeKit;
+using PostKit.Common;
+using PostKit.Validation;
 
 namespace PostKit;
 
-partial class EmailBuilder
+partial class EmailBuilder : IEmailCcBuilder
 {
-    private List<MailboxAddress>? _cc;
+    private IList<MailboxAddress>? _cc;
 
-    public EmailBuilder Cc(string address)
+    public IEmailCcBuilder Cc(string address)
     {
-        var mailboxAddress = MailboxAddress.Parse(address);
-        _cc ??= [];
-        _cc.Add(mailboxAddress);
+        _cc.EnsureNotSet(nameof(Email.Cc));
+
+        _cc = address.ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder Cc(string name, string address)
+    public IEmailCcBuilder Cc(string name, string address)
     {
-        var mailboxAddress = new MailboxAddress(name, address);
-        _cc ??= [];
-        _cc.Add(mailboxAddress);
+        _cc.EnsureNotSet(nameof(Email.Cc));
+
+        _cc = (name, address).ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder Cc(MailboxAddress mailboxAddress)
+    public IEmailCcBuilder Cc(MailboxAddress mailboxAddress)
     {
-        _cc ??= [];
-        _cc.Add(mailboxAddress);
+        _cc.EnsureNotSet(nameof(Email.Cc));
+
+        _cc = mailboxAddress.ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder Cc(params IEnumerable<string> addresses)
+    public IEmailCcBuilder Cc(IEnumerable<string> addresses)
     {
-        var mailboxAddresses = addresses.Select(MailboxAddress.Parse);
-        _cc ??= [];
-        _cc.AddRange(mailboxAddresses);
+        _cc.EnsureNotSet(nameof(Email.Cc));
+
+        _cc = addresses.ToAddressList();
+
         return this;
     }
 
-    public EmailBuilder Cc(params IEnumerable<(string Name, string Address)> addresses)
+    public IEmailCcBuilder Cc(IList<MailboxAddress> mailboxAddresses)
     {
-        var mailboxAddresses = addresses.Select(x => new MailboxAddress(x.Name, x.Address));
-        _cc ??= [];
-        _cc.AddRange(mailboxAddresses);
+        _cc.EnsureNotSet(nameof(Email.Cc));
+
+        _cc = mailboxAddresses;
+
+        return this;
+    }
+    
+    public IEmailCcBuilder AlsoCc(string address)
+    {
+        var mailboxAddresses = address.ToAddressList();
+
+        _cc!.AddRange(mailboxAddresses);
+
         return this;
     }
 
-    public EmailBuilder Cc(params IEnumerable<MailboxAddress> mailboxAddresses)
+    public IEmailCcBuilder AlsoCc(string name, string address)
     {
-        _cc ??= [];
-        _cc.AddRange(mailboxAddresses);
+        var mailboxAddresses = (name, address).ToAddressList();
+
+        _cc!.AddRange(mailboxAddresses);
+
+        return this;
+    }
+
+    public IEmailCcBuilder AlsoCc(MailboxAddress mailboxAddress)
+    {
+        var mailboxAddresses = mailboxAddress.ToAddressList();
+
+        _cc!.AddRange(mailboxAddresses);
+        
+        return this;
+    }
+
+    public IEmailCcBuilder AlsoCc(IEnumerable<string> addresses)
+    {
+        var mailboxAddresses = addresses.ToAddressList();
+
+        _cc!.AddRange(mailboxAddresses);
+
+        return this;
+    }
+
+    public IEmailCcBuilder AlsoCc(IList<MailboxAddress> mailboxAddresses)
+    {
+        _cc!.AddRange(mailboxAddresses);
+
         return this;
     }
 }
