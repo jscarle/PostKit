@@ -1,4 +1,4 @@
-﻿namespace PostKit.Validation;
+﻿namespace PostKit.Common;
 
 internal static class ValidationExtensions
 {

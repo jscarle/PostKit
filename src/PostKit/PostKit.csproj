@@ -17,11 +17,11 @@
 
     <!-- References -->
     <ItemGroup>
-        <PackageReference Include="JetBrains.Annotations" Version="2024.3.0"/>
-        <PackageReference Include="LightResults" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0"/>
-        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="9.0.0"/>
-        <PackageReference Include="MimeKit" Version="4.9.0"/>
+        <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" />
+        <PackageReference Include="LightResults" Version="9.0.5" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.9" />
+        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="9.9.0" />
+        <PackageReference Include="MimeKit" Version="4.13.0" />
     </ItemGroup>
 
     <!-- Output -->

@@ -1,5 +1,5 @@
 ﻿using MimeKit;
-using PostKit.Validation;
+using PostKit.Common;
 
 namespace PostKit;
 
