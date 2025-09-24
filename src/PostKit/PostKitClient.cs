@@ -4,12 +4,13 @@ using MimeKit;
 using PostKit.Common;
 using PostKit.Postmark;
 using PostKit.Postmark.Email;
+using PostKit.Responses;
 
 namespace PostKit;
 
 internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<PostKitClient> logger) : IPostKitClient
 {
-    public async Task SendEmailAsync(Email email, CancellationToken cancellationToken = default)
+    public async Task<Result<SendEmailResponse>> SendEmailAsync(Email email, CancellationToken cancellationToken = default)
     {
         var request = email.ToEmailRequest();
 
@@ -21,13 +22,13 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
         catch (Exception ex)
         {
             LogException(ex);
-            return;
+            return Result.Failure<SendEmailResponse>(ex);
         }
 
         if (response.IsFailure(out var error, out var emailResponse))
         {
             LogError(error.Message, error);
-            return;
+            return Result.Failure<SendEmailResponse>(error);
         }
 
         if (email.To is not null)
@@ -36,6 +37,13 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
             LogEmailSent(email.Cc, emailResponse);
         else if (email.Bcc is not null)
             LogEmailSent(email.Bcc, emailResponse);
+        
+        if (emailResponse.MessageId is null)
+            return Result.Failure<SendEmailResponse>("Message ID was not returned from the Postmark API.");
+
+        var sendEmailResponse = new SendEmailResponse(emailResponse.MessageId);
+
+        return Result.Success(sendEmailResponse);
     }
 
     [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to send the email.")]
