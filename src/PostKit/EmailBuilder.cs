@@ -1,4 +1,7 @@
-﻿namespace PostKit;
+﻿// ReSharper disable RedundantExtendsListEntry
+// Intentional reference as the code is separated into multiple files.
+
+namespace PostKit;
 
 public sealed partial class EmailBuilder : IEmailBuilder
 {

@@ -1,10 +1,13 @@
-﻿using System.Net;
+﻿#if DEBUG
 using System.Net.Mime;
 using System.Text;
+#else
+using System.Net.Http.Json;
+#endif
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LightResults;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PostKit.Configuration;
 using PostKit.Errors;
@@ -12,23 +15,37 @@ using PostKit.Postmark.Email;
 
 namespace PostKit.Postmark;
 
-internal sealed partial class PostmarkClient : IPostmarkClient
+internal sealed
+#if DEBUG
+    partial
+#endif
+    class PostmarkClient : IPostmarkClient
 {
     private static readonly string Version = typeof(PostmarkClient).Assembly.GetName()
         .Version!.ToString(2);
 
     private readonly HttpClient _httpClient;
+#if DEBUG
     private readonly ILogger<PostmarkClient> _logger;
+#endif
 
     private readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public PostmarkClient(HttpClient httpClient, IOptions<PostKitOptions> options, ILogger<PostmarkClient> logger)
+    public PostmarkClient(
+        HttpClient httpClient,
+        IOptions<PostKitOptions> options
+#if DEBUG
+        , ILogger<PostmarkClient> logger
+#endif
+    )
     {
         _httpClient = httpClient;
+#if DEBUG
         _logger = logger;
+#endif
 
         if (string.IsNullOrWhiteSpace(options.Value.ServerApiToken))
             throw new InvalidOperationException("The server API token has not been set.");
@@ -71,7 +88,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             LogApiResponse(receivedContent);
             var response = JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, _jsonSerializerOptions);
 #else
-            var errorResponse = await responseMessage.Content.ReadFromJsonAsync<ErrorResponse>(cancellationToken);
+            var response = await responseMessage.Content.ReadFromJsonAsync<PostmarkResponse>(cancellationToken);
 #endif
 
             if (response == null)
@@ -84,10 +101,11 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         var httpError = new HttpError(responseMessage.StatusCode);
         return Result.Failure<TResponse>(httpError);
     }
-
+#if DEBUG
     [LoggerMessage(LogLevel.Information, "Postmark API request: {Content}")]
     private partial void LogApiRequest(string content);
 
     [LoggerMessage(LogLevel.Information, "Postmark API response: {Content}")]
     private partial void LogApiResponse(string content);
+#endif
 }
