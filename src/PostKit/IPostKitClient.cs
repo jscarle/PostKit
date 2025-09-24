@@ -1,6 +1,9 @@
-﻿namespace PostKit;
+﻿using LightResults;
+using PostKit.Responses;
+
+namespace PostKit;
 
 public interface IPostKitClient
 {
-    Task SendEmailAsync(Email email, CancellationToken cancellationToken = default);
+    Task<Result<SendEmailResponse>> SendEmailAsync(Email email, CancellationToken cancellationToken = default);
 }
