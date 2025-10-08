@@ -5,6 +5,8 @@ namespace PostKit;
 
 public sealed partial class EmailBuilder : IEmailBuilder
 {
+    private const int MessageSizeLimitInBytes = 10 * 1024 * 1024; // 10 MB
+    
     internal EmailBuilder()
     {
     }
@@ -24,7 +26,10 @@ public sealed partial class EmailBuilder : IEmailBuilder
         if (_htmlBody is null && _textBody is null)
             throw new InvalidOperationException("Either an HTML or text body is required.");
 
-        EnsureAttachmentConstraints();
+        var bodyLength = (long)(_textBody?.Length + _htmlBody?.Length ?? 0);
+        var projectedTotal = _attachmentBytes + bodyLength;
+        if (projectedTotal > MessageSizeLimitInBytes)
+            throw new InvalidOperationException("Message size exceeds Postmark's 10 MB limit.");
 
         var email = new Email
         {

@@ -1,12 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace PostKit;
 
 partial class EmailBuilder
 {
-    private const int AttachmentSizeLimitInBytes = 10 * 1024 * 1024;
     private List<Attachment>? _attachments;
     private int _attachmentBytes;
 
@@ -14,10 +9,10 @@ partial class EmailBuilder
     {
         ArgumentNullException.ThrowIfNull(attachment);
 
-        EnsureAttachmentsWithinLimit(attachment.ContentLength);
+        EnsureAttachmentsWithinLimit(attachment.Content.Length);
 
-        (_attachments ??= new List<Attachment>()).Add(attachment);
-        _attachmentBytes += attachment.ContentLength;
+        (_attachments ??= []).Add(attachment);
+        _attachmentBytes += attachment.Content.Length;
 
         return this;
     }
@@ -34,29 +29,24 @@ partial class EmailBuilder
         foreach (var attachment in buffer)
         {
             ArgumentNullException.ThrowIfNull(attachment);
-            additionalBytes += attachment.ContentLength;
+            additionalBytes += attachment.Content.Length;
         }
 
         EnsureAttachmentsWithinLimit(additionalBytes);
 
-        (_attachments ??= new List<Attachment>()).AddRange(buffer);
+        (_attachments ??= []).AddRange(buffer);
         _attachmentBytes += (int)additionalBytes;
 
         return this;
     }
 
-    internal void EnsureAttachmentConstraints()
-    {
-        EnsureAttachmentsWithinLimit(0);
-    }
 
     private void EnsureAttachmentsWithinLimit(long additionalBytes)
     {
-        if (additionalBytes < 0)
-            throw new ArgumentOutOfRangeException(nameof(additionalBytes));
+        ArgumentOutOfRangeException.ThrowIfNegative(additionalBytes);
 
-        var projectedTotal = (long)_attachmentBytes + additionalBytes;
-        if (projectedTotal > AttachmentSizeLimitInBytes)
+        var projectedTotal = _attachmentBytes + additionalBytes;
+        if (projectedTotal > MessageSizeLimitInBytes)
             throw new InvalidOperationException("Attachments exceed Postmark's 10 MB limit.");
     }
 }
