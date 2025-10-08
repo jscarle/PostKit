@@ -24,6 +24,8 @@ public sealed partial class EmailBuilder : IEmailBuilder
         if (_htmlBody is null && _textBody is null)
             throw new InvalidOperationException("Either an HTML or text body is required.");
 
+        EnsureAttachmentConstraints();
+
         var email = new Email
         {
             From = _from,
@@ -39,6 +41,7 @@ public sealed partial class EmailBuilder : IEmailBuilder
             Metadata = _metadata?.AsReadOnly(),
             LinkTracking = _linkTracking,
             MessageStream = _messageStream,
+            Attachments = _attachments?.AsReadOnly(),
         };
 
         return email;

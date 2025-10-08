@@ -17,6 +17,15 @@ internal static class EmailExtensions
         var bcc = email.Bcc is not null ? string.Join(",", email.Bcc.Select(x => x.ToString(true))) : null;
         var headers = email.Headers?.ToList();
         var metadata = email.Metadata?.ToDictionary();
+        var attachments = email.Attachments?.Select(
+                attachment => new EmailAttachmentRequest
+                {
+                    Name = attachment.Name,
+                    ContentType = attachment.ContentType,
+                    Content = attachment.Content,
+                    ContentId = attachment.ContentId,
+                })
+            .ToList();
         var trackLinks = email.LinkTracking is not null
             ? email.LinkTracking switch
             {
@@ -38,6 +47,7 @@ internal static class EmailExtensions
             Subject = email.Subject,
             HtmlBody = email.HtmlBody,
             TextBody = email.TextBody,
+            Attachments = attachments,
             Tag = email.Tag,
             Headers = headers,
             Metadata = metadata,
