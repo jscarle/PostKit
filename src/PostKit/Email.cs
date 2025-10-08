@@ -32,6 +32,8 @@ public sealed class Email
 
     public string? MessageStream { get; internal init; }
 
+    public IReadOnlyCollection<Attachment>? Attachments { get; internal init; }
+
     internal Email()
     {
     }

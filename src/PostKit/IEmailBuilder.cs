@@ -42,6 +42,8 @@ public interface IEmailBuilder
     IEmailBuilder WithMetadata(KeyValuePair<string, string> entry);
     IEmailBuilder WithMetadata(IEnumerable<KeyValuePair<string, string>> metadata);
     IEmailBuilder WithMetadata(IDictionary<string, string> metadata);
+    IEmailBuilder WithAttachment(Attachment attachment);
+    IEmailBuilder WithAttachments(IEnumerable<Attachment> attachments);
     IEmailBuilder WithOpenTracking(bool openTracking = true);
     IEmailBuilder WithLinkTracking(LinkTracking linkTracking = LinkTracking.HtmlAndText);
     IEmailBuilder UsingMessageStream(MessageStream messageStream);
