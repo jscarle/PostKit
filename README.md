@@ -134,6 +134,34 @@ var email = Email.CreateBuilder()
 await _postKitClient.SendEmailAsync(email);
 ```
 
+#### Attachments and Inline Images
+
+```csharp
+var invoice = Attachment.Create(
+    name: "invoice.pdf",
+    contentType: "application/pdf",
+    content: await File.ReadAllBytesAsync("invoice.pdf"));
+
+var logo = Attachment.Create(
+    name: "logo.png",
+    contentType: "image/png",
+    content: await File.ReadAllBytesAsync("logo.png"),
+    contentId: "logo@yourapp.com");
+
+var email = Email.CreateBuilder()
+    .From("billing@company.com")
+    .To("customer@example.com")
+    .WithSubject("Your Monthly Invoice")
+    .WithHtmlBody($"<p>Please find your invoice attached.</p><img src=\"{logo.ContentId}\" alt=\"Company Logo\" />")
+    .WithAttachment(invoice)
+    .WithAttachment(logo)
+    .Build();
+
+await _postKitClient.SendEmailAsync(email);
+```
+
+> **Note:** Postmark enforces a combined attachment size limit of 10 MB. PostKit automatically enforces this limit when you call `WithAttachment` or `WithAttachments`.
+
 ### Builder Pattern Features
 
 PostKit uses a fluent builder pattern with the following capabilities:
