@@ -10,6 +10,9 @@ partial class EmailBuilder
     public IEmailBuilder WithSubject(string subject)
     {
         _subject.EnsureNotSet(nameof(Email.Subject));
+        _templateId.EnsureNotSet(nameof(Email.TemplateId));
+        _templateAlias.EnsureNotSet(nameof(Email.TemplateAlias));
+        _templateModel.EnsureNotSet(nameof(Email.TemplateModel));
 
         var length = subject.AsSpan()
             .GetUtf16Length();
