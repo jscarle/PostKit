@@ -6,7 +6,7 @@ partial class EmailBuilder
 {
     private string? _tag;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBuilder WithTag(string tag)
     {
         _tag.EnsureNotSet(nameof(Email.Tag));

@@ -7,13 +7,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Content Update="appsettings.Development.json">
-        <DependentUpon>appsettings.json</DependentUpon>
-      </Content>
+        <Content Update="appsettings.Development.json">
+            <DependentUpon>appsettings.json</DependentUpon>
+        </Content>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\PostKit\PostKit.csproj" />
+        <ProjectReference Include="..\..\src\PostKit\PostKit.csproj"/>
     </ItemGroup>
 
 </Project>

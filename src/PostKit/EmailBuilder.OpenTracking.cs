@@ -6,7 +6,7 @@ partial class EmailBuilder
 {
     private bool? _openTracking;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBuilder WithOpenTracking(bool openTracking = true)
     {
         _openTracking.EnsureNotSet(nameof(Email.OpenTracking));
