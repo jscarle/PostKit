@@ -13,7 +13,7 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
     public async Task<Result<SendEmailResponse>> SendEmailAsync(Email email, CancellationToken cancellationToken = default)
     {
         var request = email.ToEmailRequest();
-        
+
         var endpoint = email.TemplateId.HasValue || email.TemplateAlias is not null ? "/email/withTemplate" : "/email";
 
         Result<EmailResponse> response;
@@ -39,7 +39,7 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
             LogEmailSent(email.Cc, emailResponse);
         else if (email.Bcc is not null)
             LogEmailSent(email.Bcc, emailResponse);
-        
+
         if (emailResponse.MessageId is null)
             return Result.Failure<SendEmailResponse>("Message ID was not returned from the Postmark API.");
 

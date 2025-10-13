@@ -7,16 +7,16 @@ internal sealed class EmailRequest
 {
     [JsonPropertyName("TemplateId")]
     public required int? TemplateId { get; init; }
-    
+
     [JsonPropertyName("TemplateAlias")]
     public required string? TemplateAlias { get; init; }
-    
+
     [JsonPropertyName("TemplateModel")]
     public required JsonNode? TemplateModel { get; init; }
-    
+
     [JsonPropertyName("InlineCss")]
     public required bool? InlineCss { get; init; }
-    
+
     [JsonPropertyName("From")]
     public required string From { get; init; }
 

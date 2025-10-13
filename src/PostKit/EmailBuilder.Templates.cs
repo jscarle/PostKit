@@ -5,13 +5,16 @@ namespace PostKit;
 
 partial class EmailBuilder
 {
+    [GeneratedRegex(@"^[A-Za-z][A-Za-z0-9._-]*$")]
+    private static partial Regex TemplateAliasRegex { get; }
+
+    private const int TemplateAliasMaxLength = 64;
     private int? _templateId;
     private string? _templateAlias;
     private object? _templateModel;
     private bool? _inlineCss;
-    private const int TemplateAliasMaxLength = 64;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBuilder WithTemplate(int templateId, object templateModel, bool? inlineCss = null)
     {
         _htmlBody.EnsureNotSet(nameof(Email.HtmlBody));
@@ -34,7 +37,7 @@ partial class EmailBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBuilder WithTemplate(string templateAlias, object templateModel, bool? inlineCss = null)
     {
         _htmlBody.EnsureNotSet(nameof(Email.HtmlBody));
@@ -48,14 +51,10 @@ partial class EmailBuilder
             throw new ArgumentException("The template alias is required.", nameof(templateAlias));
 
         if (templateAlias.Length > TemplateAliasMaxLength)
-            throw new ArgumentException(
-                $"The template alias must not exceed {TemplateAliasMaxLength} characters.",
-                nameof(templateAlias));
+            throw new ArgumentException($"The template alias must not exceed {TemplateAliasMaxLength} characters.", nameof(templateAlias));
 
         if (!TemplateAliasRegex.IsMatch(templateAlias))
-            throw new ArgumentException(
-                "The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters.",
-                nameof(templateAlias));
+            throw new ArgumentException("The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters.", nameof(templateAlias));
 
         if (templateModel is null)
             throw new ArgumentException("The template model is required.", nameof(templateModel));
@@ -66,7 +65,4 @@ partial class EmailBuilder
 
         return this;
     }
-
-    [GeneratedRegex(@"^[A-Za-z][A-Za-z0-9._-]*$")]
-    private static partial Regex TemplateAliasRegex { get; }
 }

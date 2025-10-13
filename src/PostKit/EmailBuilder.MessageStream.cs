@@ -7,7 +7,7 @@ partial class EmailBuilder
 {
     private string? _messageStream;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBuilder UsingMessageStream(MessageStream messageStream)
     {
         _messageStream.EnsureNotSet(nameof(Email.MessageStream));
@@ -22,7 +22,7 @@ partial class EmailBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBuilder UsingMessageStream(string messageStreamId)
     {
         _messageStream.EnsureNotSet(nameof(Email.MessageStream));

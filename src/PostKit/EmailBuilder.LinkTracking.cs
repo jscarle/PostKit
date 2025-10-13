@@ -6,7 +6,7 @@ partial class EmailBuilder
 {
     private LinkTracking? _linkTracking;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBuilder WithLinkTracking(LinkTracking linkTracking = LinkTracking.HtmlAndText)
     {
         _linkTracking.EnsureNotSet(nameof(Email.LinkTracking));
