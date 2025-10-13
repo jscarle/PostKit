@@ -7,6 +7,7 @@ partial class EmailBuilder
 {
     private MailboxAddress? _from;
 
+    /// <inheritdoc />
     public IEmailBuilder From(string address)
     {
         _from.EnsureNotSet(nameof(Email.From));
@@ -20,6 +21,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder From(string name, string address)
     {
         _from.EnsureNotSet(nameof(Email.From));
@@ -33,6 +35,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder From(MailboxAddress mailboxAddress)
     {
         _from.EnsureNotSet(nameof(Email.From));

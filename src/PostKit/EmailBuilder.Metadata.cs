@@ -6,6 +6,7 @@ partial class EmailBuilder
 {
     private IDictionary<string, string>? _metadata;
 
+    /// <inheritdoc />
     public IEmailBuilder WithMetadata(string name, string value)
     {
         _metadata.EnsureNotSet(nameof(Email.Metadata));
@@ -21,6 +22,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithMetadata(KeyValuePair<string, string> entry)
     {
         _metadata.EnsureNotSet(nameof(Email.Metadata));
@@ -35,6 +37,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithMetadata(IEnumerable<KeyValuePair<string, string>> metadata)
     {
         _metadata.EnsureNotSet(nameof(Email.Metadata));
@@ -49,6 +52,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithMetadata(IDictionary<string, string> metadata)
     {
         _metadata.EnsureNotSet(nameof(Email.Metadata));

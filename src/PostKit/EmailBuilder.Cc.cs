@@ -7,6 +7,7 @@ partial class EmailBuilder : IEmailCcBuilder
 {
     private IList<MailboxAddress>? _cc;
 
+    /// <inheritdoc />
     public IEmailCcBuilder Cc(string address)
     {
         _cc.EnsureNotSet(nameof(Email.Cc));
@@ -16,6 +17,7 @@ partial class EmailBuilder : IEmailCcBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailCcBuilder Cc(string name, string address)
     {
         _cc.EnsureNotSet(nameof(Email.Cc));
@@ -25,6 +27,7 @@ partial class EmailBuilder : IEmailCcBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailCcBuilder Cc(MailboxAddress mailboxAddress)
     {
         _cc.EnsureNotSet(nameof(Email.Cc));
@@ -34,6 +37,7 @@ partial class EmailBuilder : IEmailCcBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailCcBuilder Cc(IEnumerable<string> addresses)
     {
         _cc.EnsureNotSet(nameof(Email.Cc));
@@ -43,6 +47,7 @@ partial class EmailBuilder : IEmailCcBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailCcBuilder Cc(IList<MailboxAddress> mailboxAddresses)
     {
         _cc.EnsureNotSet(nameof(Email.Cc));
@@ -52,6 +57,7 @@ partial class EmailBuilder : IEmailCcBuilder
         return this;
     }
     
+    /// <inheritdoc />
     public IEmailCcBuilder AlsoCc(string address)
     {
         var mailboxAddresses = address.ToAddressList();
@@ -61,6 +67,7 @@ partial class EmailBuilder : IEmailCcBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailCcBuilder AlsoCc(string name, string address)
     {
         var mailboxAddresses = (name, address).ToAddressList();
@@ -70,6 +77,7 @@ partial class EmailBuilder : IEmailCcBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailCcBuilder AlsoCc(MailboxAddress mailboxAddress)
     {
         var mailboxAddresses = mailboxAddress.ToAddressList();
@@ -79,6 +87,7 @@ partial class EmailBuilder : IEmailCcBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailCcBuilder AlsoCc(IEnumerable<string> addresses)
     {
         var mailboxAddresses = addresses.ToAddressList();
@@ -88,6 +97,7 @@ partial class EmailBuilder : IEmailCcBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailCcBuilder AlsoCc(IList<MailboxAddress> mailboxAddresses)
     {
         _cc!.AddRange(mailboxAddresses);

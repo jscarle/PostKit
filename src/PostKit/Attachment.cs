@@ -1,5 +1,8 @@
 namespace PostKit;
 
+/// <summary>
+/// Represents an email attachment that can be sent with a <see cref="Email"/>.
+/// </summary>
 public sealed class Attachment
 {
     private Attachment(string name, string contentType, string content, string? contentId)
@@ -10,14 +13,35 @@ public sealed class Attachment
         ContentId = contentId;
     }
 
+    /// <summary>
+    /// Gets the file name that will be presented to the email recipient.
+    /// </summary>
     public string Name { get; }
 
+    /// <summary>
+    /// Gets the MIME content type of the attachment.
+    /// </summary>
     public string ContentType { get; }
 
+    /// <summary>
+    /// Gets the Base64 encoded contents of the attachment.
+    /// </summary>
     public string Content { get; }
 
+    /// <summary>
+    /// Gets the optional content identifier of the attachment when it should be embedded in the message body.
+    /// </summary>
     public string? ContentId { get; }
 
+    /// <summary>
+    /// Creates a new <see cref="Attachment"/> from the provided raw content.
+    /// </summary>
+    /// <param name="name">The file name to associate with the attachment.</param>
+    /// <param name="contentType">The MIME content type describing the attachment.</param>
+    /// <param name="content">The raw attachment content that will be encoded as Base64.</param>
+    /// <param name="contentId">The optional content identifier used for inline attachments.</param>
+    /// <returns>The created <see cref="Attachment"/>.</returns>
+    /// <exception cref="ArgumentException">Thrown when any parameter is invalid.</exception>
     public static Attachment Create(string name, string contentType, ReadOnlySpan<byte> content, string? contentId = null)
     {
         if (string.IsNullOrWhiteSpace(name))

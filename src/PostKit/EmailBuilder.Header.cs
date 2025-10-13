@@ -6,6 +6,7 @@ partial class EmailBuilder
 {
     private IDictionary<string, string>? _headers;
 
+    /// <inheritdoc />
     public IEmailBuilder WithHeader(string name, string value)
     {
         _headers.EnsureNotSet(nameof(Email.Headers));
@@ -21,6 +22,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithHeader(KeyValuePair<string, string> header)
     {
         _headers.EnsureNotSet(nameof(Email.Headers));
@@ -35,6 +37,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithHeader(IEnumerable<KeyValuePair<string, string>> headers)
     {
         _headers.EnsureNotSet(nameof(Email.Headers));
@@ -49,6 +52,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithHeader(IDictionary<string, string> headers)
     {
         _headers.EnsureNotSet(nameof(Email.Headers));
@@ -57,7 +61,7 @@ partial class EmailBuilder
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
         if (uniqueKeys != headers.Keys.Count)
-            throw new ArgumentException("There are duplicate metadata entries.", nameof(headers));
+            throw new ArgumentException("There are duplicate header entries.", nameof(headers));
 
         foreach (var header in headers)
             ValidateHeader(header.Key, header.Value, nameof(headers));

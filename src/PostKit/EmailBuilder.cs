@@ -3,6 +3,9 @@
 
 namespace PostKit;
 
+/// <summary>
+/// Provides a fluent interface for constructing <see cref="Email"/> messages.
+/// </summary>
 public sealed partial class EmailBuilder : IEmailBuilder
 {
     private const int MessageSizeLimitInBytes = 10 * 1024 * 1024; // 10 MB
@@ -11,6 +14,7 @@ public sealed partial class EmailBuilder : IEmailBuilder
     {
     }
 
+    /// <inheritdoc />
     public Email Build()
     {
         if (_from is null)
@@ -23,10 +27,10 @@ public sealed partial class EmailBuilder : IEmailBuilder
         if (totalRecipients > 50)
             throw new InvalidOperationException("There are too many recipients. Postmark implements a limit of 50 recipients per message. The recipient count includes all To, Cc, and Bcc recipients combined.");
 
-        if (_htmlBody is null && _textBody is null)
-            throw new InvalidOperationException("Either an HTML or text body is required.");
+        if (_htmlBody is null && _textBody is null && !_templateId.HasValue && _templateAlias is null)
+            throw new InvalidOperationException("Either an HTML or text body, or a template ID or alias, is required.");
 
-        var bodyLength = (long)(_textBody?.Length + _htmlBody?.Length ?? 0);
+        var bodyLength = (long)(_textBody?.Length ?? 0) + (_htmlBody?.Length ?? 0);
         var projectedTotal = _attachmentBytes + bodyLength;
         if (projectedTotal > MessageSizeLimitInBytes)
             throw new InvalidOperationException("Message size exceeds Postmark's 10 MB limit.");
@@ -44,9 +48,14 @@ public sealed partial class EmailBuilder : IEmailBuilder
             Tag = _tag,
             Headers = _headers?.AsReadOnly(),
             Metadata = _metadata?.AsReadOnly(),
+            OpenTracking = _openTracking,
             LinkTracking = _linkTracking,
             MessageStream = _messageStream,
             Attachments = _attachments?.AsReadOnly(),
+            TemplateId = _templateId,
+            TemplateAlias = _templateAlias,
+            TemplateModel = _templateModel,
+            InlineCss = _inlineCss,
         };
 
         return email;

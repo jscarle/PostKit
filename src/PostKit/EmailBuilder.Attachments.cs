@@ -5,6 +5,7 @@ partial class EmailBuilder
     private List<Attachment>? _attachments;
     private int _attachmentBytes;
 
+    /// <inheritdoc />
     public IEmailBuilder WithAttachment(Attachment attachment)
     {
         ArgumentNullException.ThrowIfNull(attachment);
@@ -17,6 +18,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithAttachments(IEnumerable<Attachment> attachments)
     {
         ArgumentNullException.ThrowIfNull(attachments);

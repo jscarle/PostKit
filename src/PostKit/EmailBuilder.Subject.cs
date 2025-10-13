@@ -6,6 +6,7 @@ partial class EmailBuilder
 {
     private string? _subject;
 
+    /// <inheritdoc />
     public IEmailBuilder WithSubject(string subject)
     {
         _subject.EnsureNotSet(nameof(Email.Subject));
