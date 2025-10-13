@@ -105,6 +105,9 @@
         <Compile Update="EmailBuilder.OpenTracking.cs">
           <DependentUpon>EmailBuilder.cs</DependentUpon>
         </Compile>
+        <Compile Update="EmailBuilder.Templates.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
     </ItemGroup>
 
 </Project>

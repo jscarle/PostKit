@@ -13,11 +13,13 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
     public async Task<Result<SendEmailResponse>> SendEmailAsync(Email email, CancellationToken cancellationToken = default)
     {
         var request = email.ToEmailRequest();
+        
+        var endpoint = email.TemplateId.HasValue || email.TemplateAlias is not null ? "/email/withTemplate" : "/email";
 
         Result<EmailResponse> response;
         try
         {
-            response = await postmark.SendAsync<EmailRequest, EmailResponse>("/email", request, cancellationToken);
+            response = await postmark.SendAsync<EmailRequest, EmailResponse>(endpoint, request, cancellationToken);
         }
         catch (Exception ex)
         {

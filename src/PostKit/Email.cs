@@ -33,6 +33,14 @@ public sealed class Email
     public string? MessageStream { get; internal init; }
 
     public IReadOnlyCollection<Attachment>? Attachments { get; internal init; }
+    
+    public int? TemplateId { get; internal init; }
+    
+    public string? TemplateAlias { get; internal init; }
+    
+    public object? TemplateModel { get; internal init; }
+    
+    public bool? InlineCss { get; internal init; }
 
     internal Email()
     {

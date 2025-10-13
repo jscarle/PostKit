@@ -23,8 +23,8 @@ public sealed partial class EmailBuilder : IEmailBuilder
         if (totalRecipients > 50)
             throw new InvalidOperationException("There are too many recipients. Postmark implements a limit of 50 recipients per message. The recipient count includes all To, Cc, and Bcc recipients combined.");
 
-        if (_htmlBody is null && _textBody is null)
-            throw new InvalidOperationException("Either an HTML or text body is required.");
+        if (_htmlBody is null && _textBody is null && !_templateId.HasValue && _templateAlias is null)
+            throw new InvalidOperationException("Either an HTML or text body, or a template ID or alias, is required.");
 
         var bodyLength = (long)(_textBody?.Length + _htmlBody?.Length ?? 0);
         var projectedTotal = _attachmentBytes + bodyLength;

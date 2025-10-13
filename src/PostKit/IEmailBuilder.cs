@@ -48,4 +48,6 @@ public interface IEmailBuilder
     IEmailBuilder WithLinkTracking(LinkTracking linkTracking = LinkTracking.HtmlAndText);
     IEmailBuilder UsingMessageStream(MessageStream messageStream);
     IEmailBuilder UsingMessageStream(string messageStreamId);
+    IEmailBuilder WithTemplate(int templateId, object templateModel, bool? inlineCss = null);
+    IEmailBuilder WithTemplate(string templateAlias, object templateModel, bool? inlineCss = null);
 }
