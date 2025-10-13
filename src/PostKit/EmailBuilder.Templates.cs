@@ -11,6 +11,7 @@ partial class EmailBuilder
     private bool? _inlineCss;
     private const int TemplateAliasMaxLength = 64;
 
+    /// <inheritdoc />
     public IEmailBuilder WithTemplate(int templateId, object templateModel, bool? inlineCss = null)
     {
         _htmlBody.EnsureNotSet(nameof(Email.HtmlBody));
@@ -33,6 +34,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithTemplate(string templateAlias, object templateModel, bool? inlineCss = null)
     {
         _htmlBody.EnsureNotSet(nameof(Email.HtmlBody));

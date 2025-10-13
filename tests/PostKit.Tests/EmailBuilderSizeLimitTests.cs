@@ -1,5 +1,3 @@
-using System;
-using PostKit;
 using Xunit;
 
 namespace PostKit.Tests;

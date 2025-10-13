@@ -3,6 +3,9 @@
 
 namespace PostKit;
 
+/// <summary>
+/// Provides a fluent interface for constructing <see cref="Email"/> messages.
+/// </summary>
 public sealed partial class EmailBuilder : IEmailBuilder
 {
     private const int MessageSizeLimitInBytes = 10 * 1024 * 1024; // 10 MB
@@ -11,6 +14,7 @@ public sealed partial class EmailBuilder : IEmailBuilder
     {
     }
 
+    /// <inheritdoc />
     public Email Build()
     {
         if (_from is null)

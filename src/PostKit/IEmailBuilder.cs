@@ -3,10 +3,10 @@ using MimeKit;
 
 namespace PostKit;
 
-[SuppressMessage("Naming", "CA1716: Identifiers should not match keywords", Justification = "Emails have to go to someone!")]
 /// <summary>
-/// Provides a fluent interface for constructing <see cref="Email"/> messages.
+/// Defines a fluent interface for constructing <see cref="Email"/> messages.
 /// </summary>
+[SuppressMessage("Naming", "CA1716: Identifiers should not match keywords", Justification = "Emails have to go to someone!")]
 public interface IEmailBuilder
 {
     /// <summary>

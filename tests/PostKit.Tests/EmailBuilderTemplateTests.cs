@@ -1,6 +1,5 @@
 using LightResults;
 using Microsoft.Extensions.Logging;
-using PostKit;
 using PostKit.Postmark;
 using PostKit.Postmark.Email;
 using Xunit;

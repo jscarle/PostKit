@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using PostKit;
 using Xunit;
 
 namespace PostKit.Tests;

@@ -6,6 +6,7 @@ partial class EmailBuilder
 {
     private IDictionary<string, string>? _headers;
 
+    /// <inheritdoc />
     public IEmailBuilder WithHeader(string name, string value)
     {
         _headers.EnsureNotSet(nameof(Email.Headers));
@@ -21,6 +22,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithHeader(KeyValuePair<string, string> header)
     {
         _headers.EnsureNotSet(nameof(Email.Headers));
@@ -35,6 +37,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithHeader(IEnumerable<KeyValuePair<string, string>> headers)
     {
         _headers.EnsureNotSet(nameof(Email.Headers));
@@ -49,6 +52,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithHeader(IDictionary<string, string> headers)
     {
         _headers.EnsureNotSet(nameof(Email.Headers));

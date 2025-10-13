@@ -7,6 +7,7 @@ partial class EmailBuilder
     private string? _htmlBody;
     private string? _textBody;
 
+    /// <inheritdoc />
     public IEmailBuilder WithHtmlBody(string html)
     {
         _templateId.EnsureNotSet(nameof(Email.TemplateId));
@@ -20,6 +21,7 @@ partial class EmailBuilder
         return this;
     }
 
+    /// <inheritdoc />
     public IEmailBuilder WithTextBody(string text)
     {
         _templateId.EnsureNotSet(nameof(Email.TemplateId));
