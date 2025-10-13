@@ -41,5 +41,12 @@ public interface IEmailReplyToBuilder : IEmailBuilder
     /// </summary>
     /// <param name="mailboxAddresses">The reply-to mailbox addresses.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
+    IEmailReplyToBuilder AlsoReplyTo(IEnumerable<MailboxAddress> mailboxAddresses);
+
+    /// <summary>
+    /// Adds multiple reply-to recipients using mailbox addresses.
+    /// </summary>
+    /// <param name="mailboxAddresses">The reply-to mailbox addresses.</param>
+    /// <returns>The builder instance for fluent chaining.</returns>
     IEmailReplyToBuilder AlsoReplyTo(IList<MailboxAddress> mailboxAddresses);
 }

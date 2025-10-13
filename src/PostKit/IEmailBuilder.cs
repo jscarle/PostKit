@@ -71,6 +71,13 @@ public interface IEmailBuilder
     /// </summary>
     /// <param name="mailboxAddresses">The reply-to mailbox addresses.</param>
     /// <returns>An <see cref="IEmailReplyToBuilder"/> for further configuration.</returns>
+    IEmailReplyToBuilder ReplyTo(IEnumerable<MailboxAddress> mailboxAddresses);
+
+    /// <summary>
+    /// Begins configuring reply-to recipients with mailbox addresses.
+    /// </summary>
+    /// <param name="mailboxAddresses">The reply-to mailbox addresses.</param>
+    /// <returns>An <see cref="IEmailReplyToBuilder"/> for further configuration.</returns>
     IEmailReplyToBuilder ReplyTo(IList<MailboxAddress> mailboxAddresses);
 
     /// <summary>
@@ -101,6 +108,13 @@ public interface IEmailBuilder
     /// <param name="addresses">The recipient email addresses.</param>
     /// <returns>An <see cref="IEmailToBuilder"/> for further configuration.</returns>
     IEmailToBuilder To(IEnumerable<string> addresses);
+
+    /// <summary>
+    /// Begins configuring primary recipients with mailbox addresses.
+    /// </summary>
+    /// <param name="mailboxAddresses">The recipient mailbox addresses.</param>
+    /// <returns>An <see cref="IEmailToBuilder"/> for further configuration.</returns>
+    IEmailToBuilder To(IEnumerable<MailboxAddress> mailboxAddresses);
 
     /// <summary>
     /// Begins configuring primary recipients with mailbox addresses.
@@ -143,6 +157,13 @@ public interface IEmailBuilder
     /// </summary>
     /// <param name="mailboxAddresses">The CC mailbox addresses.</param>
     /// <returns>An <see cref="IEmailCcBuilder"/> for further configuration.</returns>
+    IEmailCcBuilder Cc(IEnumerable<MailboxAddress> mailboxAddresses);
+
+    /// <summary>
+    /// Begins configuring carbon-copy recipients with mailbox addresses.
+    /// </summary>
+    /// <param name="mailboxAddresses">The CC mailbox addresses.</param>
+    /// <returns>An <see cref="IEmailCcBuilder"/> for further configuration.</returns>
     IEmailCcBuilder Cc(IList<MailboxAddress> mailboxAddresses);
 
     /// <summary>
@@ -173,6 +194,13 @@ public interface IEmailBuilder
     /// <param name="addresses">The BCC email addresses.</param>
     /// <returns>An <see cref="IEmailBccBuilder"/> for further configuration.</returns>
     IEmailBccBuilder Bcc(IEnumerable<string> addresses);
+
+    /// <summary>
+    /// Begins configuring blind carbon-copy recipients with mailbox addresses.
+    /// </summary>
+    /// <param name="mailboxAddresses">The BCC mailbox addresses.</param>
+    /// <returns>An <see cref="IEmailBccBuilder"/> for further configuration.</returns>
+    IEmailBccBuilder Bcc(IEnumerable<MailboxAddress> mailboxAddresses);
 
     /// <summary>
     /// Begins configuring blind carbon-copy recipients with mailbox addresses.

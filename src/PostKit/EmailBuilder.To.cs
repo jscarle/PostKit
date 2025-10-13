@@ -48,6 +48,23 @@ partial class EmailBuilder : IEmailToBuilder
     }
 
     /// <inheritdoc />
+    public IEmailToBuilder To(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        _to.EnsureNotSet(nameof(Email.To));
+
+        var addresses = new List<MailboxAddress>();
+
+        foreach (var mailboxAddress in mailboxAddresses)
+        {
+            addresses.Add(mailboxAddress);
+        }
+
+        _to = addresses;
+
+        return this;
+    }
+
+    /// <inheritdoc />
     public IEmailToBuilder To(IList<MailboxAddress> mailboxAddresses)
     {
         _to.EnsureNotSet(nameof(Email.To));
@@ -93,6 +110,17 @@ partial class EmailBuilder : IEmailToBuilder
         var mailboxAddresses = addresses.ToAddressList();
 
         _to!.AddRange(mailboxAddresses);
+
+        return this;
+    }
+
+    /// <inheritdoc />
+    public IEmailToBuilder AlsoTo(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        foreach (var mailboxAddress in mailboxAddresses)
+        {
+            _to!.Add(mailboxAddress);
+        }
 
         return this;
     }
