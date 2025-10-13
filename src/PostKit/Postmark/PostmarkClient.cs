@@ -62,9 +62,9 @@ internal sealed
         var jsonToSend = JsonSerializer.Serialize(body, _jsonSerializerOptions);
         LogApiRequest(jsonToSend);
         var contentToSend = new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json);
-        var responseMessage = await _httpClient.PostAsync(endpoint, contentToSend, cancellationToken);
+        using var responseMessage = await _httpClient.PostAsync(endpoint, contentToSend, cancellationToken);
 #else
-        var responseMessage = await _httpClient.PostAsJsonAsync(endpoint, body, _jsonSerializerOptions, cancellationToken);
+        using var responseMessage = await _httpClient.PostAsJsonAsync(endpoint, body, _jsonSerializerOptions, cancellationToken);
 #endif
         if (responseMessage.IsSuccessStatusCode)
         {
