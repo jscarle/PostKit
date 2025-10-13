@@ -26,7 +26,7 @@ public sealed partial class EmailBuilder : IEmailBuilder
         if (_htmlBody is null && _textBody is null && !_templateId.HasValue && _templateAlias is null)
             throw new InvalidOperationException("Either an HTML or text body, or a template ID or alias, is required.");
 
-        var bodyLength = (long)(_textBody?.Length + _htmlBody?.Length ?? 0);
+        var bodyLength = (long)(_textBody?.Length ?? 0) + (_htmlBody?.Length ?? 0);
         var projectedTotal = _attachmentBytes + bodyLength;
         if (projectedTotal > MessageSizeLimitInBytes)
             throw new InvalidOperationException("Message size exceeds Postmark's 10 MB limit.");
