@@ -11,12 +11,15 @@ public class EmailBuilderTemplateTests
     [Fact]
     public void WithTemplateId_Build_SetsTemplateProperties()
     {
-        var templateModel = new { Name = "Alice" };
+        var templateModel = new
+        {
+            Name = "Alice",
+        };
 
         var email = Email.CreateBuilder()
             .From("sender@example.com")
             .To("recipient@example.com")
-            .WithTemplate(42, templateModel, inlineCss: true)
+            .WithTemplate(42, templateModel, true)
             .Build();
 
         Assert.Equal(42, email.TemplateId);
@@ -28,12 +31,15 @@ public class EmailBuilderTemplateTests
     [Fact]
     public void WithTemplateAlias_Build_SetsTemplateProperties()
     {
-        var templateModel = new { Name = "Bob" };
+        var templateModel = new
+        {
+            Name = "Bob",
+        };
 
         var email = Email.CreateBuilder()
             .From("sender@example.com")
             .To("recipient@example.com")
-            .WithTemplate("welcome-email", templateModel, inlineCss: false)
+            .WithTemplate("welcome-email", templateModel, false)
             .Build();
 
         Assert.Null(email.TemplateId);
@@ -45,7 +51,10 @@ public class EmailBuilderTemplateTests
     [Fact]
     public async Task SendEmailAsync_WithTemplate_RoutesThroughTemplateEndpoint()
     {
-        var templateModel = new { Name = "Charlie" };
+        var templateModel = new
+        {
+            Name = "Charlie",
+        };
 
         var email = Email.CreateBuilder()
             .From("sender@example.com")
@@ -92,9 +101,16 @@ public class EmailBuilderTemplateTests
 
     private sealed class TestLogger : ILogger<PostKitClient>
     {
-        public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
+        public IDisposable BeginScope<TState>(TState state)
+            where TState : notnull
+        {
+            return NullScope.Instance;
+        }
 
-        public bool IsEnabled(LogLevel logLevel) => true;
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {

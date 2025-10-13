@@ -26,17 +26,13 @@ internal static class MailboxAddressExtensions
         var mailboxAddresses = addresses.Select(MailboxAddress.Parse);
         return [..mailboxAddresses];
     }
-    
+
     public static void AddRange(this IList<MailboxAddress> mailboxAddressesList, IList<MailboxAddress> mailboxAddresses)
     {
         if (mailboxAddressesList is List<MailboxAddress> list)
-        {
             list.AddRange(mailboxAddresses);
-        }
         else
-        {
-            foreach(var mailboxAddress in mailboxAddresses)
+            foreach (var mailboxAddress in mailboxAddresses)
                 mailboxAddressesList.Add(mailboxAddress);
-        }
     }
 }

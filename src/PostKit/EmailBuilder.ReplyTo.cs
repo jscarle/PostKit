@@ -7,7 +7,7 @@ partial class EmailBuilder : IEmailReplyToBuilder
 {
     private IList<MailboxAddress>? _replyTo;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailReplyToBuilder ReplyTo(string address)
     {
         _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
@@ -17,7 +17,7 @@ partial class EmailBuilder : IEmailReplyToBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailReplyToBuilder ReplyTo(string name, string address)
     {
         _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
@@ -27,7 +27,7 @@ partial class EmailBuilder : IEmailReplyToBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailReplyToBuilder ReplyTo(MailboxAddress mailboxAddress)
     {
         _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
@@ -37,7 +37,7 @@ partial class EmailBuilder : IEmailReplyToBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailReplyToBuilder ReplyTo(IEnumerable<string> addresses)
     {
         _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
@@ -47,7 +47,17 @@ partial class EmailBuilder : IEmailReplyToBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
+    public IEmailReplyToBuilder ReplyTo(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
+
+        _replyTo = mailboxAddresses.ToList();
+
+        return this;
+    }
+
+    /// <inheritdoc/>
     public IEmailReplyToBuilder ReplyTo(IList<MailboxAddress> mailboxAddresses)
     {
         _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
@@ -56,8 +66,8 @@ partial class EmailBuilder : IEmailReplyToBuilder
 
         return this;
     }
-    
-    /// <inheritdoc />
+
+    /// <inheritdoc/>
     public IEmailReplyToBuilder AlsoReplyTo(string address)
     {
         var mailboxAddresses = address.ToAddressList();
@@ -67,7 +77,7 @@ partial class EmailBuilder : IEmailReplyToBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailReplyToBuilder AlsoReplyTo(string name, string address)
     {
         var mailboxAddresses = (name, address).ToAddressList();
@@ -77,17 +87,17 @@ partial class EmailBuilder : IEmailReplyToBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailReplyToBuilder AlsoReplyTo(MailboxAddress mailboxAddress)
     {
         var mailboxAddresses = mailboxAddress.ToAddressList();
 
         _replyTo!.AddRange(mailboxAddresses);
-        
+
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailReplyToBuilder AlsoReplyTo(IEnumerable<string> addresses)
     {
         var mailboxAddresses = addresses.ToAddressList();
@@ -97,7 +107,16 @@ partial class EmailBuilder : IEmailReplyToBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
+    public IEmailReplyToBuilder AlsoReplyTo(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        foreach (var mailboxAddress in mailboxAddresses)
+            _replyTo!.Add(mailboxAddress);
+
+        return this;
+    }
+
+    /// <inheritdoc/>
     public IEmailReplyToBuilder AlsoReplyTo(IList<MailboxAddress> mailboxAddresses)
     {
         _replyTo!.AddRange(mailboxAddresses);

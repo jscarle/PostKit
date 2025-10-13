@@ -7,7 +7,7 @@ partial class EmailBuilder : IEmailBccBuilder
 {
     private IList<MailboxAddress>? _bcc;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBccBuilder Bcc(string address)
     {
         _bcc.EnsureNotSet(nameof(Email.Bcc));
@@ -17,7 +17,7 @@ partial class EmailBuilder : IEmailBccBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBccBuilder Bcc(string name, string address)
     {
         _bcc.EnsureNotSet(nameof(Email.Bcc));
@@ -27,7 +27,7 @@ partial class EmailBuilder : IEmailBccBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBccBuilder Bcc(MailboxAddress mailboxAddress)
     {
         _bcc.EnsureNotSet(nameof(Email.Bcc));
@@ -37,7 +37,7 @@ partial class EmailBuilder : IEmailBccBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBccBuilder Bcc(IEnumerable<string> addresses)
     {
         _bcc.EnsureNotSet(nameof(Email.Bcc));
@@ -47,7 +47,17 @@ partial class EmailBuilder : IEmailBccBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
+    public IEmailBccBuilder Bcc(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        _bcc.EnsureNotSet(nameof(Email.Bcc));
+
+        _bcc = mailboxAddresses.ToList();
+
+        return this;
+    }
+
+    /// <inheritdoc/>
     public IEmailBccBuilder Bcc(IList<MailboxAddress> mailboxAddresses)
     {
         _bcc.EnsureNotSet(nameof(Email.Bcc));
@@ -56,8 +66,8 @@ partial class EmailBuilder : IEmailBccBuilder
 
         return this;
     }
-    
-    /// <inheritdoc />
+
+    /// <inheritdoc/>
     public IEmailBccBuilder AlsoBcc(string address)
     {
         var mailboxAddresses = address.ToAddressList();
@@ -67,7 +77,7 @@ partial class EmailBuilder : IEmailBccBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBccBuilder AlsoBcc(string name, string address)
     {
         var mailboxAddresses = (name, address).ToAddressList();
@@ -77,17 +87,17 @@ partial class EmailBuilder : IEmailBccBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBccBuilder AlsoBcc(MailboxAddress mailboxAddress)
     {
         var mailboxAddresses = mailboxAddress.ToAddressList();
 
         _bcc!.AddRange(mailboxAddresses);
-        
+
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEmailBccBuilder AlsoBcc(IEnumerable<string> addresses)
     {
         var mailboxAddresses = addresses.ToAddressList();
@@ -97,7 +107,16 @@ partial class EmailBuilder : IEmailBccBuilder
         return this;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
+    public IEmailBccBuilder AlsoBcc(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        foreach (var mailboxAddress in mailboxAddresses)
+            _bcc!.Add(mailboxAddress);
+
+        return this;
+    }
+
+    /// <inheritdoc/>
     public IEmailBccBuilder AlsoBcc(IList<MailboxAddress> mailboxAddresses)
     {
         _bcc!.AddRange(mailboxAddresses);

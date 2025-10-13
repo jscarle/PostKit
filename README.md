@@ -45,6 +45,7 @@ Configure your Postmark Server API Token in `appsettings.json`:
 ```
 
 Or set it via environment variables:
+
 ```bash
 PostKit__ServerApiToken=your-postmark-server-token-here
 ```
