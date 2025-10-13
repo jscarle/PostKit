@@ -60,7 +60,7 @@ public class EmailBuilderTemplateTests
 
         var result = await client.SendEmailAsync(email, CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess());
         Assert.Equal("/email/withTemplate", postmark.LastEndpoint);
         Assert.IsType<EmailRequest>(postmark.LastRequest);
     }
@@ -81,7 +81,10 @@ public class EmailBuilderTemplateTests
 
             var response = new EmailResponse
             {
-                MessageId = Guid.NewGuid().ToString(),
+                MessageId = Guid.NewGuid()
+                    .ToString(),
+                ErrorCode = 0,
+                Message = "",
             };
 
             return Task.FromResult(Result.Success((TResponse)(object)response));
