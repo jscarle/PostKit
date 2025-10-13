@@ -55,6 +55,7 @@ internal static class EmailExtensions
             TrackLinks = trackLinks,
             MessageStream = email.MessageStream,
         };
+        
         return request;
     }
 }

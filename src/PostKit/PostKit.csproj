@@ -90,6 +90,21 @@
         <Compile Update="EmailBuilder.Header.cs">
             <DependentUpon>EmailBuilder.cs</DependentUpon>
         </Compile>
+        <Compile Update="EmailBuilder.Attachments.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.LinkTracking.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.MessageStream.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.Metadata.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="EmailBuilder.OpenTracking.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
     </ItemGroup>
 
 </Project>

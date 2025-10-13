@@ -44,6 +44,7 @@ public sealed partial class EmailBuilder : IEmailBuilder
             Tag = _tag,
             Headers = _headers?.AsReadOnly(),
             Metadata = _metadata?.AsReadOnly(),
+            OpenTracking = _openTracking,
             LinkTracking = _linkTracking,
             MessageStream = _messageStream,
             Attachments = _attachments?.AsReadOnly(),
