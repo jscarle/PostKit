@@ -48,6 +48,10 @@ public sealed partial class EmailBuilder : IEmailBuilder
             LinkTracking = _linkTracking,
             MessageStream = _messageStream,
             Attachments = _attachments?.AsReadOnly(),
+            TemplateId = _templateId,
+            TemplateAlias = _templateAlias,
+            TemplateModel = _templateModel,
+            InlineCss = _inlineCss,
         };
 
         return email;
