@@ -6,6 +6,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{83B35624
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostKit", "src\PostKit\PostKit.csproj", "{C9D7514E-34AE-45A3-980B-84DBD5120BF2}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{CD3A7C84-7F22-4650-812A-793C8BC05E41}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostKit.Tests", "tests\\PostKit.Tests\\PostKit.Tests.csproj", "{5CD4FC31-A455-40B3-82E7-E77658771A04}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,8 +24,13 @@ Global
 		{C9D7514E-34AE-45A3-980B-84DBD5120BF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C9D7514E-34AE-45A3-980B-84DBD5120BF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C9D7514E-34AE-45A3-980B-84DBD5120BF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CD4FC31-A455-40B3-82E7-E77658771A04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CD4FC31-A455-40B3-82E7-E77658771A04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CD4FC31-A455-40B3-82E7-E77658771A04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CD4FC31-A455-40B3-82E7-E77658771A04}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4C9C196B-46C2-461E-AD67-1C2A71E28084} = {83B35624-97C6-4EF6-A198-552522CC5662}
+		{5CD4FC31-A455-40B3-82E7-E77658771A04} = {CD3A7C84-7F22-4650-812A-793C8BC05E41}
 	EndGlobalSection
 EndGlobal
