@@ -41,5 +41,12 @@ public interface IEmailBccBuilder : IEmailBuilder
     /// </summary>
     /// <param name="mailboxAddresses">The BCC mailbox addresses.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
+    IEmailBccBuilder AlsoBcc(IEnumerable<MailboxAddress> mailboxAddresses);
+
+    /// <summary>
+    /// Adds multiple blind carbon-copy recipients using mailbox addresses.
+    /// </summary>
+    /// <param name="mailboxAddresses">The BCC mailbox addresses.</param>
+    /// <returns>The builder instance for fluent chaining.</returns>
     IEmailBccBuilder AlsoBcc(IList<MailboxAddress> mailboxAddresses);
 }

@@ -41,5 +41,12 @@ public interface IEmailCcBuilder : IEmailBuilder
     /// </summary>
     /// <param name="mailboxAddresses">The CC mailbox addresses.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
+    IEmailCcBuilder AlsoCc(IEnumerable<MailboxAddress> mailboxAddresses);
+
+    /// <summary>
+    /// Adds multiple carbon-copy recipients using mailbox addresses.
+    /// </summary>
+    /// <param name="mailboxAddresses">The CC mailbox addresses.</param>
+    /// <returns>The builder instance for fluent chaining.</returns>
     IEmailCcBuilder AlsoCc(IList<MailboxAddress> mailboxAddresses);
 }

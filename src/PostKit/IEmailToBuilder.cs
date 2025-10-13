@@ -41,5 +41,12 @@ public interface IEmailToBuilder : IEmailBuilder
     /// </summary>
     /// <param name="mailboxAddresses">The recipient mailbox addresses.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
+    IEmailToBuilder AlsoTo(IEnumerable<MailboxAddress> mailboxAddresses);
+
+    /// <summary>
+    /// Adds multiple primary recipients using mailbox addresses.
+    /// </summary>
+    /// <param name="mailboxAddresses">The recipient mailbox addresses.</param>
+    /// <returns>The builder instance for fluent chaining.</returns>
     IEmailToBuilder AlsoTo(IList<MailboxAddress> mailboxAddresses);
 }

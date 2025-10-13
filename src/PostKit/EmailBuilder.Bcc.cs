@@ -48,6 +48,23 @@ partial class EmailBuilder : IEmailBccBuilder
     }
 
     /// <inheritdoc />
+    public IEmailBccBuilder Bcc(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        _bcc.EnsureNotSet(nameof(Email.Bcc));
+
+        var addresses = new List<MailboxAddress>();
+
+        foreach (var mailboxAddress in mailboxAddresses)
+        {
+            addresses.Add(mailboxAddress);
+        }
+
+        _bcc = addresses;
+
+        return this;
+    }
+
+    /// <inheritdoc />
     public IEmailBccBuilder Bcc(IList<MailboxAddress> mailboxAddresses)
     {
         _bcc.EnsureNotSet(nameof(Email.Bcc));
@@ -93,6 +110,17 @@ partial class EmailBuilder : IEmailBccBuilder
         var mailboxAddresses = addresses.ToAddressList();
 
         _bcc!.AddRange(mailboxAddresses);
+
+        return this;
+    }
+
+    /// <inheritdoc />
+    public IEmailBccBuilder AlsoBcc(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        foreach (var mailboxAddress in mailboxAddresses)
+        {
+            _bcc!.Add(mailboxAddress);
+        }
 
         return this;
     }

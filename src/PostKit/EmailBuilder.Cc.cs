@@ -48,6 +48,23 @@ partial class EmailBuilder : IEmailCcBuilder
     }
 
     /// <inheritdoc />
+    public IEmailCcBuilder Cc(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        _cc.EnsureNotSet(nameof(Email.Cc));
+
+        var addresses = new List<MailboxAddress>();
+
+        foreach (var mailboxAddress in mailboxAddresses)
+        {
+            addresses.Add(mailboxAddress);
+        }
+
+        _cc = addresses;
+
+        return this;
+    }
+
+    /// <inheritdoc />
     public IEmailCcBuilder Cc(IList<MailboxAddress> mailboxAddresses)
     {
         _cc.EnsureNotSet(nameof(Email.Cc));
@@ -93,6 +110,17 @@ partial class EmailBuilder : IEmailCcBuilder
         var mailboxAddresses = addresses.ToAddressList();
 
         _cc!.AddRange(mailboxAddresses);
+
+        return this;
+    }
+
+    /// <inheritdoc />
+    public IEmailCcBuilder AlsoCc(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        foreach (var mailboxAddress in mailboxAddresses)
+        {
+            _cc!.Add(mailboxAddress);
+        }
 
         return this;
     }

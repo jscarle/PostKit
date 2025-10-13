@@ -48,6 +48,23 @@ partial class EmailBuilder : IEmailReplyToBuilder
     }
 
     /// <inheritdoc />
+    public IEmailReplyToBuilder ReplyTo(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
+
+        var addresses = new List<MailboxAddress>();
+
+        foreach (var mailboxAddress in mailboxAddresses)
+        {
+            addresses.Add(mailboxAddress);
+        }
+
+        _replyTo = addresses;
+
+        return this;
+    }
+
+    /// <inheritdoc />
     public IEmailReplyToBuilder ReplyTo(IList<MailboxAddress> mailboxAddresses)
     {
         _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
@@ -93,6 +110,17 @@ partial class EmailBuilder : IEmailReplyToBuilder
         var mailboxAddresses = addresses.ToAddressList();
 
         _replyTo!.AddRange(mailboxAddresses);
+
+        return this;
+    }
+
+    /// <inheritdoc />
+    public IEmailReplyToBuilder AlsoReplyTo(IEnumerable<MailboxAddress> mailboxAddresses)
+    {
+        foreach (var mailboxAddress in mailboxAddresses)
+        {
+            _replyTo!.Add(mailboxAddress);
+        }
 
         return this;
     }
