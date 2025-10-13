@@ -28,6 +28,8 @@ partial class EmailBuilder
         if (!IsValidMessageStreamId(messageStreamId))
             throw new ArgumentException("The message stream ID is invalid.", nameof(messageStreamId));
 
+        _messageStream = messageStreamId;
+
         return this;
     }
 
