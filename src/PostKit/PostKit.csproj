@@ -3,7 +3,7 @@
     <!-- Compilation -->
     <PropertyGroup>
         <RootNamespace>PostKit</RootNamespace>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
@@ -18,7 +18,7 @@
     <!-- References -->
     <ItemGroup>
         <PackageReference Include="JetBrains.Annotations" Version="2025.2.2"/>
-        <PackageReference Include="LightResults" Version="9.0.5"/>
+        <PackageReference Include="LightResults" Version="10.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.9"/>
         <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="9.9.0"/>
         <PackageReference Include="MimeKit" Version="4.14.0"/>
@@ -27,9 +27,9 @@
     <!-- Output -->
     <PropertyGroup>
         <AssemblyName>PostKit</AssemblyName>
-        <Version>9.0.0-preview.7</Version>
-        <AssemblyVersion>9.0.0.0</AssemblyVersion>
-        <FileVersion>9.0.0.0</FileVersion>
+        <Version>10.0.0-preview.1</Version>
+        <AssemblyVersion>10.0.0.0</AssemblyVersion>
+        <FileVersion>10.0.0.0</FileVersion>
         <NeutralLanguage>en-US</NeutralLanguage>
         <Optimize>true</Optimize>
         <!--<IsAotCompatible>true</IsAotCompatible>-->
