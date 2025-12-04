@@ -6,7 +6,7 @@ A MimeKit infused implementation of the Postmark API.
 
 ### Prerequisites
 
-- .NET 9.0 or later
+- .NET 8.0 or later
 - A [Postmark](https://postmarkapp.com) account with a Server API Token
 - Verified sender email addresses in your Postmark account
 
