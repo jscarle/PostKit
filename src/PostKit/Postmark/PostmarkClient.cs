@@ -1,4 +1,5 @@
 ﻿#if DEBUG
+using Microsoft.Extensions.Logging;
 using System.Net.Mime;
 using System.Text;
 #else
