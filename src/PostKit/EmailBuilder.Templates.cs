@@ -17,6 +17,7 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithTemplate(int templateId, object templateModel, bool? inlineCss = null)
     {
+        _subject.EnsureNotSet(nameof(Email.Subject));
         _htmlBody.EnsureNotSet(nameof(Email.HtmlBody));
         _textBody.EnsureNotSet(nameof(Email.TextBody));
         _templateId.EnsureNotSet(nameof(Email.TemplateId));
@@ -40,6 +41,7 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithTemplate(string templateAlias, object templateModel, bool? inlineCss = null)
     {
+        _subject.EnsureNotSet(nameof(Email.Subject));
         _htmlBody.EnsureNotSet(nameof(Email.HtmlBody));
         _textBody.EnsureNotSet(nameof(Email.TextBody));
         _templateId.EnsureNotSet(nameof(Email.TemplateId));

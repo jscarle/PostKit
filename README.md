@@ -114,6 +114,37 @@ var email = Email.CreateBuilder()
 await _postKitClient.SendEmailAsync(email);
 ```
 
+#### Batch Sending
+
+```csharp
+var welcomeEmail = Email.CreateBuilder()
+    .From("noreply@yourapp.com")
+    .To("user1@example.com")
+    .WithSubject("Welcome!")
+    .WithTextBody("Thanks for signing up")
+    .Build();
+
+var reminderEmail = Email.CreateBuilder()
+    .From("noreply@yourapp.com")
+    .To("user2@example.com")
+    .WithSubject("Complete Your Profile")
+    .WithTextBody("Finish setting up your account")
+    .Build();
+
+var batchResult = await _postKitClient.SendEmailBatchAsync(new[] { welcomeEmail, reminderEmail });
+
+if (!batchResult.IsSuccessful)
+{
+    foreach (var result in batchResult.Results.Where(result => !result.IsSuccessful))
+    {
+        // Inspect result.Email and result.Message to handle the failure.
+    }
+}
+```
+
+> **Note:** Postmark accepts up to 500 emails per batch, and every email in the batch must either use a template or none may us
+e one.
+
 #### Advanced Features
 
 ```csharp
