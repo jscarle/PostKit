@@ -3,7 +3,7 @@
     <!-- Compilation -->
     <PropertyGroup>
         <RootNamespace>PostKit</RootNamespace>
-        <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+        <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
