@@ -5,8 +5,14 @@ namespace PostKit;
 
 partial class EmailBuilder
 {
-    [GeneratedRegex(@"^[A-Za-z][A-Za-z0-9._-]*$")]
+    private const string TemplateAliasRegexPattern = "^[A-Za-z][A-Za-z0-9._-]*$";
+#if NET9_0_OR_GREATER
+    [GeneratedRegex(TemplateAliasRegexPattern)]
     private static partial Regex TemplateAliasRegex { get; }
+#else
+    [GeneratedRegex(TemplateAliasRegexPattern)]
+    private static partial Regex TemplateAliasRegex();
+#endif
 
     private const int TemplateAliasMaxLength = 64;
     private int? _templateId;
@@ -28,11 +34,8 @@ partial class EmailBuilder
         if (templateId <= 0)
             throw new ArgumentException("The template ID must be greater than zero.", nameof(templateId));
 
-        if (templateModel is null)
-            throw new ArgumentException("The template model is required.", nameof(templateModel));
-
         _templateId = templateId;
-        _templateModel = templateModel;
+        _templateModel = templateModel ?? throw new ArgumentException("The template model is required.", nameof(templateModel));
         _inlineCss = inlineCss;
 
         return this;
@@ -54,15 +57,15 @@ partial class EmailBuilder
 
         if (templateAlias.Length > TemplateAliasMaxLength)
             throw new ArgumentException($"The template alias must not exceed {TemplateAliasMaxLength} characters.", nameof(templateAlias));
-
+#if NET9_0_OR_GREATER
         if (!TemplateAliasRegex.IsMatch(templateAlias))
+#else
+        if (!TemplateAliasRegex().IsMatch(templateAlias))
+#endif
             throw new ArgumentException("The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters.", nameof(templateAlias));
 
-        if (templateModel is null)
-            throw new ArgumentException("The template model is required.", nameof(templateModel));
-
         _templateAlias = templateAlias;
-        _templateModel = templateModel;
+        _templateModel = templateModel ?? throw new ArgumentException("The template model is required.", nameof(templateModel));
         _inlineCss = inlineCss;
 
         return this;

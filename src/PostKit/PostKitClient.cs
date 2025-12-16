@@ -1,6 +1,4 @@
-﻿﻿using System.Collections.Generic;
-using System.Linq;
-using LightResults;
+﻿using LightResults;
 using Microsoft.Extensions.Logging;
 using MimeKit;
 using PostKit.Common;
