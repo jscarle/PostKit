@@ -13,6 +13,7 @@ public class EmailBuilderMessageStreamTests
         var email = Email.CreateBuilder()
             .From("sender@example.com")
             .To("recipient@example.com")
+            .WithSubject("Test Email")
             .WithHtmlBody("<p>Hello</p>")
             .UsingMessageStream(messageStreamId)
             .Build();
