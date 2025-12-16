@@ -142,8 +142,7 @@ if (!batchResult.IsSuccessful)
 }
 ```
 
-> **Note:** Postmark accepts up to 500 emails per batch, and every email in the batch must either use a template or none may us
-e one.
+> **Note:** Postmark accepts up to 500 emails per batch, and every email in the batch must either use a template or none may use one.
 
 #### Advanced Features
 
