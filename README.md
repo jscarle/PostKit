@@ -1,4 +1,4 @@
-[![Banner](https://raw.githubusercontent.com/jscarle/PostKit/refs/heads/develop/Banner.jpeg)](https://github.com/jscarle/PostKit)
+[![Banner](https://raw.githubusercontent.com/jscarle/PostKit/refs/heads/develop/Banner.png)](https://github.com/jscarle/PostKit)
 
 # PostKit
 
