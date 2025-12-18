@@ -1,3 +1,5 @@
+[![Banner](https://raw.githubusercontent.com/jscarle/PostKit/refs/heads/develop/Banner.jpeg)](https://github.com/jscarle/PostKit)
+
 # PostKit
 
 A MimeKit infused implementation of the Postmark API.
