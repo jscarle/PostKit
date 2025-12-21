@@ -63,6 +63,7 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
         var emailList = emails.ToList();
         var requests = new List<EmailRequest>(emailList.Count);
         var templateCount = 0;
+        long estimatedBatchSize = 0;
 
         foreach (var email in emailList)
         {
@@ -71,11 +72,15 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
             if (email.TemplateId.HasValue || email.TemplateAlias is not null)
                 templateCount++;
 
+            estimatedBatchSize += PostmarkSizeEstimator.EstimateMessageSizeLowerBound(email);
             requests.Add(email.ToEmailRequest());
         }
 
         if (templateCount > 0 && templateCount < emailList.Count)
             return Result.Failure<SendEmailBatchResponse>("Each email in a batch must either use a template or none may use a template.");
+
+        if (estimatedBatchSize > PostmarkSizeEstimator.BatchPayloadSizeLimitInBytes)
+            return Result.Failure<SendEmailBatchResponse>("Batch payload size exceeds Postmark's 50 MB limit.");
 
         var endpoint = templateCount > 0 ? "/email/batchWithTemplates" : "/email/batch";
 

@@ -1,13 +1,13 @@
 ﻿// ReSharper disable RedundantExtendsListEntry
 // Intentional reference as the code is separated into multiple files.
 
+using PostKit.Common;
+
 namespace PostKit;
 
 /// <summary>Provides a fluent interface for constructing <see cref="Email"/> messages.</summary>
 public sealed partial class EmailBuilder : IEmailBuilder
 {
-    private const int MessageSizeLimitInBytes = 10 * 1024 * 1024; // 10 MB
-
     internal EmailBuilder()
     {
     }
@@ -34,9 +34,16 @@ public sealed partial class EmailBuilder : IEmailBuilder
         if ((_htmlBody is not null || _textBody is not null) && (_templateId.HasValue || _templateAlias is not null))
             throw new InvalidOperationException("Neither a text or HTML body, nor a subject may be specified when using a template.");
 
-        var bodyLength = (long)(_textBody?.Length ?? 0) + (_htmlBody?.Length ?? 0);
-        var projectedTotal = _attachmentBytes + bodyLength;
-        if (projectedTotal > MessageSizeLimitInBytes)
+        var textBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_textBody);
+        if (textBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
+            throw new InvalidOperationException("Text body exceeds Postmark's 5 MB limit.");
+
+        var htmlBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_htmlBody);
+        if (htmlBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
+            throw new InvalidOperationException("HTML body exceeds Postmark's 5 MB limit.");
+
+        var projectedTotal = textBodySize + htmlBodySize + _attachmentBytes;
+        if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
             throw new InvalidOperationException("Message size exceeds Postmark's 10 MB limit.");
 
         var email = new Email
