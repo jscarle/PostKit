@@ -56,6 +56,34 @@ Or set it via environment variables:
 PostKit__ServerApiToken=your-postmark-server-token-here
 ```
 
+If you need multiple Postmark configurations (for example, separate servers or tenants), register keyed services with `AddKeyedPostKit`. Each keyed registration binds to `PostKit:{configurationKey}`; if you omit `configurationKey`, the
+`serviceKey.ToString()` value is used.
+
+```csharp
+builder.Services.AddKeyedPostKit("Marketing"); // binds PostKit:Marketing
+```
+
+```csharp
+public enum PostmarkServer
+{
+    Development,
+    Production
+}
+
+builder.Services.AddKeyedPostKit(PostmarkServer.Development); // binds PostKit:Development
+builder.Services.AddKeyedPostKit(PostmarkServer.Production, "Default"); // binds PostKit:Default
+```
+
+```json
+{
+  "PostKit": {
+    "Marketing": { "ServerApiToken": "token-1" },
+    "Development": { "ServerApiToken": "token-2" },
+    "Default": { "ServerApiToken": "token-3" }
+  }
+}
+```
+
 ### Basic Usage
 
 PostKit uses a fluent builder pattern with the following capabilities:
@@ -203,7 +231,8 @@ await _postKitClient.SendEmailAsync(email);
 
 ### Size Limits
 
- Postmark limits `TextBody` and `HtmlBody` to 5 MB each, and total message size (including attachments) to 10 MB. When batching, Postmark accepts up to 500 emails per batch and batch payloads are limited to 50 MB. PostKit uses a conservative estimate to prevent grossly oversized requests. Actual size limits will be enforced by the Postmark API.
+Postmark limits `TextBody` and `HtmlBody` to 5 MB each, and total message size (including attachments) to 10 MB. When batching, Postmark accepts up to 500 emails per batch and batch payloads are limited to 50 MB. PostKit uses a conservative
+estimate to prevent grossly oversized requests. Actual size limits will be enforced by the Postmark API.
 
 ### Error Handling
 
@@ -311,7 +340,7 @@ Console.WriteLine("Email sent successfully!");
 
 ## Development
 
-The following tables track development progress and map the different Postmark API endpoints to their respective methods in PostKit. 
+The following tables track development progress and map the different Postmark API endpoints to their respective methods in PostKit.
 
 ## Email API
 
