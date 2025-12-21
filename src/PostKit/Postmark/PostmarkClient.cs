@@ -8,6 +8,7 @@ using System.Net.Http.Json;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JetBrains.Annotations;
 using LightResults;
 using Microsoft.Extensions.Options;
 using PostKit.Configuration;
@@ -16,6 +17,7 @@ using PostKit.Postmark.Email;
 
 namespace PostKit.Postmark;
 
+[UsedImplicitly]
 internal sealed
 #if DEBUG
     partial
@@ -30,10 +32,7 @@ internal sealed
     private readonly ILogger<PostmarkClient> _logger;
 #endif
 
-    private readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web)
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, };
 
     public PostmarkClient(
         HttpClient httpClient,
