@@ -14,10 +14,7 @@ partial class EmailBuilder
         ValidateMetadataName(name, nameof(name));
         ValidateMetadataValue(value, nameof(value));
 
-        _metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { name, value },
-        };
+        _metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { name, value } };
 
         return this;
     }
@@ -29,10 +26,7 @@ partial class EmailBuilder
 
         ValidateMetadata(entry.Key, entry.Value, nameof(entry));
 
-        _metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { entry.Key, entry.Value },
-        };
+        _metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { entry.Key, entry.Value } };
 
         return this;
     }

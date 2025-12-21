@@ -11,10 +11,7 @@ public class EmailBuilderTemplateTests
     [Fact]
     public void WithTemplateId_Build_SetsTemplateProperties()
     {
-        var templateModel = new
-        {
-            Name = "Alice",
-        };
+        var templateModel = new { Name = "Alice" };
 
         var email = Email.CreateBuilder()
             .From("sender@example.com")
@@ -31,10 +28,7 @@ public class EmailBuilderTemplateTests
     [Fact]
     public void WithTemplateAlias_Build_SetsTemplateProperties()
     {
-        var templateModel = new
-        {
-            Name = "Bob",
-        };
+        var templateModel = new { Name = "Bob" };
 
         var email = Email.CreateBuilder()
             .From("sender@example.com")
@@ -51,10 +45,7 @@ public class EmailBuilderTemplateTests
     [Fact]
     public async Task SendEmailAsync_WithTemplate_RoutesThroughTemplateEndpoint()
     {
-        var templateModel = new
-        {
-            Name = "Charlie",
-        };
+        var templateModel = new { Name = "Charlie" };
 
         var email = Email.CreateBuilder()
             .From("sender@example.com")

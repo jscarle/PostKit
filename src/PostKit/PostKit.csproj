@@ -17,10 +17,10 @@
 
     <!-- References -->
     <ItemGroup>
-        <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
-        <PackageReference Include="LightResults" Version="10.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.1.0" />
+        <PackageReference Include="JetBrains.Annotations" Version="2025.2.4"/>
+        <PackageReference Include="LightResults" Version="10.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.1.0"/>
         <PackageReference Include="MimeKit" Version="4.14.0"/>
     </ItemGroup>
 

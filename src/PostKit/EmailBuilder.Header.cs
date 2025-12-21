@@ -14,10 +14,7 @@ partial class EmailBuilder
         ValidateHeaderName(name, nameof(name));
         ValidateHeaderValue(value, nameof(value));
 
-        _headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { name, value },
-        };
+        _headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { name, value } };
 
         return this;
     }
@@ -29,10 +26,7 @@ partial class EmailBuilder
 
         ValidateHeader(header.Key, header.Value, nameof(header));
 
-        _headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { header.Key, header.Value },
-        };
+        _headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { header.Key, header.Value } };
 
         return this;
     }

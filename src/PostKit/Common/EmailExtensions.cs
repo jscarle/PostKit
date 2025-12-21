@@ -25,7 +25,7 @@ internal static class EmailExtensions
             )
             .ToList();
         IReadOnlyList<EmailRequestHeader>? headers = email.Headers
-            ?.Select(x => new EmailRequestHeader { Name = x.Key, Value = x.Value, })
+            ?.Select(x => new EmailRequestHeader { Name = x.Key, Value = x.Value })
             .ToList();
         IReadOnlyDictionary<string, string>? metadata = email.Metadata?.ToDictionary();
         var trackLinks = email.LinkTracking is not null

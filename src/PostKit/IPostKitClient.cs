@@ -16,7 +16,5 @@ public interface IPostKitClient
     /// <param name="emails">The collection of emails to send.</param>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the batch send response or error information.</returns>
-    Task<Result<SendEmailBatchResponse>> SendEmailBatchAsync(
-        IReadOnlyCollection<Email> emails,
-        CancellationToken cancellationToken = default);
+    Task<Result<SendEmailBatchResponse>> SendEmailBatchAsync(IReadOnlyCollection<Email> emails, CancellationToken cancellationToken = default);
 }

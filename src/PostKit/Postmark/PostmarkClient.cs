@@ -1,17 +1,12 @@
-﻿#if DEBUG
-using Microsoft.Extensions.Logging;
+﻿using System.Net;
 using System.Net.Mime;
 using System.Text;
-using PostKit.Common;
-#else
-using System.Net.Http.Json;
-#endif
-using System.Net;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using JetBrains.Annotations;
 using LightResults;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PostKit.Common;
 using PostKit.Configuration;
 using PostKit.Errors;
 using PostKit.Postmark.Email;
@@ -19,32 +14,18 @@ using PostKit.Postmark.Email;
 namespace PostKit.Postmark;
 
 [UsedImplicitly]
-internal sealed
-#if DEBUG
-    partial
-#endif
-    class PostmarkClient : IPostmarkClient
+internal sealed partial class PostmarkClient : IPostmarkClient
 {
     private static readonly string Version = typeof(PostmarkClient).Assembly.GetName()
         .Version!.ToString(2);
 
     private readonly HttpClient _httpClient;
-#if DEBUG
     private readonly ILogger<PostmarkClient> _logger;
-#endif
 
-    public PostmarkClient(
-        HttpClient httpClient,
-        IOptions<PostKitOptions> options
-#if DEBUG
-        , ILogger<PostmarkClient> logger
-#endif
-    )
+    public PostmarkClient(HttpClient httpClient, IOptions<PostKitOptions> options, ILogger<PostmarkClient> logger)
     {
         _httpClient = httpClient;
-#if DEBUG
         _logger = logger;
-#endif
 
         if (string.IsNullOrWhiteSpace(options.Value.ServerApiToken))
             throw new InvalidOperationException("The server API token has not been set.");
@@ -57,23 +38,15 @@ internal sealed
 
     public async Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
     {
-#if DEBUG
         var jsonToSend = JsonSerializer.Serialize(body, PostmarkConfiguration.JsonSerializerOptions);
         LogApiRequest(jsonToSend);
         var contentToSend = new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json);
         using var responseMessage = await _httpClient.PostAsync(endpoint, contentToSend, cancellationToken);
-#else
-        using var responseMessage = await _httpClient.PostAsJsonAsync(endpoint, body, _jsonSerializerOptions, cancellationToken);
-#endif
         if (responseMessage.IsSuccessStatusCode)
         {
-#if DEBUG
             var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
             LogApiResponse(receivedContent);
             var response = JsonSerializer.Deserialize<TResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
-#else
-            var response = await responseMessage.Content.ReadFromJsonAsync<TResponse>(cancellationToken);
-#endif
             if (response == null)
                 return Result.Failure<TResponse>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
 
@@ -82,13 +55,9 @@ internal sealed
 
         if (responseMessage.StatusCode == HttpStatusCode.UnprocessableEntity)
         {
-#if DEBUG
             var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
             LogApiResponse(receivedContent);
             var response = JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
-#else
-            var response = await responseMessage.Content.ReadFromJsonAsync<PostmarkResponse>(cancellationToken);
-#endif
 
             if (response == null)
                 return Result.Failure<TResponse>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
@@ -100,11 +69,10 @@ internal sealed
         var httpError = new HttpError(responseMessage.StatusCode);
         return Result.Failure<TResponse>(httpError);
     }
-#if DEBUG
-    [LoggerMessage(LogLevel.Information, "Postmark API request: {Content}")]
+
+    [LoggerMessage(LogLevel.Trace, "Postmark API request: {Content}")]
     private partial void LogApiRequest(string content);
 
-    [LoggerMessage(LogLevel.Information, "Postmark API response: {Content}")]
+    [LoggerMessage(LogLevel.Trace, "Postmark API response: {Content}")]
     private partial void LogApiResponse(string content);
-#endif
 }
