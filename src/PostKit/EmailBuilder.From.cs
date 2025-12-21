@@ -51,7 +51,7 @@ partial class EmailBuilder
     {
         var fromString = mailboxAddress.ToString(true);
         var length = fromString.AsSpan()
-            .GetUtf16Length();
+            .GetCharacterCount();
         if (length > 255)
             throw new ArgumentException($"The {nameof(Email.From)} address cannot exceed 255 characters.", paramName);
     }

@@ -15,7 +15,7 @@ partial class EmailBuilder
         _templateModel.EnsureNotSet(nameof(Email.TemplateModel));
 
         var length = subject.AsSpan()
-            .GetUtf16Length();
+            .GetCharacterCount();
         if (length > 2000)
             throw new ArgumentException("The subject cannot be longer than 2000 characters.", nameof(subject));
 

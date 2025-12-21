@@ -8,7 +8,12 @@ internal static class ValidationExtensions
             throw new InvalidOperationException($"{propertyName} has already been set.");
     }
 
-    public static int GetUtf16Length(this ReadOnlySpan<char> input)
+    /// <summary>
+    /// Gets the character count of the input, where each Unicode scalar value (including emojis and other characters represented by surrogate pairs) is counted as a single character.
+    /// </summary>
+    /// <param name="input">The input span to count characters in.</param>
+    /// <returns>The number of Unicode scalar values in the input.</returns>
+    public static int GetCharacterCount(this ReadOnlySpan<char> input)
     {
         if (input.IsEmpty)
             return 0;
