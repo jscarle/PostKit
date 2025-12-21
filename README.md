@@ -58,6 +58,12 @@ PostKit__ServerApiToken=your-postmark-server-token-here
 
 ### Basic Usage
 
+PostKit uses a fluent builder pattern with the following capabilities:
+
+- **Email Addresses**: Support for simple strings, name/address pairs, or MimeKit `MailboxAddress` objects
+- **Multiple Recipients**: Chain `AlsoTo()`, `AlsoCc()`, or `AlsoBcc()` to add additional recipients
+- **Validation**: Automatic validation of email addresses, character limits, and required fields
+
 #### Simple Email
 
 ```csharp
@@ -148,8 +154,6 @@ if (!batchResult.IsSuccessful)
 }
 ```
 
-> **Note:** Postmark accepts up to 500 emails per batch, and every email in the batch must either use a template or none may use one.
-
 #### Advanced Features
 
 ```csharp
@@ -197,16 +201,9 @@ var email = Email.CreateBuilder()
 await _postKitClient.SendEmailAsync(email);
 ```
 
-> **Note:** Postmark enforces a combined attachment size limit of 10 MB. PostKit automatically enforces this limit when you call `WithAttachment` or `WithAttachments`.
+### Size Limits
 
-### Builder Pattern Features
-
-PostKit uses a fluent builder pattern with the following capabilities:
-
-- **Email Addresses**: Support for simple strings, name/address pairs, or MimeKit `MailboxAddress` objects
-- **Multiple Recipients**: Chain `AlsoTo()`, `AlsoCc()`, or `AlsoBcc()` to add additional recipients
-- **Validation**: Automatic validation of email addresses, character limits, and required fields
-- **Flexible API**: Mix and match any combination of features
+ Postmark limits `TextBody` and `HtmlBody` to 5 MB each, and total message size (including attachments) to 10 MB. When batching, Postmark accepts up to 500 emails per batch and batch payloads are limited to 50 MB. PostKit uses a conservative estimate to prevent grossly oversized requests. Actual size limits will be enforced by the Postmark API.
 
 ### Error Handling
 
@@ -232,6 +229,7 @@ else
 PostKit may return different types of errors depending on the failure scenario:
 
 **HttpError** - Returned for HTTP-level failures (network issues, timeouts, non-422 status codes):
+
 ```csharp
 if (error is HttpError httpError)
 {
@@ -240,6 +238,7 @@ if (error is HttpError httpError)
 ```
 
 **PostmarkError** - Returned for Postmark API validation errors (422 status code):
+
 ```csharp
 if (error is PostmarkError postmarkError)
 {
@@ -311,6 +310,8 @@ Console.WriteLine("Email sent successfully!");
 ```
 
 ## Development
+
+The following tables track development progress and map the different Postmark API endpoints to their respective methods in PostKit. 
 
 ## Email API
 
