@@ -36,7 +36,15 @@ partial class EmailBuilder
     {
         _headers.EnsureNotSet(nameof(Email.Headers));
 
-        var dictionary = headers.ToDictionary(StringComparer.OrdinalIgnoreCase);
+        var headerList = headers.ToList();
+        var uniqueKeys = headerList
+            .Select(h => h.Key)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+        if (uniqueKeys != headerList.Count)
+            throw new ArgumentException("There are duplicate header entries.", nameof(headers));
+
+        var dictionary = headerList.ToDictionary(h => h.Key, h => h.Value, StringComparer.OrdinalIgnoreCase);
 
         foreach (var header in dictionary)
             ValidateHeader(header.Key, header.Value, nameof(headers));

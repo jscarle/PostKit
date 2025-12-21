@@ -36,7 +36,15 @@ partial class EmailBuilder
     {
         _metadata.EnsureNotSet(nameof(Email.Metadata));
 
-        var dictionary = metadata.ToDictionary(StringComparer.OrdinalIgnoreCase);
+        var metadataList = metadata.ToList();
+        var uniqueKeys = metadataList
+            .Select(m => m.Key)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+        if (uniqueKeys != metadataList.Count)
+            throw new ArgumentException("There are duplicate metadata entries.", nameof(metadata));
+
+        var dictionary = metadataList.ToDictionary(m => m.Key, m => m.Value, StringComparer.OrdinalIgnoreCase);
 
         foreach (var entry in dictionary)
             ValidateMetadata(entry.Key, entry.Value, nameof(metadata));

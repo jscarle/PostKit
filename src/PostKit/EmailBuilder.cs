@@ -18,10 +18,10 @@ public sealed partial class EmailBuilder : IEmailBuilder
         if (_from is null)
             throw new InvalidOperationException("From address is required.");
 
-        if (_to is null && _cc is null && _bcc is null)
+        var totalRecipients = (_to?.Count ?? 0) + (_cc?.Count ?? 0) + (_bcc?.Count ?? 0);
+        if (totalRecipients == 0)
             throw new InvalidOperationException("At least one recipient is required.");
 
-        var totalRecipients = (_to?.Count ?? 0) + (_cc?.Count ?? 0) + (_bcc?.Count ?? 0);
         if (totalRecipients > 50)
             throw new InvalidOperationException("There are too many recipients. Postmark implements a limit of 50 recipients per message. The recipient count includes all To, Cc, and Bcc recipients combined.");
 
