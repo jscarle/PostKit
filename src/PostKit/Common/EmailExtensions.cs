@@ -11,24 +11,23 @@ internal static class EmailExtensions
         if (email.From is null)
             throw new UnreachableException($"{nameof(email.From)} is unexpectedly null.");
 
-        var templateModel = email.TemplateModel is not null ? JsonSerializer.SerializeToNode(email.TemplateModel) : null;
+        var templateModel = email.TemplateModel is not null ? JsonSerializer.SerializeToNode(email.TemplateModel, PostmarkConfiguration.JsonSerializerOptions) : null;
         var from = email.From.ToString(true);
         var replyTo = email.ReplyTo is not null ? string.Join(",", email.ReplyTo.Select(x => x.ToString(true))) : null;
         var to = email.To is not null ? string.Join(",", email.To.Select(x => x.ToString(true))) : null;
         var cc = email.Cc is not null ? string.Join(",", email.Cc.Select(x => x.ToString(true))) : null;
         var bcc = email.Bcc is not null ? string.Join(",", email.Bcc.Select(x => x.ToString(true))) : null;
-        var headers = email.Headers?.ToList();
-        var metadata = email.Metadata?.ToDictionary();
-        var attachments = email.Attachments
-            ?.Select(attachment => new EmailAttachmentRequest
+        IReadOnlyList<EmailRequestAttachment>? attachments = email.Attachments
+            ?.Select(attachment => new EmailRequestAttachment
                 {
-                    Name = attachment.Name,
-                    ContentType = attachment.ContentType,
-                    Content = attachment.Content,
-                    ContentId = attachment.ContentId,
+                    Name = attachment.Name, ContentType = attachment.ContentType, Content = attachment.Content, ContentId = attachment.ContentId,
                 }
             )
             .ToList();
+        IReadOnlyList<EmailRequestHeader>? headers = email.Headers
+            ?.Select(x => new EmailRequestHeader { Name = x.Key, Value = x.Value, })
+            .ToList();
+        IReadOnlyDictionary<string, string>? metadata = email.Metadata?.ToDictionary();
         var trackLinks = email.LinkTracking is not null
             ? email.LinkTracking switch
             {

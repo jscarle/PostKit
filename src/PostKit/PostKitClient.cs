@@ -21,7 +21,7 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
         Result<EmailResponse> response;
         try
         {
-            response = await postmark.SendAsync<EmailRequest, EmailResponse>(endpoint, request, cancellationToken);
+            response = await postmark.PostAsync<EmailRequest, EmailResponse>(endpoint, request, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -90,7 +90,7 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
         Result<List<EmailResponse>> response;
         try
         {
-            response = await postmark.SendAsync<List<EmailRequest>, List<EmailResponse>>(endpoint, requests, cancellationToken);
+            response = await postmark.PostAsync<List<EmailRequest>, List<EmailResponse>>(endpoint, requests, cancellationToken);
         }
         catch (Exception ex)
         {

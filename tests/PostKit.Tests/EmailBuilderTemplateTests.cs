@@ -79,7 +79,7 @@ public class EmailBuilderTemplateTests
 
         public object? LastRequest { get; private set; }
 
-        public Task<Result<TResponse>> SendAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             LastEndpoint = endpoint;
             LastRequest = body;

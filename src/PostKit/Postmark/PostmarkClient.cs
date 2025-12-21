@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System.Net.Mime;
 using System.Text;
+using PostKit.Common;
 #else
 using System.Net.Http.Json;
 #endif
@@ -32,8 +33,6 @@ internal sealed
     private readonly ILogger<PostmarkClient> _logger;
 #endif
 
-    private readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, };
-
     public PostmarkClient(
         HttpClient httpClient,
         IOptions<PostKitOptions> options
@@ -56,10 +55,10 @@ internal sealed
         _httpClient.DefaultRequestHeaders.Add("X-Postmark-Server-Token", options.Value.ServerApiToken);
     }
 
-    public async Task<Result<TResponse>> SendAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+    public async Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
     {
 #if DEBUG
-        var jsonToSend = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+        var jsonToSend = JsonSerializer.Serialize(body, PostmarkConfiguration.JsonSerializerOptions);
         LogApiRequest(jsonToSend);
         var contentToSend = new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json);
         using var responseMessage = await _httpClient.PostAsync(endpoint, contentToSend, cancellationToken);
@@ -71,7 +70,7 @@ internal sealed
 #if DEBUG
             var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
             LogApiResponse(receivedContent);
-            var response = JsonSerializer.Deserialize<TResponse>(receivedContent, _jsonSerializerOptions);
+            var response = JsonSerializer.Deserialize<TResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
 #else
             var response = await responseMessage.Content.ReadFromJsonAsync<TResponse>(cancellationToken);
 #endif
@@ -86,7 +85,7 @@ internal sealed
 #if DEBUG
             var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
             LogApiResponse(receivedContent);
-            var response = JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, _jsonSerializerOptions);
+            var response = JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
 #else
             var response = await responseMessage.Content.ReadFromJsonAsync<PostmarkResponse>(cancellationToken);
 #endif

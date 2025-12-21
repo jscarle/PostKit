@@ -14,12 +14,13 @@ internal static class ValidationExtensions
             return 0;
 
         var length = 0;
-        foreach (var c in input)
+
+        for (var i = 0; i < input.Length; i++)
         {
-            if (char.IsHighSurrogate(c))
-                length += 2;
-            else
-                length += 1;
+            if (char.IsHighSurrogate(input[i]) && i + 1 < input.Length && char.IsLowSurrogate(input[i + 1]))
+                i++; // skip low surrogate
+
+            length++;
         }
 
         return length;
