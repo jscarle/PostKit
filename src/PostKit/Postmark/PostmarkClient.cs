@@ -53,6 +53,29 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             return response;
         }
 
+        return await GetRequestFailure<TResponse>(endpoint, responseMessage, cancellationToken);
+    }
+
+    private async Task<Result<TResponse>> GetRequestFailure<TResponse>(string endpoint, HttpResponseMessage responseMessage, CancellationToken cancellationToken)
+    {
+        if (responseMessage.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            var httpError = new HttpError(HttpStatusCode.Unauthorized, "The server API token is invalid.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
+        if (responseMessage.StatusCode == HttpStatusCode.NotFound)
+        {
+            var httpError = new HttpError(HttpStatusCode.NotFound, $"The '{endpoint}' endpoint of the Postmark API could not be found.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
+        if (responseMessage.StatusCode == HttpStatusCode.RequestEntityTooLarge)
+        {
+            var httpError = new HttpError(HttpStatusCode.RequestEntityTooLarge, $"The payload for the request to the '{endpoint}' endpoint of the Postmark API was too large.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
         if (responseMessage.StatusCode == HttpStatusCode.UnprocessableEntity)
         {
             var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
@@ -66,8 +89,26 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             return Result.Failure<TResponse>(postmarkError);
         }
 
-        var httpError = new HttpError(responseMessage.StatusCode);
-        return Result.Failure<TResponse>(httpError);
+        if (responseMessage.StatusCode == HttpStatusCode.TooManyRequests)
+        {
+            var httpError = new HttpError(HttpStatusCode.TooManyRequests, "The number of requests to the Postmark API has exceeded the rate limit.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
+        if (responseMessage.StatusCode == HttpStatusCode.InternalServerError)
+        {
+            var httpError = new HttpError(HttpStatusCode.InternalServerError, $"An internal server error occurred while processing the request to the '{endpoint}' endpoint of the Postmark API.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
+        if (responseMessage.StatusCode == HttpStatusCode.ServiceUnavailable)
+        {
+            var httpError = new HttpError(HttpStatusCode.ServiceUnavailable, "The Postmark API is currently unavailable.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
+        var genericHttpError = new HttpError(responseMessage.StatusCode, $"An '{responseMessage.StatusCode} {responseMessage.ReasonPhrase}' error occurred while processing the request to the '{endpoint}' endpoint of the Postmark API.");
+        return Result.Failure<TResponse>(genericHttpError);
     }
 
     [LoggerMessage(LogLevel.Trace, "Postmark API request: {Content}")]
