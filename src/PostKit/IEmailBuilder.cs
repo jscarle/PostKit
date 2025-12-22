@@ -185,12 +185,12 @@ public interface IEmailBuilder
     /// <summary>Adds custom headers to the email.</summary>
     /// <param name="headers">The collection of header key/value pairs.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IEmailBuilder WithHeader(IEnumerable<KeyValuePair<string, string>> headers);
+    IEmailBuilder WithHeaders(IEnumerable<KeyValuePair<string, string>> headers);
 
     /// <summary>Adds custom headers to the email.</summary>
     /// <param name="headers">The dictionary of header names and values.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IEmailBuilder WithHeader(IDictionary<string, string> headers);
+    IEmailBuilder WithHeaders(IDictionary<string, string> headers);
 
     /// <summary>Adds metadata to the email.</summary>
     /// <param name="name">The metadata key.</param>
@@ -248,12 +248,12 @@ public interface IEmailBuilder
     /// <param name="templateModel">The template model data.</param>
     /// <param name="inlineCss">Whether CSS should be inlined.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IEmailBuilder WithTemplate(int templateId, object templateModel, bool? inlineCss = null);
+    IEmailBuilder WithTemplate(int templateId, object? templateModel = null, bool? inlineCss = null);
 
     /// <summary>Applies a template to the email using an alias.</summary>
     /// <param name="templateAlias">The template alias.</param>
     /// <param name="templateModel">The template model data.</param>
     /// <param name="inlineCss">Whether CSS should be inlined.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IEmailBuilder WithTemplate(string templateAlias, object templateModel, bool? inlineCss = null);
+    IEmailBuilder WithTemplate(string templateAlias, object? templateModel = null, bool? inlineCss = null);
 }

@@ -9,12 +9,17 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithMetadata(string name, string value)
     {
-        _metadata.EnsureNotSet(nameof(Email.Metadata));
-
         ValidateMetadataName(name, nameof(name));
         ValidateMetadataValue(value, nameof(value));
 
-        _metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { name, value } };
+        if (_metadata is null)
+            _metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { name, value } };
+        else
+        {
+            if (_metadata.Count >= 10)
+                throw new InvalidOperationException("Cannot add more than 10 metadata values.");
+            _metadata.Add(name, value);
+        }
 
         return this;
     }
@@ -22,11 +27,16 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithMetadata(KeyValuePair<string, string> entry)
     {
-        _metadata.EnsureNotSet(nameof(Email.Metadata));
-
         ValidateMetadata(entry.Key, entry.Value, nameof(entry));
 
-        _metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { entry.Key, entry.Value } };
+        if (_metadata is null)
+            _metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { entry.Key, entry.Value } };
+        else
+        {
+            if (_metadata.Count >= 10)
+                throw new InvalidOperationException("Cannot add more than 10 metadata values.");
+            _metadata.Add(entry.Key, entry.Value);
+        }
 
         return this;
     }
@@ -37,14 +47,16 @@ partial class EmailBuilder
         _metadata.EnsureNotSet(nameof(Email.Metadata));
 
         var metadataList = metadata.ToList();
-        var uniqueKeys = metadataList
-            .Select(m => m.Key)
+        var uniqueKeys = metadataList.Select(m => m.Key)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
         if (uniqueKeys != metadataList.Count)
             throw new ArgumentException("There are duplicate metadata entries.", nameof(metadata));
 
         var dictionary = metadataList.ToDictionary(m => m.Key, m => m.Value, StringComparer.OrdinalIgnoreCase);
+
+        if (dictionary.Count > 10)
+            throw new ArgumentException("Cannot set more than 10 metadata values.", nameof(metadata));
 
         foreach (var entry in dictionary)
             ValidateMetadata(entry.Key, entry.Value, nameof(metadata));
@@ -64,6 +76,9 @@ partial class EmailBuilder
             .Count();
         if (uniqueKeys != metadata.Keys.Count)
             throw new ArgumentException("There are duplicate metadata entries.", nameof(metadata));
+
+        if (metadata.Count > 10)
+            throw new ArgumentException("Cannot set more than 10 metadata values.", nameof(metadata));
 
         foreach (var entry in metadata)
             ValidateMetadata(entry.Key, entry.Value, nameof(metadata));

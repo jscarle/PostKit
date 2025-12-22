@@ -10,7 +10,7 @@ public class EmailBuilderHeaderTests
         var builder = Email.CreateBuilder();
         var headers = new Dictionary<string, string> { ["X-Test"] = "A", ["x-test"] = "B" };
 
-        var exception = Assert.Throws<ArgumentException>(() => builder.WithHeader(headers));
+        var exception = Assert.Throws<ArgumentException>(() => builder.WithHeaders(headers));
 
         Assert.Equal("There are duplicate header entries. (Parameter 'headers')", exception.Message);
     }

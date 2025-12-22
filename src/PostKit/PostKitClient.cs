@@ -82,12 +82,21 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
         if (estimatedBatchSize > PostmarkSizeEstimator.BatchPayloadSizeLimitInBytes)
             return Result.Failure<SendEmailBatchResponse>("Batch payload size exceeds Postmark's 50 MB limit.");
 
-        var endpoint = templateCount > 0 ? "/email/batchWithTemplates" : "/email/batch";
+        var sendWithTemplates = templateCount > 0;
+        var endpoint = sendWithTemplates ? "/email/batchWithTemplates" : "/email/batch";
 
         Result<List<EmailResponse>> response;
         try
         {
-            response = await postmark.PostAsync<List<EmailRequest>, List<EmailResponse>>(endpoint, requests, cancellationToken);
+            if (sendWithTemplates)
+            {
+                var request = new EmailTemplateBatchRequest { Messages = requests };
+                response = await postmark.PostAsync<EmailTemplateBatchRequest, List<EmailResponse>>(endpoint, request, cancellationToken);
+            }
+            else
+            {
+                response = await postmark.PostAsync<List<EmailRequest>, List<EmailResponse>>(endpoint, requests, cancellationToken);
+            }
         }
         catch (Exception ex)
         {
