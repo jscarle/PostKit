@@ -17,19 +17,23 @@
 
     <!-- References -->
     <ItemGroup>
-        <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
-        <PackageReference Include="LightResults" Version="10.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.1.0" />
+        <PackageReference Include="JetBrains.Annotations" Version="2025.2.4"/>
+        <PackageReference Include="LightResults" Version="10.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.1.0"/>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="MimeKit" Version="4.14.0"/>
     </ItemGroup>
 
     <!-- Output -->
     <PropertyGroup>
         <AssemblyName>PostKit</AssemblyName>
-        <Version>10.0.0</Version>
-        <AssemblyVersion>10.0.0.0</AssemblyVersion>
-        <FileVersion>10.0.0.0</FileVersion>
+        <Version>10.0.1</Version>
+        <AssemblyVersion>10.0.1.0</AssemblyVersion>
+        <FileVersion>10.0.1.0</FileVersion>
         <NeutralLanguage>en-US</NeutralLanguage>
         <Optimize>true</Optimize>
         <!--<IsAotCompatible>true</IsAotCompatible>-->
@@ -55,10 +59,14 @@
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+
     <ItemGroup>
         <None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false"/>
         <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" Visible="false"/>
-        <!--<None Include="..\..\Icon.png" Pack="true" PackagePath="\" Visible="false"/>-->
+        <None Include="..\..\Icon.png" Pack="true" PackagePath="\" Visible="false"/>
     </ItemGroup>
 
     <!-- Content -->

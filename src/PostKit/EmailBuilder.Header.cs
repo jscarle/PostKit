@@ -9,15 +9,13 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithHeader(string name, string value)
     {
-        _headers.EnsureNotSet(nameof(Email.Headers));
-
         ValidateHeaderName(name, nameof(name));
         ValidateHeaderValue(value, nameof(value));
 
-        _headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { name, value },
-        };
+        if (_headers is null)
+            _headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { name, value } };
+        else
+            _headers.Add(name, value);
 
         return this;
     }
@@ -25,24 +23,29 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithHeader(KeyValuePair<string, string> header)
     {
-        _headers.EnsureNotSet(nameof(Email.Headers));
-
         ValidateHeader(header.Key, header.Value, nameof(header));
 
-        _headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { header.Key, header.Value },
-        };
+        if (_headers is null)
+            _headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { header.Key, header.Value } };
+        else
+            _headers.Add(header.Key, header.Value);
 
         return this;
     }
 
     /// <inheritdoc/>
-    public IEmailBuilder WithHeader(IEnumerable<KeyValuePair<string, string>> headers)
+    public IEmailBuilder WithHeaders(IEnumerable<KeyValuePair<string, string>> headers)
     {
         _headers.EnsureNotSet(nameof(Email.Headers));
 
-        var dictionary = headers.ToDictionary(StringComparer.OrdinalIgnoreCase);
+        var headerList = headers.ToList();
+        var uniqueKeys = headerList.Select(h => h.Key)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+        if (uniqueKeys != headerList.Count)
+            throw new ArgumentException("There are duplicate header entries.", nameof(headers));
+
+        var dictionary = headerList.ToDictionary(h => h.Key, h => h.Value, StringComparer.OrdinalIgnoreCase);
 
         foreach (var header in dictionary)
             ValidateHeader(header.Key, header.Value, nameof(headers));
@@ -53,7 +56,7 @@ partial class EmailBuilder
     }
 
     /// <inheritdoc/>
-    public IEmailBuilder WithHeader(IDictionary<string, string> headers)
+    public IEmailBuilder WithHeaders(IDictionary<string, string> headers)
     {
         _headers.EnsureNotSet(nameof(Email.Headers));
 

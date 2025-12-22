@@ -2,7 +2,7 @@
 
 namespace PostKit.Postmark.Email;
 
-internal sealed class EmailAttachmentRequest
+internal sealed class EmailRequestAttachment
 {
     [JsonPropertyName("Name")]
     public string? Name { get; set; }

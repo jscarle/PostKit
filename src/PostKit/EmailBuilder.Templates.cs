@@ -21,7 +21,7 @@ partial class EmailBuilder
     private bool? _inlineCss;
 
     /// <inheritdoc/>
-    public IEmailBuilder WithTemplate(int templateId, object templateModel, bool? inlineCss = null)
+    public IEmailBuilder WithTemplate(int templateId, object? templateModel, bool? inlineCss = null)
     {
         _subject.EnsureNotSet(nameof(Email.Subject));
         _htmlBody.EnsureNotSet(nameof(Email.HtmlBody));
@@ -35,14 +35,14 @@ partial class EmailBuilder
             throw new ArgumentException("The template ID must be greater than zero.", nameof(templateId));
 
         _templateId = templateId;
-        _templateModel = templateModel ?? throw new ArgumentException("The template model is required.", nameof(templateModel));
+        _templateModel = templateModel;
         _inlineCss = inlineCss;
 
         return this;
     }
 
     /// <inheritdoc/>
-    public IEmailBuilder WithTemplate(string templateAlias, object templateModel, bool? inlineCss = null)
+    public IEmailBuilder WithTemplate(string templateAlias, object? templateModel, bool? inlineCss = null)
     {
         _subject.EnsureNotSet(nameof(Email.Subject));
         _htmlBody.EnsureNotSet(nameof(Email.HtmlBody));
@@ -65,7 +65,7 @@ partial class EmailBuilder
             throw new ArgumentException("The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters.", nameof(templateAlias));
 
         _templateAlias = templateAlias;
-        _templateModel = templateModel ?? throw new ArgumentException("The template model is required.", nameof(templateModel));
+        _templateModel = templateModel;
         _inlineCss = inlineCss;
 
         return this;

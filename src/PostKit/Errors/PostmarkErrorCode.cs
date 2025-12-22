@@ -159,8 +159,20 @@ public enum PostmarkErrorCode
     /// <summary>Trigger query exception. You provided invalid querystring parameters in your request.</summary>
     TriggerQueryException = 800,
 
-    /// <summary>No trigger data received. You didn’t provide JSON body parameters in your request.</summary>
+    /// <summary>No trigger data received. You didn't provide JSON body parameters in your request.</summary>
     NoTriggerDataReceived = 809,
+
+    /// <summary>This inbound rule already exists. You are attempting to add a duplicate inbound rule.</summary>
+    InboundRuleAlreadyExists = 810,
+
+    /// <summary>Unable to remove this inbound rule. Please contact support.</summary>
+    UnableToRemoveInboundRule = 811,
+
+    /// <summary>This inbound rule was not found. The inbound rule does not exist for this server.</summary>
+    InboundRuleNotFound = 812,
+
+    /// <summary>Not a valid email address or domain. The input for the inbound domain rule is invalid.</summary>
+    InvalidEmailAddressOrDomain = 813,
 
     /// <summary>Stats query exception. You provided invalid querystring parameters in your request.</summary>
     StatsQueryException = 900,
