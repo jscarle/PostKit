@@ -70,9 +70,12 @@ partial class EmailBuilder : IEmailCcBuilder
     /// <inheritdoc/>
     public IEmailCcBuilder AlsoCc(string address)
     {
+        if (_cc is null)
+            throw new InvalidOperationException("Cc() must be called before AlsoCc().");
+
         var mailboxAddresses = address.ToAddressList();
 
-        _cc!.AddRange(mailboxAddresses);
+        _cc.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -80,9 +83,12 @@ partial class EmailBuilder : IEmailCcBuilder
     /// <inheritdoc/>
     public IEmailCcBuilder AlsoCc(string name, string address)
     {
+        if (_cc is null)
+            throw new InvalidOperationException("Cc() must be called before AlsoCc().");
+
         var mailboxAddresses = (name, address).ToAddressList();
 
-        _cc!.AddRange(mailboxAddresses);
+        _cc.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -90,9 +96,12 @@ partial class EmailBuilder : IEmailCcBuilder
     /// <inheritdoc/>
     public IEmailCcBuilder AlsoCc(MailboxAddress mailboxAddress)
     {
+        if (_cc is null)
+            throw new InvalidOperationException("Cc() must be called before AlsoCc().");
+
         var mailboxAddresses = mailboxAddress.ToAddressList();
 
-        _cc!.AddRange(mailboxAddresses);
+        _cc.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -100,9 +109,12 @@ partial class EmailBuilder : IEmailCcBuilder
     /// <inheritdoc/>
     public IEmailCcBuilder AlsoCc(IEnumerable<string> addresses)
     {
+        if (_cc is null)
+            throw new InvalidOperationException("Cc() must be called before AlsoCc().");
+
         var mailboxAddresses = addresses.ToAddressList();
 
-        _cc!.AddRange(mailboxAddresses);
+        _cc.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -110,8 +122,11 @@ partial class EmailBuilder : IEmailCcBuilder
     /// <inheritdoc/>
     public IEmailCcBuilder AlsoCc(IEnumerable<MailboxAddress> mailboxAddresses)
     {
+        if (_cc is null)
+            throw new InvalidOperationException("Cc() must be called before AlsoCc().");
+
         foreach (var mailboxAddress in mailboxAddresses)
-            _cc!.Add(mailboxAddress);
+            _cc.Add(mailboxAddress);
 
         return this;
     }
@@ -119,7 +134,10 @@ partial class EmailBuilder : IEmailCcBuilder
     /// <inheritdoc/>
     public IEmailCcBuilder AlsoCc(IList<MailboxAddress> mailboxAddresses)
     {
-        _cc!.AddRange(mailboxAddresses);
+        if (_cc is null)
+            throw new InvalidOperationException("Cc() must be called before AlsoCc().");
+
+        _cc.AddRange(mailboxAddresses);
 
         return this;
     }

@@ -1,52 +1,31 @@
-﻿#if DEBUG
-using Microsoft.Extensions.Logging;
+﻿using System.Net;
 using System.Net.Mime;
 using System.Text;
-#else
-using System.Net.Http.Json;
-#endif
-using System.Net;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using JetBrains.Annotations;
 using LightResults;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PostKit.Common;
 using PostKit.Configuration;
 using PostKit.Errors;
 using PostKit.Postmark.Email;
 
 namespace PostKit.Postmark;
 
-internal sealed
-#if DEBUG
-    partial
-#endif
-    class PostmarkClient : IPostmarkClient
+[UsedImplicitly]
+internal sealed partial class PostmarkClient : IPostmarkClient
 {
     private static readonly string Version = typeof(PostmarkClient).Assembly.GetName()
         .Version!.ToString(2);
 
     private readonly HttpClient _httpClient;
-#if DEBUG
     private readonly ILogger<PostmarkClient> _logger;
-#endif
 
-    private readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web)
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
-
-    public PostmarkClient(
-        HttpClient httpClient,
-        IOptions<PostKitOptions> options
-#if DEBUG
-        , ILogger<PostmarkClient> logger
-#endif
-    )
+    public PostmarkClient(HttpClient httpClient, IOptions<PostKitOptions> options, ILogger<PostmarkClient> logger)
     {
         _httpClient = httpClient;
-#if DEBUG
         _logger = logger;
-#endif
 
         if (string.IsNullOrWhiteSpace(options.Value.ServerApiToken))
             throw new InvalidOperationException("The server API token has not been set.");
@@ -57,40 +36,51 @@ internal sealed
         _httpClient.DefaultRequestHeaders.Add("X-Postmark-Server-Token", options.Value.ServerApiToken);
     }
 
-    public async Task<Result<TResponse>> SendAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+    public async Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
     {
-#if DEBUG
-        var jsonToSend = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+        var jsonToSend = JsonSerializer.Serialize(body, PostmarkConfiguration.JsonSerializerOptions);
         LogApiRequest(jsonToSend);
         var contentToSend = new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json);
         using var responseMessage = await _httpClient.PostAsync(endpoint, contentToSend, cancellationToken);
-#else
-        using var responseMessage = await _httpClient.PostAsJsonAsync(endpoint, body, _jsonSerializerOptions, cancellationToken);
-#endif
         if (responseMessage.IsSuccessStatusCode)
         {
-#if DEBUG
             var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
             LogApiResponse(receivedContent);
-            var response = JsonSerializer.Deserialize<TResponse>(receivedContent, _jsonSerializerOptions);
-#else
-            var response = await responseMessage.Content.ReadFromJsonAsync<TResponse>(cancellationToken);
-#endif
+            var response = JsonSerializer.Deserialize<TResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
             if (response == null)
                 return Result.Failure<TResponse>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
 
             return response;
         }
 
+        return await GetRequestFailure<TResponse>(endpoint, responseMessage, cancellationToken);
+    }
+
+    private async Task<Result<TResponse>> GetRequestFailure<TResponse>(string endpoint, HttpResponseMessage responseMessage, CancellationToken cancellationToken)
+    {
+        if (responseMessage.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            var httpError = new HttpError(HttpStatusCode.Unauthorized, "The server API token is invalid.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
+        if (responseMessage.StatusCode == HttpStatusCode.NotFound)
+        {
+            var httpError = new HttpError(HttpStatusCode.NotFound, $"The '{endpoint}' endpoint of the Postmark API could not be found.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
+        if (responseMessage.StatusCode == HttpStatusCode.RequestEntityTooLarge)
+        {
+            var httpError = new HttpError(HttpStatusCode.RequestEntityTooLarge, $"The payload for the request to the '{endpoint}' endpoint of the Postmark API was too large.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
         if (responseMessage.StatusCode == HttpStatusCode.UnprocessableEntity)
         {
-#if DEBUG
             var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
             LogApiResponse(receivedContent);
-            var response = JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, _jsonSerializerOptions);
-#else
-            var response = await responseMessage.Content.ReadFromJsonAsync<PostmarkResponse>(cancellationToken);
-#endif
+            var response = JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
 
             if (response == null)
                 return Result.Failure<TResponse>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
@@ -99,14 +89,31 @@ internal sealed
             return Result.Failure<TResponse>(postmarkError);
         }
 
-        var httpError = new HttpError(responseMessage.StatusCode);
-        return Result.Failure<TResponse>(httpError);
+        if (responseMessage.StatusCode == HttpStatusCode.TooManyRequests)
+        {
+            var httpError = new HttpError(HttpStatusCode.TooManyRequests, "The number of requests to the Postmark API has exceeded the rate limit.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
+        if (responseMessage.StatusCode == HttpStatusCode.InternalServerError)
+        {
+            var httpError = new HttpError(HttpStatusCode.InternalServerError, $"An internal server error occurred while processing the request to the '{endpoint}' endpoint of the Postmark API.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
+        if (responseMessage.StatusCode == HttpStatusCode.ServiceUnavailable)
+        {
+            var httpError = new HttpError(HttpStatusCode.ServiceUnavailable, "The Postmark API is currently unavailable.");
+            return Result.Failure<TResponse>(httpError);
+        }
+
+        var genericHttpError = new HttpError(responseMessage.StatusCode, $"An '{responseMessage.StatusCode} {responseMessage.ReasonPhrase}' error occurred while processing the request to the '{endpoint}' endpoint of the Postmark API.");
+        return Result.Failure<TResponse>(genericHttpError);
     }
-#if DEBUG
-    [LoggerMessage(LogLevel.Information, "Postmark API request: {Content}")]
+
+    [LoggerMessage(LogLevel.Trace, "Postmark API request: {Content}")]
     private partial void LogApiRequest(string content);
 
-    [LoggerMessage(LogLevel.Information, "Postmark API response: {Content}")]
+    [LoggerMessage(LogLevel.Trace, "Postmark API response: {Content}")]
     private partial void LogApiResponse(string content);
-#endif
 }

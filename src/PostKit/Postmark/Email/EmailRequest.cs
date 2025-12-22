@@ -42,13 +42,13 @@ internal sealed class EmailRequest
     public string? TextBody { get; init; }
 
     [JsonPropertyName("Attachments")]
-    public List<EmailAttachmentRequest>? Attachments { get; init; }
+    public IReadOnlyList<EmailRequestAttachment>? Attachments { get; init; }
 
     [JsonPropertyName("Tag")]
     public string? Tag { get; init; }
 
     [JsonPropertyName("Headers")]
-    public IReadOnlyList<KeyValuePair<string, string>>? Headers { get; init; }
+    public IReadOnlyList<EmailRequestHeader>? Headers { get; init; }
 
     [JsonPropertyName("Metadata")]
     public IReadOnlyDictionary<string, string>? Metadata { get; init; }

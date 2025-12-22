@@ -21,7 +21,7 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
         Result<EmailResponse> response;
         try
         {
-            response = await postmark.SendAsync<EmailRequest, EmailResponse>(endpoint, request, cancellationToken);
+            response = await postmark.PostAsync<EmailRequest, EmailResponse>(endpoint, request, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -50,9 +50,7 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
         return Result.Success(sendEmailResponse);
     }
 
-    public async Task<Result<SendEmailBatchResponse>> SendEmailBatchAsync(
-        IReadOnlyCollection<Email> emails,
-        CancellationToken cancellationToken = default)
+    public async Task<Result<SendEmailBatchResponse>> SendEmailBatchAsync(IReadOnlyCollection<Email> emails, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(emails);
 
@@ -60,14 +58,12 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
             return Result.Failure<SendEmailBatchResponse>("At least one email must be provided to send a batch.");
 
         if (emails.Count > MaxBatchSize)
-        {
-            return Result.Failure<SendEmailBatchResponse>(
-                $"Postmark only accepts {MaxBatchSize} emails per batch request.");
-        }
+            return Result.Failure<SendEmailBatchResponse>($"Postmark only accepts {MaxBatchSize} emails per batch request.");
 
         var emailList = emails.ToList();
         var requests = new List<EmailRequest>(emailList.Count);
         var templateCount = 0;
+        long estimatedBatchSize = 0;
 
         foreach (var email in emailList)
         {
@@ -76,21 +72,31 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
             if (email.TemplateId.HasValue || email.TemplateAlias is not null)
                 templateCount++;
 
+            estimatedBatchSize += PostmarkSizeEstimator.EstimateMessageSizeLowerBound(email);
             requests.Add(email.ToEmailRequest());
         }
 
         if (templateCount > 0 && templateCount < emailList.Count)
-        {
-            return Result.Failure<SendEmailBatchResponse>(
-                "Each email in a batch must either use a template or none may use a template.");
-        }
+            return Result.Failure<SendEmailBatchResponse>("Each email in a batch must either use a template or none may use a template.");
 
-        var endpoint = templateCount > 0 ? "/email/batchWithTemplates" : "/email/batch";
+        if (estimatedBatchSize > PostmarkSizeEstimator.BatchPayloadSizeLimitInBytes)
+            return Result.Failure<SendEmailBatchResponse>("Batch payload size exceeds Postmark's 50 MB limit.");
+
+        var sendWithTemplates = templateCount > 0;
+        var endpoint = sendWithTemplates ? "/email/batchWithTemplates" : "/email/batch";
 
         Result<List<EmailResponse>> response;
         try
         {
-            response = await postmark.SendAsync<List<EmailRequest>, List<EmailResponse>>(endpoint, requests, cancellationToken);
+            if (sendWithTemplates)
+            {
+                var request = new EmailTemplateBatchRequest { Messages = requests };
+                response = await postmark.PostAsync<EmailTemplateBatchRequest, List<EmailResponse>>(endpoint, request, cancellationToken);
+            }
+            else
+            {
+                response = await postmark.PostAsync<List<EmailRequest>, List<EmailResponse>>(endpoint, requests, cancellationToken);
+            }
         }
         catch (Exception ex)
         {
@@ -105,10 +111,7 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
         }
 
         if (emailResponses.Count != emailList.Count)
-        {
-            return Result.Failure<SendEmailBatchResponse>(
-                "Postmark returned an unexpected number of results for the batch request.");
-        }
+            return Result.Failure<SendEmailBatchResponse>("Postmark returned an unexpected number of results for the batch request.");
 
         var batchResults = new List<SendEmailBatchResult>(emailResponses.Count);
 
@@ -121,13 +124,7 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
             if (emailResponse.MessageId is not null)
                 sendEmailResponse = new SendEmailResponse(emailResponse.MessageId);
 
-            var batchResult = new SendEmailBatchResult(
-                email,
-                emailResponse.Message,
-                emailResponse.ErrorCode,
-                emailResponse.To,
-                emailResponse.SubmittedAt,
-                sendEmailResponse);
+            var batchResult = new SendEmailBatchResult(email, emailResponse.Message, emailResponse.ErrorCode, emailResponse.To, emailResponse.SubmittedAt, sendEmailResponse);
 
             batchResults.Add(batchResult);
 

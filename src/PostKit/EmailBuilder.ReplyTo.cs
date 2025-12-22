@@ -70,9 +70,12 @@ partial class EmailBuilder : IEmailReplyToBuilder
     /// <inheritdoc/>
     public IEmailReplyToBuilder AlsoReplyTo(string address)
     {
+        if (_replyTo is null)
+            throw new InvalidOperationException("ReplyTo() must be called before AlsoReplyTo().");
+
         var mailboxAddresses = address.ToAddressList();
 
-        _replyTo!.AddRange(mailboxAddresses);
+        _replyTo.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -80,9 +83,12 @@ partial class EmailBuilder : IEmailReplyToBuilder
     /// <inheritdoc/>
     public IEmailReplyToBuilder AlsoReplyTo(string name, string address)
     {
+        if (_replyTo is null)
+            throw new InvalidOperationException("ReplyTo() must be called before AlsoReplyTo().");
+
         var mailboxAddresses = (name, address).ToAddressList();
 
-        _replyTo!.AddRange(mailboxAddresses);
+        _replyTo.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -90,9 +96,12 @@ partial class EmailBuilder : IEmailReplyToBuilder
     /// <inheritdoc/>
     public IEmailReplyToBuilder AlsoReplyTo(MailboxAddress mailboxAddress)
     {
+        if (_replyTo is null)
+            throw new InvalidOperationException("ReplyTo() must be called before AlsoReplyTo().");
+
         var mailboxAddresses = mailboxAddress.ToAddressList();
 
-        _replyTo!.AddRange(mailboxAddresses);
+        _replyTo.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -100,9 +109,12 @@ partial class EmailBuilder : IEmailReplyToBuilder
     /// <inheritdoc/>
     public IEmailReplyToBuilder AlsoReplyTo(IEnumerable<string> addresses)
     {
+        if (_replyTo is null)
+            throw new InvalidOperationException("ReplyTo() must be called before AlsoReplyTo().");
+
         var mailboxAddresses = addresses.ToAddressList();
 
-        _replyTo!.AddRange(mailboxAddresses);
+        _replyTo.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -110,8 +122,11 @@ partial class EmailBuilder : IEmailReplyToBuilder
     /// <inheritdoc/>
     public IEmailReplyToBuilder AlsoReplyTo(IEnumerable<MailboxAddress> mailboxAddresses)
     {
+        if (_replyTo is null)
+            throw new InvalidOperationException("ReplyTo() must be called before AlsoReplyTo().");
+
         foreach (var mailboxAddress in mailboxAddresses)
-            _replyTo!.Add(mailboxAddress);
+            _replyTo.Add(mailboxAddress);
 
         return this;
     }
@@ -119,7 +134,10 @@ partial class EmailBuilder : IEmailReplyToBuilder
     /// <inheritdoc/>
     public IEmailReplyToBuilder AlsoReplyTo(IList<MailboxAddress> mailboxAddresses)
     {
-        _replyTo!.AddRange(mailboxAddresses);
+        if (_replyTo is null)
+            throw new InvalidOperationException("ReplyTo() must be called before AlsoReplyTo().");
+
+        _replyTo.AddRange(mailboxAddresses);
 
         return this;
     }

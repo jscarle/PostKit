@@ -48,13 +48,7 @@ public sealed record SendEmailBatchResult
     /// <summary>Gets a value indicating whether the email was accepted by Postmark.</summary>
     public bool IsSuccessful => ErrorCode == 0 && Response is not null;
 
-    internal SendEmailBatchResult(
-        Email email,
-        string message,
-        int errorCode,
-        string? recipient,
-        DateTimeOffset? submittedAt,
-        SendEmailResponse? response)
+    internal SendEmailBatchResult(Email email, string message, int errorCode, string? recipient, DateTimeOffset? submittedAt, SendEmailResponse? response)
     {
         Email = email;
         Message = message;

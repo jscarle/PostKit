@@ -1,19 +1,22 @@
+using PostKit.Common;
+
 namespace PostKit;
 
 partial class EmailBuilder
 {
     private List<Attachment>? _attachments;
-    private int _attachmentBytes;
+    private long _attachmentBytes;
 
     /// <inheritdoc/>
     public IEmailBuilder WithAttachment(Attachment attachment)
     {
         ArgumentNullException.ThrowIfNull(attachment);
 
-        EnsureAttachmentsWithinLimit(attachment.Content.Length);
+        var estimatedSize = PostmarkSizeEstimator.EstimateBase64SizeLowerBound(attachment.Content);
+        EnsureAttachmentsWithinLimit(estimatedSize);
 
         (_attachments ??= []).Add(attachment);
-        _attachmentBytes += attachment.Content.Length;
+        _attachmentBytes += estimatedSize;
 
         return this;
     }
@@ -31,13 +34,13 @@ partial class EmailBuilder
         foreach (var attachment in buffer)
         {
             ArgumentNullException.ThrowIfNull(attachment);
-            additionalBytes += attachment.Content.Length;
+            additionalBytes += PostmarkSizeEstimator.EstimateBase64SizeLowerBound(attachment.Content);
         }
 
         EnsureAttachmentsWithinLimit(additionalBytes);
 
         (_attachments ??= []).AddRange(buffer);
-        _attachmentBytes += (int)additionalBytes;
+        _attachmentBytes += additionalBytes;
 
         return this;
     }
@@ -47,7 +50,7 @@ partial class EmailBuilder
         ArgumentOutOfRangeException.ThrowIfNegative(additionalBytes);
 
         var projectedTotal = _attachmentBytes + additionalBytes;
-        if (projectedTotal > MessageSizeLimitInBytes)
+        if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
             throw new InvalidOperationException("Attachments exceed Postmark's 10 MB limit.");
     }
 }

@@ -70,9 +70,12 @@ partial class EmailBuilder : IEmailBccBuilder
     /// <inheritdoc/>
     public IEmailBccBuilder AlsoBcc(string address)
     {
+        if (_bcc is null)
+            throw new InvalidOperationException("Bcc() must be called before AlsoBcc().");
+
         var mailboxAddresses = address.ToAddressList();
 
-        _bcc!.AddRange(mailboxAddresses);
+        _bcc.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -80,9 +83,12 @@ partial class EmailBuilder : IEmailBccBuilder
     /// <inheritdoc/>
     public IEmailBccBuilder AlsoBcc(string name, string address)
     {
+        if (_bcc is null)
+            throw new InvalidOperationException("Bcc() must be called before AlsoBcc().");
+
         var mailboxAddresses = (name, address).ToAddressList();
 
-        _bcc!.AddRange(mailboxAddresses);
+        _bcc.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -90,9 +96,12 @@ partial class EmailBuilder : IEmailBccBuilder
     /// <inheritdoc/>
     public IEmailBccBuilder AlsoBcc(MailboxAddress mailboxAddress)
     {
+        if (_bcc is null)
+            throw new InvalidOperationException("Bcc() must be called before AlsoBcc().");
+
         var mailboxAddresses = mailboxAddress.ToAddressList();
 
-        _bcc!.AddRange(mailboxAddresses);
+        _bcc.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -100,9 +109,12 @@ partial class EmailBuilder : IEmailBccBuilder
     /// <inheritdoc/>
     public IEmailBccBuilder AlsoBcc(IEnumerable<string> addresses)
     {
+        if (_bcc is null)
+            throw new InvalidOperationException("Bcc() must be called before AlsoBcc().");
+
         var mailboxAddresses = addresses.ToAddressList();
 
-        _bcc!.AddRange(mailboxAddresses);
+        _bcc.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -110,8 +122,11 @@ partial class EmailBuilder : IEmailBccBuilder
     /// <inheritdoc/>
     public IEmailBccBuilder AlsoBcc(IEnumerable<MailboxAddress> mailboxAddresses)
     {
+        if (_bcc is null)
+            throw new InvalidOperationException("Bcc() must be called before AlsoBcc().");
+
         foreach (var mailboxAddress in mailboxAddresses)
-            _bcc!.Add(mailboxAddress);
+            _bcc.Add(mailboxAddress);
 
         return this;
     }
@@ -119,7 +134,10 @@ partial class EmailBuilder : IEmailBccBuilder
     /// <inheritdoc/>
     public IEmailBccBuilder AlsoBcc(IList<MailboxAddress> mailboxAddresses)
     {
-        _bcc!.AddRange(mailboxAddresses);
+        if (_bcc is null)
+            throw new InvalidOperationException("Bcc() must be called before AlsoBcc().");
+
+        _bcc.AddRange(mailboxAddresses);
 
         return this;
     }

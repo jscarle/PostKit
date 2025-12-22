@@ -1,0 +1,270 @@
+namespace PostKit.IntegrationTests;
+
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
+/// <summary>Integration tests for template-based emails through Postmark API.</summary>
+public class TemplateIntegrationTests
+{
+    private readonly IPostKitClient _client = TestHelper.CreateClient();
+
+    [Fact(Skip = "Cannot be tested with test API token.")]
+    public async Task SendEmailAsync_WithTemplateId_Succeeds()
+    {
+        // Arrange
+        var templateModel = new { product_name = "Test Product", product_url = "https://example.com/product", name = "Test User" };
+
+        var email = Email.CreateBuilder()
+            .From(TestConfiguration.TestFromEmail)
+            .To(TestConfiguration.TestToEmail)
+            .WithTemplate(41813873, templateModel)
+            .Build();
+
+        // Act
+        var result = await _client.SendEmailAsync(email, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEmpty(response.MessageId);
+    }
+
+    [Fact(Skip = "Cannot be tested with test API token.")]
+    public async Task SendEmailAsync_WithTemplateAlias_Succeeds()
+    {
+        // Arrange
+        var templateModel = new { company_name = "Test Company", company_address = "123 Test St" };
+
+        var email = Email.CreateBuilder()
+            .From(TestConfiguration.TestFromEmail)
+            .To(TestConfiguration.TestToEmail)
+            .WithTemplate("message-en", templateModel)
+            .Build();
+
+        // Act
+        var result = await _client.SendEmailAsync(email, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEmpty(response.MessageId);
+    }
+
+    [Fact(Skip = "Cannot be tested with test API token.")]
+    public async Task SendEmailAsync_WithTemplateAndInlineCss_Succeeds()
+    {
+        // Arrange
+        var templateModel = new { title = "Test Title", content = "Test Content" };
+
+        var email = Email.CreateBuilder()
+            .From(TestConfiguration.TestFromEmail)
+            .To(TestConfiguration.TestToEmail)
+            .WithTemplate(41813873, templateModel, true)
+            .Build();
+
+        // Act
+        var result = await _client.SendEmailAsync(email, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEmpty(response.MessageId);
+    }
+
+    [Fact(Skip = "Cannot be tested with test API token.")]
+    public async Task SendEmailAsync_WithTemplateAndMetadata_Succeeds()
+    {
+        // Arrange
+        var templateModel = new { user_name = "John Doe", action = "verify_email" };
+
+        var email = Email.CreateBuilder()
+            .From(TestConfiguration.TestFromEmail)
+            .To(TestConfiguration.TestToEmail)
+            .WithTemplate(41813873, templateModel)
+            .WithMetadata("template_type", "verification")
+            .WithMetadata("user_id", "98765")
+            .Build();
+
+        // Act
+        var result = await _client.SendEmailAsync(email, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEmpty(response.MessageId);
+    }
+
+    [Fact(Skip = "Cannot be tested with test API token.")]
+    public async Task SendEmailAsync_WithTemplateAndTracking_Succeeds()
+    {
+        // Arrange
+        var templateModel = new { notification_type = "order_confirmation", order_number = "12345" };
+
+        var email = Email.CreateBuilder()
+            .From(TestConfiguration.TestFromEmail)
+            .To(TestConfiguration.TestToEmail)
+            .WithTemplate("message-en", templateModel)
+            .WithOpenTracking()
+            .WithLinkTracking()
+            .Build();
+
+        // Act
+        var result = await _client.SendEmailAsync(email, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEmpty(response.MessageId);
+    }
+
+    [Fact(Skip = "Cannot be tested with test API token.")]
+    public async Task SendEmailAsync_WithTemplateAndTag_Succeeds()
+    {
+        // Arrange
+        var templateModel = new { content = "Newsletter content" };
+
+        var email = Email.CreateBuilder()
+            .From(TestConfiguration.TestFromEmail)
+            .To(TestConfiguration.TestToEmail)
+            .WithTemplate(41813873, templateModel)
+            .WithTag("newsletter")
+            .Build();
+
+        // Act
+        var result = await _client.SendEmailAsync(email, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEmpty(response.MessageId);
+    }
+
+    [Fact(Skip = "Cannot be tested with test API token.")]
+    public async Task SendEmailAsync_WithTemplateAndHeaders_Succeeds()
+    {
+        // Arrange
+        var templateModel = new { message = "Custom header test" };
+
+        var email = Email.CreateBuilder()
+            .From(TestConfiguration.TestFromEmail)
+            .To(TestConfiguration.TestToEmail)
+            .WithTemplate(41813873, templateModel)
+            .WithHeader("X-Template-Version", "1.0")
+            .WithHeader("X-Campaign-Id", "campaign-123")
+            .Build();
+
+        // Act
+        var result = await _client.SendEmailAsync(email, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEmpty(response.MessageId);
+    }
+
+    [Fact(Skip = "Cannot be tested with test API token.")]
+    public async Task SendEmailAsync_WithTemplateAndAttachment_Succeeds()
+    {
+        // Arrange
+        var templateModel = new { invoice_number = "INV-2024-001" };
+
+        var attachment = Attachment.Create("invoice.txt", "text/plain", "Invoice details"u8.ToArray());
+
+        var email = Email.CreateBuilder()
+            .From(TestConfiguration.TestFromEmail)
+            .To(TestConfiguration.TestToEmail)
+            .WithTemplate("message-en", templateModel)
+            .WithAttachment(attachment)
+            .Build();
+
+        // Act
+        var result = await _client.SendEmailAsync(email, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEmpty(response.MessageId);
+    }
+
+    [Fact(Skip = "Cannot be tested with test API token.")]
+    public async Task SendEmailBatchAsync_WithTemplates_Succeeds()
+    {
+        // Arrange
+        var email1 = Email.CreateBuilder()
+            .From(TestConfiguration.TestFromEmail)
+            .To(TestConfiguration.TestToEmail)
+            .WithTemplate(41813873, new { name = "User 1" })
+            .Build();
+
+        var email2 = Email.CreateBuilder()
+            .From(TestConfiguration.TestFromEmail)
+            .To("another@example.com")
+            .WithTemplate(41813873, new { name = "User 2" })
+            .Build();
+
+        var emails = new[] { email1, email2 };
+
+        // Act
+        var result = await _client.SendEmailBatchAsync(emails, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.Equal(2, batchResponse.Results.Count);
+        Assert.All(batchResponse.Results, r =>
+            {
+                Assert.NotNull(r.Response);
+                Assert.NotEmpty(r.Response.MessageId);
+                Assert.Equal("Test job accepted", r.Message);
+            }
+        );
+    }
+
+    [Fact(Skip = "Cannot be tested with test API token.")]
+    public async Task SendEmailAsync_WithComplexTemplateModel_Succeeds()
+    {
+        // Arrange
+        var templateModel = new
+        {
+            user = new { first_name = "John", last_name = "Doe", email = "john.doe@example.com" },
+            order = new
+            {
+                id = "ORDER-123", date = "2024-01-15", total = 99.99, items = new[] { new { name = "Product 1", quantity = 2, price = 29.99 }, new { name = "Product 2", quantity = 1, price = 40.01 } },
+            },
+            settings = new { currency = "USD", tax_rate = 0.08 },
+        };
+
+        var email = Email.CreateBuilder()
+            .From(TestConfiguration.TestFromEmail)
+            .To(TestConfiguration.TestToEmail)
+            .WithTemplate(41813873, templateModel)
+            .Build();
+
+        // Act
+        var result = await _client.SendEmailAsync(email, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEmpty(response.MessageId);
+    }
+
+    [Fact(Skip = "Cannot be tested with test API token.")]
+    public async Task SendEmailAsync_WithTemplateAndAllFeatures_Succeeds()
+    {
+        // Arrange
+        var templateModel = new { recipient_name = "Test Recipient", notification_type = "comprehensive", data = new { key = "value" } };
+
+        var attachment = Attachment.Create("data.txt", "text/plain", "Additional data"u8.ToArray());
+
+        var email = Email.CreateBuilder()
+            .From("Template Sender", TestConfiguration.TestFromEmail)
+            .To("Template Recipient", TestConfiguration.TestToEmail)
+            .Cc(TestConfiguration.TestCcEmail)
+            .ReplyTo(TestConfiguration.TestReplyToEmail)
+            .WithTemplate(41813873, templateModel, true)
+            .WithTag("template-comprehensive")
+            .WithHeader("X-Template-Test", "comprehensive")
+            .WithMetadata("test_type", "template-full")
+            .WithOpenTracking()
+            .WithLinkTracking()
+            .WithAttachment(attachment)
+            .UsingMessageStream(MessageStream.Broadcast)
+            .Build();
+
+        // Act
+        var result = await _client.SendEmailAsync(email, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEmpty(response.MessageId);
+    }
+}

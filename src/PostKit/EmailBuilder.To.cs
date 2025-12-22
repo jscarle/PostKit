@@ -70,9 +70,12 @@ partial class EmailBuilder : IEmailToBuilder
     /// <inheritdoc/>
     public IEmailToBuilder AlsoTo(string address)
     {
+        if (_to is null)
+            throw new InvalidOperationException("To() must be called before AlsoTo().");
+
         var mailboxAddresses = address.ToAddressList();
 
-        _to!.AddRange(mailboxAddresses);
+        _to.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -80,9 +83,12 @@ partial class EmailBuilder : IEmailToBuilder
     /// <inheritdoc/>
     public IEmailToBuilder AlsoTo(string name, string address)
     {
+        if (_to is null)
+            throw new InvalidOperationException("To() must be called before AlsoTo().");
+
         var mailboxAddresses = (name, address).ToAddressList();
 
-        _to!.AddRange(mailboxAddresses);
+        _to.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -90,9 +96,12 @@ partial class EmailBuilder : IEmailToBuilder
     /// <inheritdoc/>
     public IEmailToBuilder AlsoTo(MailboxAddress mailboxAddress)
     {
+        if (_to is null)
+            throw new InvalidOperationException("To() must be called before AlsoTo().");
+
         var mailboxAddresses = mailboxAddress.ToAddressList();
 
-        _to!.AddRange(mailboxAddresses);
+        _to.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -100,9 +109,12 @@ partial class EmailBuilder : IEmailToBuilder
     /// <inheritdoc/>
     public IEmailToBuilder AlsoTo(IEnumerable<string> addresses)
     {
+        if (_to is null)
+            throw new InvalidOperationException("To() must be called before AlsoTo().");
+
         var mailboxAddresses = addresses.ToAddressList();
 
-        _to!.AddRange(mailboxAddresses);
+        _to.AddRange(mailboxAddresses);
 
         return this;
     }
@@ -110,8 +122,11 @@ partial class EmailBuilder : IEmailToBuilder
     /// <inheritdoc/>
     public IEmailToBuilder AlsoTo(IEnumerable<MailboxAddress> mailboxAddresses)
     {
+        if (_to is null)
+            throw new InvalidOperationException("To() must be called before AlsoTo().");
+
         foreach (var mailboxAddress in mailboxAddresses)
-            _to!.Add(mailboxAddress);
+            _to.Add(mailboxAddress);
 
         return this;
     }
@@ -119,7 +134,10 @@ partial class EmailBuilder : IEmailToBuilder
     /// <inheritdoc/>
     public IEmailToBuilder AlsoTo(IList<MailboxAddress> mailboxAddresses)
     {
-        _to!.AddRange(mailboxAddresses);
+        if (_to is null)
+            throw new InvalidOperationException("To() must be called before AlsoTo().");
+
+        _to.AddRange(mailboxAddresses);
 
         return this;
     }
