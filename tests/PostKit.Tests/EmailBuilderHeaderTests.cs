@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace PostKit.Tests;
 
 public class EmailBuilderHeaderTests

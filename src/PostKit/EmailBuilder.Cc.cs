@@ -18,7 +18,7 @@ partial class EmailBuilder : IEmailCcBuilder
     }
 
     /// <inheritdoc/>
-    public IEmailCcBuilder Cc(string name, string address)
+    public IEmailCcBuilder Cc(string? name, string address)
     {
         _cc.EnsureNotSet(nameof(Email.Cc));
 
@@ -81,7 +81,7 @@ partial class EmailBuilder : IEmailCcBuilder
     }
 
     /// <inheritdoc/>
-    public IEmailCcBuilder AlsoCc(string name, string address)
+    public IEmailCcBuilder AlsoCc(string? name, string address)
     {
         if (_cc is null)
             throw new InvalidOperationException("Cc() must be called before AlsoCc().");

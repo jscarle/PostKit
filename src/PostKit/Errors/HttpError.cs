@@ -3,16 +3,22 @@ using LightResults;
 
 namespace PostKit.Errors;
 
-internal class HttpError : Error
+/// <summary>
+/// Represents an error returned by the HTTP client.
+/// </summary>
+public class HttpError : Error
 {
+    /// <summary>
+    /// The HTTP status code returned by the server.
+    /// </summary>
     public HttpStatusCode StatusCode { get; }
 
-    public HttpError(HttpStatusCode httpStatusCode)
+    internal HttpError(HttpStatusCode httpStatusCode)
     {
         StatusCode = httpStatusCode;
     }
 
-    public HttpError(HttpStatusCode httpStatusCode, string message)
+    internal HttpError(HttpStatusCode httpStatusCode, string message)
         : base(message)
     {
         StatusCode = httpStatusCode;

@@ -18,7 +18,7 @@ partial class EmailBuilder : IEmailReplyToBuilder
     }
 
     /// <inheritdoc/>
-    public IEmailReplyToBuilder ReplyTo(string name, string address)
+    public IEmailReplyToBuilder ReplyTo(string? name, string address)
     {
         _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
 
@@ -81,7 +81,7 @@ partial class EmailBuilder : IEmailReplyToBuilder
     }
 
     /// <inheritdoc/>
-    public IEmailReplyToBuilder AlsoReplyTo(string name, string address)
+    public IEmailReplyToBuilder AlsoReplyTo(string? name, string address)
     {
         if (_replyTo is null)
             throw new InvalidOperationException("ReplyTo() must be called before AlsoReplyTo().");

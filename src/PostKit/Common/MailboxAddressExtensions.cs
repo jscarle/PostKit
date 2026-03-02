@@ -10,7 +10,7 @@ internal static class MailboxAddressExtensions
         return [mailboxAddress];
     }
 
-    public static IList<MailboxAddress> ToAddressList(this (string Name, string Address) nameAndAddress)
+    public static IList<MailboxAddress> ToAddressList(this (string? Name, string Address) nameAndAddress)
     {
         var mailboxAddress = new MailboxAddress(nameAndAddress.Name, nameAndAddress.Address);
         return [mailboxAddress];

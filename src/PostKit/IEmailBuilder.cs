@@ -20,7 +20,7 @@ public interface IEmailBuilder
     /// <param name="name">The display name of the sender.</param>
     /// <param name="address">The sender email address.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IEmailBuilder From(string name, string address);
+    IEmailBuilder From(string? name, string address);
 
     /// <summary>Sets the sender using a <see cref="MailboxAddress"/>.</summary>
     /// <param name="mailboxAddress">The sender mailbox address.</param>
@@ -36,7 +36,7 @@ public interface IEmailBuilder
     /// <param name="name">The display name for the reply-to recipient.</param>
     /// <param name="address">The reply-to email address.</param>
     /// <returns>An <see cref="IEmailReplyToBuilder"/> for further configuration.</returns>
-    IEmailReplyToBuilder ReplyTo(string name, string address);
+    IEmailReplyToBuilder ReplyTo(string? name, string address);
 
     /// <summary>Begins configuring reply-to recipients with a <see cref="MailboxAddress"/>.</summary>
     /// <param name="mailboxAddress">The reply-to mailbox address.</param>
@@ -67,7 +67,7 @@ public interface IEmailBuilder
     /// <param name="name">The display name for the recipient.</param>
     /// <param name="address">The recipient email address.</param>
     /// <returns>An <see cref="IEmailToBuilder"/> for further configuration.</returns>
-    IEmailToBuilder To(string name, string address);
+    IEmailToBuilder To(string? name, string address);
 
     /// <summary>Begins configuring primary recipients with a <see cref="MailboxAddress"/>.</summary>
     /// <param name="mailboxAddress">The recipient mailbox address.</param>
@@ -98,7 +98,7 @@ public interface IEmailBuilder
     /// <param name="name">The display name for the CC recipient.</param>
     /// <param name="address">The CC email address.</param>
     /// <returns>An <see cref="IEmailCcBuilder"/> for further configuration.</returns>
-    IEmailCcBuilder Cc(string name, string address);
+    IEmailCcBuilder Cc(string? name, string address);
 
     /// <summary>Begins configuring carbon-copy recipients with a <see cref="MailboxAddress"/>.</summary>
     /// <param name="mailboxAddress">The CC mailbox address.</param>
@@ -129,7 +129,7 @@ public interface IEmailBuilder
     /// <param name="name">The display name for the BCC recipient.</param>
     /// <param name="address">The BCC email address.</param>
     /// <returns>An <see cref="IEmailBccBuilder"/> for further configuration.</returns>
-    IEmailBccBuilder Bcc(string name, string address);
+    IEmailBccBuilder Bcc(string? name, string address);
 
     /// <summary>Begins configuring blind carbon-copy recipients with a <see cref="MailboxAddress"/>.</summary>
     /// <param name="mailboxAddress">The BCC mailbox address.</param>
