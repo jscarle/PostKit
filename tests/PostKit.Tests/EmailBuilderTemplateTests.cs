@@ -2,7 +2,6 @@ using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.Postmark;
 using PostKit.Postmark.Email;
-using Xunit;
 
 namespace PostKit.Tests;
 

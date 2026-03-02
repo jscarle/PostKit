@@ -3,13 +3,19 @@ using PostKit.Postmark.Email;
 
 namespace PostKit.Errors;
 
-internal sealed class PostmarkError : HttpError
+/// <summary>
+/// Represents an error returned by the Postmark API.
+/// </summary>
+public sealed class PostmarkError : HttpError
 {
+    /// <summary>
+    /// The error code returned by the Postmark API.
+    /// </summary>
     public PostmarkErrorCode ErrorCode { get; }
 
     private static readonly int[] ValidErrorCodes = (int[])Enum.GetValuesAsUnderlyingType<PostmarkErrorCode>();
 
-    public PostmarkError(PostmarkResponse response)
+    internal PostmarkError(PostmarkResponse response)
         : base(HttpStatusCode.UnprocessableEntity, response.Message)
     {
         if (!ValidErrorCodes.Contains(response.ErrorCode))

@@ -14,7 +14,7 @@ public interface IEmailReplyToBuilder : IEmailBuilder
     /// <param name="name">The display name for the reply-to recipient.</param>
     /// <param name="address">The reply-to email address.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IEmailReplyToBuilder AlsoReplyTo(string name, string address);
+    IEmailReplyToBuilder AlsoReplyTo(string? name, string address);
 
     /// <summary>Adds another reply-to recipient using a <see cref="MailboxAddress"/>.</summary>
     /// <param name="mailboxAddress">The reply-to mailbox address.</param>
