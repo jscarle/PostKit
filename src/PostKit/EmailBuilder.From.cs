@@ -22,7 +22,7 @@ partial class EmailBuilder
     }
 
     /// <inheritdoc/>
-    public IEmailBuilder From(string name, string address)
+    public IEmailBuilder From(string? name, string address)
     {
         _from.EnsureNotSet(nameof(Email.From));
 

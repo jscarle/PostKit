@@ -18,7 +18,7 @@ partial class EmailBuilder : IEmailBccBuilder
     }
 
     /// <inheritdoc/>
-    public IEmailBccBuilder Bcc(string name, string address)
+    public IEmailBccBuilder Bcc(string? name, string address)
     {
         _bcc.EnsureNotSet(nameof(Email.Bcc));
 
@@ -81,7 +81,7 @@ partial class EmailBuilder : IEmailBccBuilder
     }
 
     /// <inheritdoc/>
-    public IEmailBccBuilder AlsoBcc(string name, string address)
+    public IEmailBccBuilder AlsoBcc(string? name, string address)
     {
         if (_bcc is null)
             throw new InvalidOperationException("Bcc() must be called before AlsoBcc().");

@@ -18,7 +18,7 @@ partial class EmailBuilder : IEmailToBuilder
     }
 
     /// <inheritdoc/>
-    public IEmailToBuilder To(string name, string address)
+    public IEmailToBuilder To(string? name, string address)
     {
         _to.EnsureNotSet(nameof(Email.To));
 
@@ -81,7 +81,7 @@ partial class EmailBuilder : IEmailToBuilder
     }
 
     /// <inheritdoc/>
-    public IEmailToBuilder AlsoTo(string name, string address)
+    public IEmailToBuilder AlsoTo(string? name, string address)
     {
         if (_to is null)
             throw new InvalidOperationException("To() must be called before AlsoTo().");

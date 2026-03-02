@@ -14,7 +14,7 @@ public interface IEmailToBuilder : IEmailBuilder
     /// <param name="name">The display name for the recipient.</param>
     /// <param name="address">The recipient email address.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IEmailToBuilder AlsoTo(string name, string address);
+    IEmailToBuilder AlsoTo(string? name, string address);
 
     /// <summary>Adds another primary recipient using a <see cref="MailboxAddress"/>.</summary>
     /// <param name="mailboxAddress">The recipient mailbox address.</param>
