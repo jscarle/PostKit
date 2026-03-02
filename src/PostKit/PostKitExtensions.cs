@@ -31,7 +31,7 @@ public static class PostKitExtensions
     /// <returns>The same <paramref name="services"/> instance so calls can be chained.</returns>
     public static IServiceCollection AddPostKit(this IServiceCollection services)
     {
-        services.AddHttpClient();
+        services.AddHttpClient("Postmark");
 
         services.AddOptions<PostKitOptions>()
             .Configure<IConfiguration>((options, configuration) =>
