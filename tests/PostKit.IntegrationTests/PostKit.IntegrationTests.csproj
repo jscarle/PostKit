@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.4" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,5 +26,14 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\PostKit\PostKit.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="appsettings*.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="appsettings.Development.json">
+            <DependentUpon>appsettings.json</DependentUpon>
+        </None>
     </ItemGroup>
 </Project>

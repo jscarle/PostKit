@@ -1,0 +1,425 @@
+﻿openapi: 3.1.0
+info:
+  title: Postmark API (Reconstructed from API Explorer)
+  version: "1.0.0-reconstruction"
+  description: |
+    Best-effort OpenAPI 3.1 reconstruction of the Postmark API based on the public
+    API Explorer UI and documentation.
+
+    This spec intentionally avoids inventing fields that are not visible in
+    Postmark’s public explorer/examples. Some schemas are intentionally loose.
+
+servers:
+  - url: https://api.postmarkapp.com
+    description: Postmark API
+
+tags:
+  - name: Email
+  - name: Bulk Email
+  - name: Messages
+  - name: Servers
+  - name: Domains
+  - name: Message Streams
+  - name: Webhooks
+  - name: Stats
+  - name: Suppressions
+  - name: Inbound
+
+components:
+  securitySchemes:
+    serverToken:
+      type: apiKey
+      in: header
+      name: X-Postmark-Server-Token
+    accountToken:
+      type: apiKey
+      in: header
+      name: X-Postmark-Account-Token
+
+  schemas:
+    EmailRequest:
+      type: object
+      properties:
+        From:
+          type: string
+        To:
+          type: string
+        Cc:
+          type: string
+        Bcc:
+          type: string
+        Subject:
+          type: string
+        HtmlBody:
+          type: string
+        TextBody:
+          type: string
+        Tag:
+          type: string
+        ReplyTo:
+          type: string
+        Headers:
+          type: array
+          items:
+            type: object
+            properties:
+              Name:
+                type: string
+              Value:
+                type: string
+        Attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              Name:
+                type: string
+              Content:
+                type: string
+              ContentType:
+                type: string
+        Metadata:
+          type: object
+          additionalProperties:
+            type: string
+        MessageStream:
+          type: string
+      required:
+        - From
+        - To
+        - Subject
+
+    EmailResponse:
+      type: object
+      properties:
+        MessageID:
+          type: string
+        ErrorCode:
+          type: integer
+        Message:
+          type: string
+        SubmittedAt:
+          type: string
+          format: date-time
+        To:
+          type: string
+
+    BulkEmailRequest:
+      type: object
+      properties:
+        Messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailRequest"
+
+    BulkEmailResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/EmailResponse"
+
+    Server:
+      type: object
+      properties:
+        ID:
+          type: integer
+        Name:
+          type: string
+        Color:
+          type: string
+        SmtpApiActivated:
+          type: boolean
+
+    Domain:
+      type: object
+      properties:
+        ID:
+          type: integer
+        Name:
+          type: string
+        DKIMVerified:
+          type: boolean
+        SPFVerified:
+          type: boolean
+        ReturnPathDomainVerified:
+          type: boolean
+
+    MessageStream:
+      type: object
+      properties:
+        ID:
+          type: string
+        Name:
+          type: string
+        MessageStreamType:
+          type: string
+
+    Webhook:
+      type: object
+      additionalProperties: true
+
+paths:
+
+  /email:
+    post:
+      summary: Send a single email
+      tags: [Email]
+      security:
+        - serverToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailRequest"
+      responses:
+        "200":
+          description: Email accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailResponse"
+
+  /email/batch:
+    post:
+      summary: Send batch emails
+      tags: [Bulk Email]
+      security:
+        - serverToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkEmailRequest"
+      responses:
+        "200":
+          description: Batch response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkEmailResponse"
+
+  /messages/outbound:
+    get:
+      summary: List outbound messages
+      tags: [Messages]
+      security:
+        - serverToken: []
+      parameters:
+        - in: query
+          name: count
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Outbound messages
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /messages/outbound/{messageid}:
+    get:
+      summary: Get outbound message details
+      tags: [Messages]
+      security:
+        - serverToken: []
+      parameters:
+        - name: messageid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Message detail
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /servers:
+    get:
+      summary: List servers
+      tags: [Servers]
+      security:
+        - accountToken: []
+      responses:
+        "200":
+          description: Server list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Server"
+
+    post:
+      summary: Create server
+      tags: [Servers]
+      security:
+        - accountToken: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Server"
+      responses:
+        "200":
+          description: Created server
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Server"
+
+  /servers/{serverid}:
+    get:
+      summary: Get server
+      tags: [Servers]
+      security:
+        - accountToken: []
+      parameters:
+        - name: serverid
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Server info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Server"
+
+    delete:
+      summary: Delete server
+      tags: [Servers]
+      security:
+        - accountToken: []
+      parameters:
+        - name: serverid
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /domains:
+    get:
+      summary: List domains
+      tags: [Domains]
+      security:
+        - accountToken: []
+      responses:
+        "200":
+          description: Domains
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Domain"
+
+    post:
+      summary: Create domain
+      tags: [Domains]
+      security:
+        - accountToken: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Domain"
+      responses:
+        "200":
+          description: Domain created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Domain"
+
+  /message-streams:
+    get:
+      summary: List message streams
+      tags: [Message Streams]
+      security:
+        - serverToken: []
+      responses:
+        "200":
+          description: Streams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MessageStream"
+
+  /webhooks:
+    get:
+      summary: List webhooks
+      tags: [Webhooks]
+      security:
+        - serverToken: []
+      responses:
+        "200":
+          description: Webhooks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Webhook"
+
+  /stats/outbound:
+    get:
+      summary: Get outbound stats
+      tags: [Stats]
+      security:
+        - serverToken: []
+      parameters:
+        - name: tag
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Stats response
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /suppressions/bounces:
+    get:
+      summary: List bounce suppressions
+      tags: [Suppressions]
+      security:
+        - serverToken: []
+      responses:
+        "200":
+          description: Bounce list
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /inbound/rules:
+    get:
+      summary: List inbound rules
+      tags: [Inbound]
+      security:
+        - serverToken: []
+      responses:
+        "200":
+          description: Inbound rules
+          content:
+            application/json:
+              schema:
+                type: object
