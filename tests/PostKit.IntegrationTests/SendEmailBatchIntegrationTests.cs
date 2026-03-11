@@ -23,7 +23,7 @@ public class SendEmailBatchIntegrationTests
 
         var email2 = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
-            .To("another@example.com")
+            .To("another@postkit.com")
             .WithSubject("Batch Email 2")
             .WithTextBody("This is the second email in the batch.")
             .Build();
@@ -49,7 +49,7 @@ public class SendEmailBatchIntegrationTests
         {
             var email = Email.CreateBuilder()
                 .From(TestConfiguration.TestFromEmail)
-                .To($"recipient{i}@example.com")
+                .To($"recipient{i}@postkit.com")
                 .WithSubject($"Batch Email {i}")
                 .WithTextBody($"This is email number {i} in the batch.")
                 .WithTag($"batch-{i}")
@@ -80,14 +80,14 @@ public class SendEmailBatchIntegrationTests
 
         var htmlEmail = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
-            .To("recipient2@example.com")
+            .To("recipient2@postkit.com")
             .WithSubject("HTML Email in Batch")
             .WithHtmlBody("<html><body><h1>HTML Email</h1></body></html>")
             .Build();
 
         var multipartEmail = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
-            .To("recipient3@example.com")
+            .To("recipient3@postkit.com")
             .WithSubject("Multipart Email in Batch")
             .WithTextBody("Text version")
             .WithHtmlBody("<html><body><p>HTML version</p></body></html>")
@@ -122,7 +122,7 @@ public class SendEmailBatchIntegrationTests
 
         var email2 = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
-            .To("another@example.com")
+            .To("another@postkit.com")
             .WithSubject("Batch Email with Attachment 2")
             .WithTextBody("This email has attachment 2.")
             .WithAttachment(attachment2)
@@ -156,7 +156,7 @@ public class SendEmailBatchIntegrationTests
 
         var email2 = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
-            .To("another@example.com")
+            .To("another@postkit.com")
             .WithSubject("Batch Email with Metadata 2")
             .WithHtmlBody("<html><body><p>Another email with tracking.</p></body></html>")
             .WithMetadata("batch_id", "2")
@@ -189,7 +189,7 @@ public class SendEmailBatchIntegrationTests
 
         var broadcastEmail = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
-            .To("another@example.com")
+            .To("another@postkit.com")
             .WithSubject("Broadcast Email")
             .WithTextBody("This is a broadcast email.")
             .UsingMessageStream(MessageStream.Broadcast)
@@ -216,7 +216,7 @@ public class SendEmailBatchIntegrationTests
         {
             var email = Email.CreateBuilder()
                 .From(TestConfiguration.TestFromEmail)
-                .To($"recipient{i}@example.com")
+                .To($"recipient{i}@postkit.com")
                 .WithSubject($"Batch Email {i}")
                 .WithTextBody($"Email {i} of 500.")
                 .Build();
@@ -256,7 +256,7 @@ public class SendEmailBatchIntegrationTests
 
         var email2 = Email.CreateBuilder()
             .From("Batch Sender", TestConfiguration.TestFromEmail)
-            .To("Recipient 2", "recipient2@example.com")
+            .To("Recipient 2", "recipient2@postkit.com")
             .Bcc(TestConfiguration.TestBccEmail)
             .WithSubject("Complex Batch Email 2")
             .WithHtmlBody("<html><body><p>Another complex email with <a href='https://example.com'>link</a>.</p></body></html>")

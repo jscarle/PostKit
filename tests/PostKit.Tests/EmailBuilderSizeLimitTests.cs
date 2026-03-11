@@ -12,8 +12,8 @@ public class EmailBuilderSizeLimitTests
         var oversizedText = new string('a', (int)PostmarkSizeEstimator.BodySizeLimitInBytes + 1);
 
         var builder = Email.CreateBuilder()
-            .From("sender@example.com")
-            .To("recipient@example.com")
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
             .WithSubject("Oversized text body")
             .WithTextBody(oversizedText);
 
@@ -26,8 +26,8 @@ public class EmailBuilderSizeLimitTests
         var oversizedHtml = new string('a', (int)PostmarkSizeEstimator.BodySizeLimitInBytes + 1);
 
         var builder = Email.CreateBuilder()
-            .From("sender@example.com")
-            .To("recipient@example.com")
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
             .WithSubject("Oversized HTML body")
             .WithHtmlBody(oversizedHtml);
 
@@ -42,8 +42,8 @@ public class EmailBuilderSizeLimitTests
         var attachment = Attachment.Create("tiny.txt", "text/plain", new byte[] { 1 });
 
         var builder = Email.CreateBuilder()
-            .From("sender@example.com")
-            .To("recipient@example.com")
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
             .WithSubject("Oversized message")
             .WithTextBody(textBody)
             .WithHtmlBody(htmlBody)

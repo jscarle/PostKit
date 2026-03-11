@@ -23,14 +23,14 @@ public class PostKitClientBulkResponseTests
                                     """;
 
         var bulkEmail = BulkEmail.CreateBuilder()
-            .From("sender@example.com")
+            .From("sender@postkit.com")
             .WithSubject("Bulk hello")
             .WithTextBody("Hello world")
             .AddMessage(BulkEmailMessage.CreateBuilder()
-                .To("recipient@example.com")
+                .To("recipient@postkit.com")
                 .Build())
             .AddMessage(BulkEmailMessage.CreateBuilder()
-                .Cc("cc@example.com")
+                .Cc("cc@postkit.com")
                 .Build())
             .Build();
 
@@ -47,7 +47,7 @@ public class PostKitClientBulkResponseTests
         Assert.Equal(2, response.TotalMessages);
         Assert.Equal(0, response.PercentageCompleted);
         Assert.Equal("Bulk hello", response.Subject);
-        Assert.Contains("\"Cc\":\"cc@example.com\"", postmark.LastRequestJson, StringComparison.Ordinal);
+        Assert.Contains("\"Cc\":\"cc@postkit.com\"", postmark.LastRequestJson, StringComparison.Ordinal);
     }
 
     [Fact]

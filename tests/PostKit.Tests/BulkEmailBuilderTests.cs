@@ -9,15 +9,15 @@ public class BulkEmailBuilderTests
     public void Build_WithReplyToInterfaceChaining_Succeeds()
     {
         IBulkEmailReplyToBuilder builder = BulkEmail.CreateBuilder()
-            .ReplyTo("reply@example.com");
+            .ReplyTo("reply@postkit.com");
 
         var bulkEmail = builder
-            .AlsoReplyTo("other-reply@example.com")
-            .From("sender@example.com")
+            .AlsoReplyTo("other-reply@postkit.com")
+            .From("sender@postkit.com")
             .WithSubject("Hello")
             .WithTextBody("Hello world")
             .AddMessage(BulkEmailMessage.CreateBuilder()
-                .To("recipient@example.com")
+                .To("recipient@postkit.com")
                 .Build())
             .Build();
 
@@ -29,10 +29,10 @@ public class BulkEmailBuilderTests
     public void Build_WithMessageInterfaceChaining_Succeeds()
     {
         IBulkEmailMessageToBuilder builder = BulkEmailMessage.CreateBuilder()
-            .To("first@example.com");
+            .To("first@postkit.com");
 
         var message = builder
-            .AlsoTo("second@example.com")
+            .AlsoTo("second@postkit.com")
             .WithMetadata("FirstName", "Alice")
             .Build();
 
@@ -46,15 +46,15 @@ public class BulkEmailBuilderTests
     public void Build_WithCcOnlyMessage_Succeeds()
     {
         var bulkEmail = BulkEmail.CreateBuilder()
-            .From("sender@example.com")
+            .From("sender@postkit.com")
             .WithSubject("Hello")
             .WithTextBody("Hello world")
             .AddMessage(BulkEmailMessage.CreateBuilder()
-                .Cc("cc@example.com")
+                .Cc("cc@postkit.com")
                 .Build())
             .Build();
 
-        Assert.Equal("sender@example.com", bulkEmail.From.Address);
+        Assert.Equal("sender@postkit.com", bulkEmail.From.Address);
         Assert.Equal("Hello", bulkEmail.Subject);
         Assert.Single(bulkEmail.Messages);
         Assert.Null(bulkEmail.Messages[0].To);
@@ -92,10 +92,10 @@ public class BulkEmailBuilderTests
     public void Build_WithTemplateAndNoBodies_Succeeds()
     {
         var bulkEmail = BulkEmail.CreateBuilder()
-            .From("sender@example.com")
+            .From("sender@postkit.com")
             .WithTemplate("welcome-email")
             .AddMessage(BulkEmailMessage.CreateBuilder()
-                .To("recipient@example.com")
+                .To("recipient@postkit.com")
                 .Build())
             .Build();
 

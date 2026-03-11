@@ -17,10 +17,10 @@ public class EdgeCaseIntegrationTests
             .WithSubject("50 Recipients Test")
             .WithTextBody("Testing exact maximum recipient limit.");
 
-        var toBuilder = builder.To("recipient@example.com");
+        var toBuilder = builder.To("recipient@postkit.com");
         // Add exactly 50 recipients
         for (var i = 1; i < 50; i++)
-            toBuilder.AlsoTo($"recipient{i}@example.com");
+            toBuilder.AlsoTo($"recipient{i}@postkit.com");
 
         var email = builder.Build();
 
@@ -41,17 +41,17 @@ public class EdgeCaseIntegrationTests
             .WithSubject("Mixed Recipients at Limit")
             .WithTextBody("Testing mixed recipient types at maximum limit.");
 
-        var toBuilder = builder.To("to@example.com");
+        var toBuilder = builder.To("to@postkit.com");
         for (var i = 1; i < 20; i++)
-            toBuilder.AlsoTo($"to{i}@example.com");
+            toBuilder.AlsoTo($"to{i}@postkit.com");
 
-        var ccBuilder = builder.Cc("cc@example.com");
+        var ccBuilder = builder.Cc("cc@postkit.com");
         for (var i = 1; i < 15; i++)
-            ccBuilder.AlsoCc($"cc{i}@example.com");
+            ccBuilder.AlsoCc($"cc{i}@postkit.com");
 
-        var bccBuilder = builder.Bcc("bcc@example.com");
+        var bccBuilder = builder.Bcc("bcc@postkit.com");
         for (var i = 1; i < 15; i++)
-            bccBuilder.AlsoBcc($"bcc{i}@example.com");
+            bccBuilder.AlsoBcc($"bcc{i}@postkit.com");
 
         var email = builder.Build();
 
@@ -130,8 +130,8 @@ public class EdgeCaseIntegrationTests
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
             .ReplyTo(TestConfiguration.TestReplyToEmail)
-            .AlsoReplyTo("another-reply@example.com")
-            .AlsoReplyTo("third-reply@example.com")
+            .AlsoReplyTo("another-reply@postkit.com")
+            .AlsoReplyTo("third-reply@postkit.com")
             .WithSubject("Multiple Reply-To Test")
             .WithTextBody("Testing multiple Reply-To addresses.")
             .Build();

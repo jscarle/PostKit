@@ -18,8 +18,8 @@ public class PostKitClientBatchSizeLimitTests
 
         var emails = Enumerable.Range(0, emailCount)
             .Select(index => Email.CreateBuilder()
-                .From("sender@example.com")
-                .To($"recipient{index}@example.com")
+                .From("sender@postkit.com")
+                .To($"recipient{index}@postkit.com")
                 .WithSubject("Batch size check")
                 .WithTextBody(textBody)
                 .WithHtmlBody(htmlBody)

@@ -6,11 +6,11 @@ namespace PostKit.IntegrationTests;
 internal static class TestConfiguration
 {
     private const string DefaultApiToken = "POSTMARK_API_TEST";
-    private const string DefaultTestFromEmail = "sender@example.com";
-    private const string DefaultTestToEmail = "receiver@example.com";
-    private const string DefaultTestCcEmail = "cc@example.com";
-    private const string DefaultTestBccEmail = "bcc@example.com";
-    private const string DefaultTestReplyToEmail = "replyto@example.com";
+    private const string DefaultTestFromEmail = "sender@postkit.com";
+    private const string DefaultTestToEmail = "receiver@postkit.com";
+    private const string DefaultTestCcEmail = "cc@postkit.com";
+    private const string DefaultTestBccEmail = "bcc@postkit.com";
+    private const string DefaultTestReplyToEmail = "replyto@postkit.com";
 
     private static readonly Lazy<IConfigurationRoot> Configuration = new(CreateConfiguration);
     private static readonly Lazy<IConfigurationRoot> DevelopmentConfiguration = new(CreateDevelopmentConfiguration);

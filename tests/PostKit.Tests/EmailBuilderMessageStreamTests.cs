@@ -11,8 +11,8 @@ public class EmailBuilderMessageStreamTests
         const string messageStreamId = "custom-stream-id";
 
         var email = Email.CreateBuilder()
-            .From("sender@example.com")
-            .To("recipient@example.com")
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
             .WithSubject("Test Email")
             .WithHtmlBody("<p>Hello</p>")
             .UsingMessageStream(messageStreamId)

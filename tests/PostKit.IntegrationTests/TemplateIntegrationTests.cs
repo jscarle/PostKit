@@ -191,7 +191,7 @@ public class TemplateIntegrationTests
 
         var email2 = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
-            .To("another@example.com")
+            .To("another@postkit.com")
             .WithTemplate(41813873, new { name = "User 2" })
             .Build();
 
@@ -218,7 +218,7 @@ public class TemplateIntegrationTests
         // Arrange
         var templateModel = new
         {
-            user = new { first_name = "John", last_name = "Doe", email = "john.doe@example.com" },
+            user = new { first_name = "John", last_name = "Doe", email = "john.doe@postkit.com" },
             order = new
             {
                 id = "ORDER-123", date = "2024-01-15", total = 99.99, items = new[] { new { name = "Product 1", quantity = 2, price = 29.99 }, new { name = "Product 2", quantity = 1, price = 40.01 } },

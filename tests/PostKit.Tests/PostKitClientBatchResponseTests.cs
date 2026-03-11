@@ -15,8 +15,8 @@ public class PostKitClientBatchResponseTests
         var messageId = Guid.Parse("53ee8d49-dd20-4f1a-b65e-8ef299b7a504");
         var submittedAt = new DateTimeOffset(2026, 3, 10, 23, 45, 0, TimeSpan.Zero);
         var email = Email.CreateBuilder()
-            .From("sender@example.com")
-            .To("recipient@example.com")
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
             .WithSubject("Batch success")
             .WithTextBody("success")
             .Build();
@@ -27,7 +27,7 @@ public class PostKitClientBatchResponseTests
             {
                 MessageId = messageId.ToString("D"),
                 SubmittedAt = submittedAt,
-                To = "recipient@example.com",
+                To = "recipient@postkit.com",
                 ErrorCode = 0,
                 Message = "OK",
             },
@@ -44,7 +44,7 @@ public class PostKitClientBatchResponseTests
         Assert.True(itemResult.IsSuccess(out var response), itemResult.ToString());
         Assert.Equal(messageId, response.MessageId);
         Assert.Equal("<53ee8d49-dd20-4f1a-b65e-8ef299b7a504@mtasv.net>", response.InternetMessageId);
-        Assert.Equal("recipient@example.com", response.To);
+        Assert.Equal("recipient@postkit.com", response.To);
         Assert.Equal(submittedAt, response.SubmittedAt);
     }
 
@@ -52,8 +52,8 @@ public class PostKitClientBatchResponseTests
     public async Task SendEmailBatchAsync_MapsRejectedItemsToFailedResults()
     {
         var email = Email.CreateBuilder()
-            .From("sender@example.com")
-            .To("recipient@example.com")
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
             .WithSubject("Batch failure")
             .WithTextBody("failure")
             .Build();

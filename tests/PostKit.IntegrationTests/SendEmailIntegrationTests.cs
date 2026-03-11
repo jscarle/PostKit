@@ -47,7 +47,7 @@ public class SendEmailIntegrationTests
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.NotEqual(Guid.Empty, response.MessageId);
-        Assert.Null(response.To);
+        Assert.Equal(TestConfiguration.TestToEmail, response.To);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public class SendEmailIntegrationTests
         var email = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .AlsoTo("another@example.com")
+            .AlsoTo("another@postkit.com")
             .WithSubject("Multiple Recipients Test")
             .WithTextBody("This email is sent to multiple recipients.")
             .Build();
@@ -366,7 +366,7 @@ public class SendEmailIntegrationTests
         var email = Email.CreateBuilder()
             .From("Integration Test Sender", TestConfiguration.TestFromEmail)
             .To("Primary Recipient", TestConfiguration.TestToEmail)
-            .AlsoTo("second@example.com")
+            .AlsoTo("second@postkit.com")
             .Cc(TestConfiguration.TestCcEmail)
             .Bcc(TestConfiguration.TestBccEmail)
             .ReplyTo(TestConfiguration.TestReplyToEmail)
