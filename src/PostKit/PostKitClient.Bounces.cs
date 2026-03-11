@@ -1,0 +1,573 @@
+using System.Globalization;
+using LightResults;
+using Microsoft.Extensions.Logging;
+using PostKit.Bounces;
+using PostKit.Errors;
+using BounceActivationModel = PostKit.Postmark.Bounces.BounceActivationResponse;
+using BounceModel = PostKit.Postmark.Bounces.BounceResponse;
+using BounceDumpModel = PostKit.Postmark.Bounces.BounceDumpResponse;
+using BounceSearchModel = PostKit.Postmark.Bounces.BounceSearchResponse;
+using BounceTypeCountModel = PostKit.Postmark.Bounces.BounceCountElement;
+using DeliveryStatsModel = PostKit.Postmark.Bounces.DeliveryStatsResponse;
+
+namespace PostKit;
+
+internal sealed partial class PostKitClient
+{
+    private const int MaxBounceCount = 500;
+
+    public async Task<Result<BounceSearchResponse>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var validationError = ValidateBounceQuery(query);
+        if (validationError is not null)
+            return Result.Failure<BounceSearchResponse>(validationError);
+
+        var endpoint = BuildBounceSearchEndpoint(query);
+
+        Result<BounceSearchModel> response;
+        try
+        {
+            response = await postmark.GetAsync<BounceSearchModel>(endpoint, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogBouncesException(ex);
+            return Result.Failure<BounceSearchResponse>(ex);
+        }
+
+        if (response.IsFailure(out var error, out var bounceSearchModel))
+        {
+            LogBouncesError(error.Message, error);
+            return Result.Failure<BounceSearchResponse>(error);
+        }
+
+        var mappedResponse = CreateBounceSearchResponse(bounceSearchModel);
+        if (mappedResponse.IsFailure(out var mappingError, out var bounceSearchResponse))
+        {
+            LogBouncesError(mappingError.Message, mappingError);
+            return Result.Failure<BounceSearchResponse>(mappingError);
+        }
+
+        return Result.Success(bounceSearchResponse);
+    }
+
+    public async Task<Result<BounceDetails>> GetBounceAsync(long id, CancellationToken cancellationToken = default)
+    {
+        if (id <= 0)
+            return Result.Failure<BounceDetails>("The bounce ID must be greater than zero.");
+
+        Result<BounceModel> response;
+        try
+        {
+            response = await postmark.GetAsync<BounceModel>($"/bounces/{id}", cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogBounceException(ex);
+            return Result.Failure<BounceDetails>(ex);
+        }
+
+        if (response.IsFailure(out var error, out var bounceModel))
+        {
+            LogBounceError(error.Message, error);
+            return Result.Failure<BounceDetails>(error);
+        }
+
+        var mappedResponse = CreateBounceDetails(bounceModel);
+        if (mappedResponse.IsFailure(out var mappingError, out var bounceDetails))
+        {
+            LogBounceError(mappingError.Message, mappingError);
+            return Result.Failure<BounceDetails>(mappingError);
+        }
+
+        return Result.Success(bounceDetails);
+    }
+
+    public async Task<Result<DeliveryStatsResponse>> GetDeliveryStatsAsync(CancellationToken cancellationToken = default)
+    {
+        Result<DeliveryStatsModel> response;
+        try
+        {
+            response = await postmark.GetAsync<DeliveryStatsModel>("/deliverystats", cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogDeliveryStatsException(ex);
+            return Result.Failure<DeliveryStatsResponse>(ex);
+        }
+
+        if (response.IsFailure(out var error, out var deliveryStatsModel))
+        {
+            LogDeliveryStatsError(error.Message, error);
+            return Result.Failure<DeliveryStatsResponse>(error);
+        }
+
+        var mappedResponse = CreateDeliveryStatsResponse(deliveryStatsModel);
+        if (mappedResponse.IsFailure(out var mappingError, out var deliveryStatsResponse))
+        {
+            LogDeliveryStatsError(mappingError.Message, mappingError);
+            return Result.Failure<DeliveryStatsResponse>(mappingError);
+        }
+
+        return Result.Success(deliveryStatsResponse);
+    }
+
+    public async Task<Result<BounceDumpResponse>> GetBounceDumpAsync(long id, CancellationToken cancellationToken = default)
+    {
+        if (id <= 0)
+            return Result.Failure<BounceDumpResponse>("The bounce ID must be greater than zero.");
+
+        Result<BounceDumpModel> response;
+        try
+        {
+            response = await postmark.GetAsync<BounceDumpModel>($"/bounces/{id}/dump", cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogBounceDumpException(ex);
+            return Result.Failure<BounceDumpResponse>(ex);
+        }
+
+        if (response.IsFailure(out var error, out var bounceDumpModel))
+        {
+            LogBounceDumpError(error.Message, error);
+            return Result.Failure<BounceDumpResponse>(error);
+        }
+
+        if (bounceDumpModel.Body is null)
+            return Result.Failure<BounceDumpResponse>("Body was not returned from the Postmark Bounces API.");
+
+        return Result.Success(new BounceDumpResponse(bounceDumpModel.Body));
+    }
+
+    public async Task<Result<BounceActivationResponse>> ActivateBounceAsync(long id, CancellationToken cancellationToken = default)
+    {
+        if (id <= 0)
+            return Result.Failure<BounceActivationResponse>("The bounce ID must be greater than zero.");
+
+        Result<BounceActivationModel> response;
+        try
+        {
+            response = await postmark.PutAsync<BounceActivationModel>($"/bounces/{id}/activate", cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            LogActivateBounceException(ex);
+            return Result.Failure<BounceActivationResponse>(ex);
+        }
+
+        if (response.IsFailure(out var error, out var bounceActivationModel))
+        {
+            LogActivateBounceError(error.Message, error);
+            return Result.Failure<BounceActivationResponse>(error);
+        }
+
+        if (string.IsNullOrWhiteSpace(bounceActivationModel.Message))
+            return Result.Failure<BounceActivationResponse>("Message was not returned from the Postmark Bounces API.");
+
+        if (bounceActivationModel.Bounce is null)
+            return Result.Failure<BounceActivationResponse>("Bounce was not returned from the Postmark Bounces API.");
+
+        var mappedBounce = CreateBounce(bounceActivationModel.Bounce);
+        if (mappedBounce.IsFailure(out var mappingError, out var bounce))
+        {
+            LogActivateBounceError(mappingError.Message, mappingError);
+            return Result.Failure<BounceActivationResponse>(mappingError);
+        }
+
+        return Result.Success(new BounceActivationResponse(bounceActivationModel.Message, bounce));
+    }
+
+    private static string? ValidateBounceQuery(BounceQuery query)
+    {
+        if (query.Count is < 1 or > MaxBounceCount)
+            return $"The bounce query count must be between 1 and {MaxBounceCount}.";
+
+        if (query.Offset < 0)
+            return "The bounce query offset must be zero or greater.";
+
+        if (query.EmailFilter is not null && string.IsNullOrWhiteSpace(query.EmailFilter))
+            return "The bounce query email filter must not be empty.";
+
+        if (query.Tag is not null && string.IsNullOrWhiteSpace(query.Tag))
+            return "The bounce query tag filter must not be empty.";
+
+        if (query.MessageStream is not null && string.IsNullOrWhiteSpace(query.MessageStream))
+            return "The bounce query message stream filter must not be empty.";
+
+        if (query.FromDate.HasValue && query.ToDate.HasValue && query.FromDate.Value > query.ToDate.Value)
+            return "The bounce query from-date must not be later than the to-date.";
+
+        return null;
+    }
+
+    private static string BuildBounceSearchEndpoint(BounceQuery query)
+    {
+        var parameters = new List<string>(10)
+        {
+            $"count={query.Count.ToString(CultureInfo.InvariantCulture)}",
+            $"offset={query.Offset.ToString(CultureInfo.InvariantCulture)}",
+        };
+
+        if (query.Type.HasValue)
+            parameters.Add($"type={Uri.EscapeDataString(GetBounceTypeValue(query.Type.Value))}");
+
+        if (query.Inactive.HasValue)
+            parameters.Add($"inactive={query.Inactive.Value.ToString().ToLowerInvariant()}");
+
+        if (query.EmailFilter is not null)
+            parameters.Add($"emailFilter={Uri.EscapeDataString(query.EmailFilter)}");
+
+        if (query.MessageId.HasValue)
+            parameters.Add($"messageID={query.MessageId.Value:D}");
+
+        if (query.Tag is not null)
+            parameters.Add($"tag={Uri.EscapeDataString(query.Tag)}");
+
+        if (query.ToDate.HasValue)
+            parameters.Add($"todate={Uri.EscapeDataString(FormatBounceQueryDate(query.ToDate.Value))}");
+
+        if (query.FromDate.HasValue)
+            parameters.Add($"fromdate={Uri.EscapeDataString(FormatBounceQueryDate(query.FromDate.Value))}");
+
+        if (query.MessageStream is not null)
+            parameters.Add($"messagestream={Uri.EscapeDataString(query.MessageStream)}");
+
+        return $"/bounces?{string.Join("&", parameters)}";
+    }
+
+    private static string FormatBounceQueryDate(DateTime value)
+    {
+        return value.TimeOfDay == TimeSpan.Zero
+            ? value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            : value.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
+    }
+
+    private static Result<BounceSearchResponse> CreateBounceSearchResponse(BounceSearchModel response)
+    {
+        if (response.TotalCount is null)
+            return Result.Failure<BounceSearchResponse>("TotalCount was not returned from the Postmark Bounces API.");
+
+        if (response.TotalCount.Value < 0)
+            return Result.Failure<BounceSearchResponse>("TotalCount returned from the Postmark Bounces API was invalid.");
+
+        if (response.Bounces is null)
+            return Result.Failure<BounceSearchResponse>("Bounces were not returned from the Postmark Bounces API.");
+
+        var bounces = new List<Bounce>(response.Bounces.Count);
+        for (var index = 0; index < response.Bounces.Count; index++)
+        {
+            var mappedBounce = CreateBounce(response.Bounces[index]);
+            if (mappedBounce.IsFailure(out var error, out var bounce))
+                return Result.Failure<BounceSearchResponse>($"Bounce item {index} could not be mapped: {error.Message}");
+
+            bounces.Add(bounce);
+        }
+
+        return Result.Success(new BounceSearchResponse(response.TotalCount.Value, bounces));
+    }
+
+    private static Result<Bounce> CreateBounce(BounceModel response)
+    {
+        var mappedCore = CreateBounceCore(response);
+        if (mappedCore.IsFailure(out var error, out var bounceCore))
+            return Result.Failure<Bounce>(error);
+
+        return Result.Success(new Bounce(
+            bounceCore.RecordType,
+            bounceCore.Id,
+            bounceCore.Type,
+            bounceCore.TypeCode,
+            bounceCore.Name,
+            bounceCore.Tag,
+            bounceCore.MessageId,
+            bounceCore.ServerId,
+            bounceCore.MessageStream,
+            bounceCore.Description,
+            bounceCore.Details,
+            bounceCore.Email,
+            bounceCore.From,
+            bounceCore.BouncedAt,
+            bounceCore.DumpAvailable,
+            bounceCore.Inactive,
+            bounceCore.CanActivate,
+            bounceCore.Subject
+        ));
+    }
+
+    private static Result<BounceDetails> CreateBounceDetails(BounceModel response)
+    {
+        var mappedCore = CreateBounceCore(response);
+        if (mappedCore.IsFailure(out var error, out var bounceCore))
+            return Result.Failure<BounceDetails>(error);
+
+        if (response.Content is null)
+            return Result.Failure<BounceDetails>("Content was not returned from the Postmark Bounces API.");
+
+        return Result.Success(new BounceDetails(
+            bounceCore.RecordType,
+            bounceCore.Id,
+            bounceCore.Type,
+            bounceCore.TypeCode,
+            bounceCore.Name,
+            bounceCore.Tag,
+            bounceCore.MessageId,
+            bounceCore.ServerId,
+            bounceCore.MessageStream,
+            bounceCore.Description,
+            bounceCore.Details,
+            bounceCore.Email,
+            bounceCore.From,
+            bounceCore.BouncedAt,
+            bounceCore.DumpAvailable,
+            bounceCore.Inactive,
+            bounceCore.CanActivate,
+            bounceCore.Subject,
+            response.Content
+        ));
+    }
+
+    private static Result<DeliveryStatsResponse> CreateDeliveryStatsResponse(DeliveryStatsModel response)
+    {
+        if (response.InactiveMails is null)
+            return Result.Failure<DeliveryStatsResponse>("InactiveMails was not returned from the Postmark Bounces API.");
+
+        if (response.InactiveMails.Value < 0)
+            return Result.Failure<DeliveryStatsResponse>("InactiveMails returned from the Postmark Bounces API was invalid.");
+
+        if (response.Bounces is null)
+            return Result.Failure<DeliveryStatsResponse>("Bounces were not returned from the Postmark Bounces API.");
+
+        var bounces = new List<BounceTypeCount>(response.Bounces.Count);
+        for (var index = 0; index < response.Bounces.Count; index++)
+        {
+            var mappedCount = CreateBounceTypeCount(response.Bounces[index]);
+            if (mappedCount.IsFailure(out var error, out var bounceTypeCount))
+                return Result.Failure<DeliveryStatsResponse>($"Delivery stats bounce item {index} could not be mapped: {error.Message}");
+
+            bounces.Add(bounceTypeCount);
+        }
+
+        return Result.Success(new DeliveryStatsResponse(response.InactiveMails.Value, bounces));
+    }
+
+    private static Result<BounceTypeCount> CreateBounceTypeCount(BounceTypeCountModel response)
+    {
+        if (string.IsNullOrWhiteSpace(response.Name))
+            return Result.Failure<BounceTypeCount>("Name was not returned from the Postmark Bounces API.");
+
+        if (response.Count is null || response.Count.Value < 0)
+            return Result.Failure<BounceTypeCount>("Count returned from the Postmark Bounces API was invalid.");
+
+        BounceType? type = null;
+        if (!string.IsNullOrWhiteSpace(response.Type))
+        {
+            var mappedType = TryMapBounceType(response.Type);
+            if (mappedType is null)
+                return Result.Failure<BounceTypeCount>($"Type '{response.Type}' returned from the Postmark Bounces API is not supported.");
+
+            type = mappedType.Value;
+        }
+
+        return Result.Success(new BounceTypeCount(type, response.Name, response.Count.Value));
+    }
+
+    private static Result<BounceCore> CreateBounceCore(BounceModel response)
+    {
+        if (string.IsNullOrWhiteSpace(response.RecordType))
+            return Result.Failure<BounceCore>("RecordType was not returned from the Postmark Bounces API.");
+
+        if (response.Id is null || response.Id.Value <= 0)
+            return Result.Failure<BounceCore>("ID returned from the Postmark Bounces API was invalid.");
+
+        if (string.IsNullOrWhiteSpace(response.Type))
+            return Result.Failure<BounceCore>("Type was not returned from the Postmark Bounces API.");
+
+        var type = TryMapBounceType(response.Type);
+
+        if (type is null)
+            return Result.Failure<BounceCore>($"Type '{response.Type}' returned from the Postmark Bounces API is not supported.");
+
+        if (response.TypeCode is null)
+            return Result.Failure<BounceCore>("TypeCode was not returned from the Postmark Bounces API.");
+
+        if (string.IsNullOrWhiteSpace(response.Name))
+            return Result.Failure<BounceCore>("Name was not returned from the Postmark Bounces API.");
+
+        if (response.Tag is null)
+            return Result.Failure<BounceCore>("Tag was not returned from the Postmark Bounces API.");
+
+        if (response.MessageId is null)
+            return Result.Failure<BounceCore>("MessageID was not returned from the Postmark Bounces API.");
+
+        if (!Guid.TryParse(response.MessageId, out var messageId))
+            return Result.Failure<BounceCore>("MessageID returned from the Postmark Bounces API was not a valid GUID.");
+
+        if (response.ServerId is null || response.ServerId.Value <= 0)
+            return Result.Failure<BounceCore>("ServerID returned from the Postmark Bounces API was invalid.");
+
+        if (string.IsNullOrWhiteSpace(response.MessageStream))
+            return Result.Failure<BounceCore>("MessageStream was not returned from the Postmark Bounces API.");
+
+        if (string.IsNullOrWhiteSpace(response.Description))
+            return Result.Failure<BounceCore>("Description was not returned from the Postmark Bounces API.");
+
+        if (string.IsNullOrWhiteSpace(response.Details))
+            return Result.Failure<BounceCore>("Details was not returned from the Postmark Bounces API.");
+
+        if (string.IsNullOrWhiteSpace(response.Email))
+            return Result.Failure<BounceCore>("Email was not returned from the Postmark Bounces API.");
+
+        if (string.IsNullOrWhiteSpace(response.From))
+            return Result.Failure<BounceCore>("From was not returned from the Postmark Bounces API.");
+
+        if (response.BouncedAt is null)
+            return Result.Failure<BounceCore>("BouncedAt was not returned from the Postmark Bounces API.");
+
+        if (response.DumpAvailable is null)
+            return Result.Failure<BounceCore>("DumpAvailable was not returned from the Postmark Bounces API.");
+
+        if (response.Inactive is null)
+            return Result.Failure<BounceCore>("Inactive was not returned from the Postmark Bounces API.");
+
+        if (response.CanActivate is null)
+            return Result.Failure<BounceCore>("CanActivate was not returned from the Postmark Bounces API.");
+
+        if (string.IsNullOrWhiteSpace(response.Subject))
+            return Result.Failure<BounceCore>("Subject was not returned from the Postmark Bounces API.");
+
+        return Result.Success(new BounceCore(
+            response.RecordType,
+            response.Id.Value,
+            type.Value,
+            response.TypeCode.Value,
+            response.Name,
+            response.Tag,
+            messageId,
+            response.ServerId.Value,
+            response.MessageStream,
+            response.Description,
+            response.Details,
+            response.Email,
+            response.From,
+            response.BouncedAt.Value,
+            response.DumpAvailable.Value,
+            response.Inactive.Value,
+            response.CanActivate.Value,
+            response.Subject
+        ));
+    }
+
+    private static string GetBounceTypeValue(BounceType type)
+    {
+        return type switch
+        {
+            BounceType.HardBounce => "HardBounce",
+            BounceType.Transient => "Transient",
+            BounceType.Unsubscribe => "Unsubscribe",
+            BounceType.Subscribe => "Subscribe",
+            BounceType.AutoResponder => "AutoResponder",
+            BounceType.AddressChange => "AddressChange",
+            BounceType.DnsError => "DnsError",
+            BounceType.SpamNotification => "SpamNotification",
+            BounceType.OpenRelayTest => "OpenRelayTest",
+            BounceType.Unknown => "Unknown",
+            BounceType.SoftBounce => "SoftBounce",
+            BounceType.VirusNotification => "VirusNotification",
+            BounceType.MailFrontierMatador => "MailFrontier Matador.",
+            BounceType.BadEmailAddress => "BadEmailAddress",
+            BounceType.SpamComplaint => "SpamComplaint",
+            BounceType.ManuallyDeactivated => "ManuallyDeactivated",
+            BounceType.Unconfirmed => "Unconfirmed",
+            BounceType.Blocked => "Blocked",
+            BounceType.SmtpApiError => "SMTPApiError",
+            BounceType.InboundError => "InboundError",
+            BounceType.DmarcPolicy => "DMARCPolicy",
+            BounceType.TemplateRenderingFailed => "TemplateRenderingFailed",
+            _ => throw new System.Diagnostics.UnreachableException($"Enum value of '{nameof(BounceType)}.{type}' has not been handled."),
+        };
+    }
+
+    private static BounceType? TryMapBounceType(string type)
+    {
+        return type switch
+        {
+            "HardBounce" => BounceType.HardBounce,
+            "Transient" => BounceType.Transient,
+            "Unsubscribe" => BounceType.Unsubscribe,
+            "Subscribe" => BounceType.Subscribe,
+            "AutoResponder" => BounceType.AutoResponder,
+            "AddressChange" => BounceType.AddressChange,
+            "DnsError" => BounceType.DnsError,
+            "SpamNotification" => BounceType.SpamNotification,
+            "OpenRelayTest" => BounceType.OpenRelayTest,
+            "Unknown" => BounceType.Unknown,
+            "SoftBounce" => BounceType.SoftBounce,
+            "VirusNotification" => BounceType.VirusNotification,
+            "MailFrontier Matador." => BounceType.MailFrontierMatador,
+            "BadEmailAddress" => BounceType.BadEmailAddress,
+            "SpamComplaint" => BounceType.SpamComplaint,
+            "ManuallyDeactivated" => BounceType.ManuallyDeactivated,
+            "Unconfirmed" => BounceType.Unconfirmed,
+            "Blocked" => BounceType.Blocked,
+            "SMTPApiError" => BounceType.SmtpApiError,
+            "InboundError" => BounceType.InboundError,
+            "DMARCPolicy" => BounceType.DmarcPolicy,
+            "TemplateRenderingFailed" => BounceType.TemplateRenderingFailed,
+            _ => null,
+        };
+    }
+
+    [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to retrieve bounces.")]
+    private partial void LogBouncesException(Exception ex);
+
+    [LoggerMessage(LogLevel.Error, "Failed to retrieve bounces. {Message}")]
+    private partial void LogBouncesError(string message, [LogProperties] IError error);
+
+    [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to retrieve the bounce.")]
+    private partial void LogBounceException(Exception ex);
+
+    [LoggerMessage(LogLevel.Error, "Failed to retrieve the bounce. {Message}")]
+    private partial void LogBounceError(string message, [LogProperties] IError error);
+
+    [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to retrieve delivery stats.")]
+    private partial void LogDeliveryStatsException(Exception ex);
+
+    [LoggerMessage(LogLevel.Error, "Failed to retrieve delivery stats. {Message}")]
+    private partial void LogDeliveryStatsError(string message, [LogProperties] IError error);
+
+    [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to retrieve the bounce dump.")]
+    private partial void LogBounceDumpException(Exception ex);
+
+    [LoggerMessage(LogLevel.Error, "Failed to retrieve the bounce dump. {Message}")]
+    private partial void LogBounceDumpError(string message, [LogProperties] IError error);
+
+    [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to activate the bounce.")]
+    private partial void LogActivateBounceException(Exception ex);
+
+    [LoggerMessage(LogLevel.Error, "Failed to activate the bounce. {Message}")]
+    private partial void LogActivateBounceError(string message, [LogProperties] IError error);
+
+    private readonly record struct BounceCore(
+        string RecordType,
+        long Id,
+        BounceType Type,
+        int TypeCode,
+        string Name,
+        string Tag,
+        Guid MessageId,
+        long ServerId,
+        string MessageStream,
+        string Description,
+        string Details,
+        string Email,
+        string From,
+        DateTimeOffset BouncedAt,
+        bool DumpAvailable,
+        bool Inactive,
+        bool CanActivate,
+        string Subject
+    );
+}

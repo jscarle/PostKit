@@ -2,9 +2,10 @@
 openapi: "3.0.3"
 info:
   title: "Postmark API"
-  version: "2026-03-10-docs-reconstruction"
+  version: "2026-03-11-bounces-live-validated"
   description: "Merged from the live Postmark API Explorer Swagger plus developer
-    docs and llms.txt patches as of 2026-03-10."
+    docs and llms.txt patches, with Bounces API payloads validated against a live
+    server on 2026-03-11."
 servers:
   - url: "https://api.postmarkapp.com"
     description: "Postmark API"
@@ -37,6 +38,7 @@ paths:
           required: true
           schema:
             type: "integer"
+            minimum: 1
             maximum: 500
         - name: "offset"
           description: "Number of bounces to skip."
@@ -44,6 +46,7 @@ paths:
           required: true
           schema:
             type: "integer"
+            minimum: 0
         - name: "type"
           description: "Filter by type of bounce"
           in: "query"
@@ -97,16 +100,22 @@ paths:
             type: "string"
         - name: "todate"
           in: "query"
-          description: "Filter messages up to the date specified. e.g. `2014-02-01`"
+          description: "Filter messages up to the date specified. Supports `yyyy-MM-dd`
+            or `yyyy-MM-ddTHH:mm:ss` (interpreted in US Eastern time)."
           schema:
             type: "string"
-            format: "date"
         - name: "fromdate"
-          description: "Filter messages starting from the date specified. e.g. `2014-02-01`"
+          description: "Filter messages starting from the date specified. Supports
+            `yyyy-MM-dd` or `yyyy-MM-ddTHH:mm:ss` (interpreted in US Eastern time)."
           in: "query"
           schema:
             type: "string"
-            format: "date"
+        - name: "messagestream"
+          description: "Filter by message stream ID. If omitted, Postmark searches the
+            default transactional `outbound` stream."
+          in: "query"
+          schema:
+            type: "string"
       responses:
         200:
           description: "OK"
@@ -2978,6 +2987,10 @@ components:
       items:
         $ref: "#/components/schemas/Attachment"
     BounceActivationResponse:
+      description: "Response returned when reactivating a bounce. In live testing on
+        2026-03-11, the nested Bounce payload could reflect the pre-activation state;
+        follow up with `GET /bounces/{bounceid}` to confirm the updated `Inactive`
+        value."
       properties:
         Message:
           type: "string"
@@ -2990,6 +3003,8 @@ components:
         Count:
           type: "integer"
         Type:
+          description: "The bounce type associated with the count. Omitted for aggregate
+            rows such as `All`."
           type: "string"
     BounceDumpResponse:
       properties:
@@ -2999,8 +3014,11 @@ components:
           type: "string"
     BounceInfoResponse:
       properties:
-        ID:
+        RecordType:
           type: "string"
+        ID:
+          type: "integer"
+          format: "int64"
         Type:
           type: "string"
         TypeCode:
@@ -3011,11 +3029,19 @@ components:
           type: "string"
         MessageID:
           type: "string"
+        ServerID:
+          type: "integer"
+          format: "int64"
+        MessageStream:
+          type: "string"
         Description:
           type: "string"
         Details:
           type: "string"
         Email:
+          type: "string"
+          format: "email"
+        From:
           type: "string"
           format: "email"
         BouncedAt:
@@ -3030,6 +3056,8 @@ components:
         Subject:
           type: "string"
         Content:
+          description: "Raw source of bounce content. Returned by the single-bounce
+            endpoint."
           type: "string"
     BounceSearchResponse:
       description: ""

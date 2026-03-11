@@ -71,6 +71,9 @@
         <Compile Update="PostKitClient.Emails.cs">
             <DependentUpon>PostKitClient.cs</DependentUpon>
         </Compile>
+        <Compile Update="PostKitClient.Bounces.cs">
+            <DependentUpon>PostKitClient.cs</DependentUpon>
+        </Compile>
         <Compile Update="PostKitClient.BulkEmails.cs">
             <DependentUpon>PostKitClient.cs</DependentUpon>
         </Compile>

@@ -51,6 +51,12 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
     }
 
+    public async Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+    {
+        using var responseMessage = await _httpClient.PutAsync(endpoint, content: null, cancellationToken);
+        return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
+    }
+
     private async Task<Result<TResponse>> GetResponse<TResponse>(string endpoint, HttpResponseMessage responseMessage, CancellationToken cancellationToken)
     {
         if (responseMessage.IsSuccessStatusCode)
