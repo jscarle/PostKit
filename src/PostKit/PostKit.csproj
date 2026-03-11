@@ -18,19 +18,19 @@
     <!-- References -->
     <ItemGroup>
         <PackageReference Include="JetBrains.Annotations" Version="2025.2.4"/>
-        <PackageReference Include="LightResults" Version="10.0.3" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.4" />
-        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.4.0" />
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.200" PrivateAssets="All" />
-        <PackageReference Include="MimeKit" Version="4.15.1" />
+        <PackageReference Include="LightResults" Version="10.0.3"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.4"/>
+        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.4.0"/>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.200" PrivateAssets="All"/>
+        <PackageReference Include="MimeKit" Version="4.15.1"/>
     </ItemGroup>
 
     <!-- Output -->
     <PropertyGroup>
         <AssemblyName>PostKit</AssemblyName>
-        <Version>10.0.3</Version>
-        <AssemblyVersion>10.0.3.0</AssemblyVersion>
-        <FileVersion>10.0.3.0</FileVersion>
+        <Version>10.1.0</Version>
+        <AssemblyVersion>10.1.0.0</AssemblyVersion>
+        <FileVersion>10.1.0.0</FileVersion>
         <NeutralLanguage>en-US</NeutralLanguage>
         <Optimize>true</Optimize>
         <!--<IsAotCompatible>true</IsAotCompatible>-->
@@ -68,12 +68,12 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Update="PostKitClient.Emails.cs">
-        <DependentUpon>PostKitClient.cs</DependentUpon>
-      </Compile>
-      <Compile Update="PostKitClient.BulkEmails.cs">
-        <DependentUpon>PostKitClient.cs</DependentUpon>
-      </Compile>
+        <Compile Update="PostKitClient.Emails.cs">
+            <DependentUpon>PostKitClient.cs</DependentUpon>
+        </Compile>
+        <Compile Update="PostKitClient.BulkEmails.cs">
+            <DependentUpon>PostKitClient.cs</DependentUpon>
+        </Compile>
     </ItemGroup>
 
     <!-- Content -->
