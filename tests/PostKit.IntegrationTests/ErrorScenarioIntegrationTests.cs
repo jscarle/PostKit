@@ -73,7 +73,7 @@ public class ErrorScenarioIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -93,6 +93,6 @@ public class ErrorScenarioIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 }

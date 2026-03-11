@@ -1,3 +1,6 @@
+using LightResults;
+using PostKit.Responses;
+
 namespace PostKit.IntegrationTests;
 
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
@@ -31,14 +34,9 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
@@ -63,14 +61,9 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(5, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
@@ -106,14 +99,9 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(3, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
@@ -146,14 +134,9 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
@@ -186,14 +169,9 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
@@ -223,14 +201,9 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
@@ -254,14 +227,9 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(500, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
@@ -304,13 +272,15 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
+    }
+
+    private static void AssertSuccessfulBatchResult(Result<SendEmailResponse> result)
+    {
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEqual(Guid.Empty, response.MessageId);
+        Assert.Equal($"<{response.MessageId:D}@mtasv.net>", response.InternetMessageId);
     }
 }

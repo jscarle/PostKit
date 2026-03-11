@@ -34,6 +34,9 @@ public sealed partial class EmailBuilder : IEmailBuilder
         if ((_htmlBody is not null || _textBody is not null) && (_templateId.HasValue || _templateAlias is not null))
             throw new InvalidOperationException("Neither a text or HTML body, nor a subject may be specified when using a template.");
 
+        if ((_templateId.HasValue || _templateAlias is not null) && _templateModel is null)
+            throw new InvalidOperationException("A template model is required when using a template.");
+
         var textBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_textBody);
         if (textBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
             throw new InvalidOperationException("Text body exceeds Postmark's 5 MB limit.");

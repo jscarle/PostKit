@@ -63,8 +63,83 @@ public class EmailBuilderTemplateTests
         Assert.IsType<EmailRequest>(postmark.LastRequest);
     }
 
+    [Fact]
+    public async Task SendEmailAsync_MapsPostmarkResponseFields()
+    {
+        var messageId = Guid.Parse("0b261aa1-6726-4d7f-8ead-13ba17bc8283");
+        var submittedAt = new DateTimeOffset(2026, 3, 10, 22, 33, 1, TimeSpan.Zero);
+        var email = Email.CreateBuilder()
+            .From("sender@example.com")
+            .To("recipient@example.com")
+            .WithTemplate(7, new { Name = "Delta" })
+            .Build();
+
+        var postmark = new RecordingPostmarkClient(new EmailResponse
+        {
+            MessageId = messageId.ToString("D"),
+            To = "recipient@example.com",
+            SubmittedAt = submittedAt,
+            ErrorCode = 0,
+            Message = "OK",
+        });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendEmailAsync(email, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal(messageId, response.MessageId);
+        Assert.Equal("<0b261aa1-6726-4d7f-8ead-13ba17bc8283@mtasv.net>", response.InternetMessageId);
+        Assert.Equal("recipient@example.com", response.To);
+        Assert.Equal(submittedAt, response.SubmittedAt);
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_WithoutSubmittedAt_ReturnsFailure()
+    {
+        var email = Email.CreateBuilder()
+            .From("sender@example.com")
+            .To("recipient@example.com")
+            .WithTemplate(7, new { Name = "Echo" })
+            .Build();
+
+        var postmark = new RecordingPostmarkClient(new EmailResponse
+        {
+            MessageId = Guid.NewGuid()
+                .ToString("D"),
+            ErrorCode = 0,
+            Message = "OK",
+        });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendEmailAsync(email, CancellationToken.None);
+
+        Assert.True(result.IsFailure(), result.ToString());
+        Assert.Contains("SubmittedAt was not returned", result.ToString(), StringComparison.Ordinal);
+    }
+
     private sealed class RecordingPostmarkClient : IPostmarkClient
     {
+        private readonly EmailResponse _response;
+
+        public RecordingPostmarkClient()
+            : this(new EmailResponse
+            {
+                MessageId = Guid.NewGuid()
+                    .ToString(),
+                SubmittedAt = DateTimeOffset.UtcNow,
+                ErrorCode = 0,
+                Message = "",
+            })
+        {
+        }
+
+        public RecordingPostmarkClient(EmailResponse response)
+        {
+            _response = response;
+        }
+
         public string? LastEndpoint { get; private set; }
 
         public object? LastRequest { get; private set; }
@@ -77,15 +152,7 @@ public class EmailBuilderTemplateTests
             if (typeof(TResponse) != typeof(EmailResponse))
                 throw new InvalidOperationException("Unexpected response type.");
 
-            var response = new EmailResponse
-            {
-                MessageId = Guid.NewGuid()
-                    .ToString(),
-                ErrorCode = 0,
-                Message = "",
-            };
-
-            return Task.FromResult(Result.Success((TResponse)(object)response));
+            return Task.FromResult(Result.Success((TResponse)(object)_response));
         }
     }
 

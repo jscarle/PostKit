@@ -173,11 +173,15 @@ var reminderEmail = Email.CreateBuilder()
 
 var batchResult = await _postKitClient.SendEmailBatchAsync(new[] { welcomeEmail, reminderEmail });
 
-if (!batchResult.IsSuccessful)
+if (batchResult.IsSuccess(out var batchResponse))
 {
-    foreach (var result in batchResult.Results.Where(result => !result.IsSuccessful))
+    if (!batchResponse.IsSuccessful)
     {
-        // Inspect result.Email and result.Message to handle the failure.
+        foreach (var result in batchResponse.Results.Where(static result => !result.IsSuccess()))
+        {
+            if (result.IsFailure(out var error, out _) && error is PostmarkError postmarkError)
+                Console.WriteLine($"Batch item failed: {postmarkError.ErrorCode} - {postmarkError.Message}");
+        }
     }
 }
 ```
@@ -245,6 +249,7 @@ if (result.IsSuccess(out var response, out var error))
 {
     // Email sent successfully
     Console.WriteLine($"Email sent with MessageId: {response.MessageId}");
+    Console.WriteLine($"Internet Message-Id: {response.InternetMessageId}");
 }
 else
 {
@@ -266,7 +271,7 @@ if (error is HttpError httpError)
 }
 ```
 
-**PostmarkError** - Returned for Postmark API validation errors (422 status code):
+**PostmarkError** - Returned for Postmark API validation errors (422 status code), and for per-email failures inside a successful batch request:
 
 ```csharp
 if (error is PostmarkError postmarkError)

@@ -248,12 +248,12 @@ public interface IEmailBuilder
     /// <param name="templateModel">The template model data.</param>
     /// <param name="inlineCss">Whether CSS should be inlined.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IEmailBuilder WithTemplate(int templateId, object? templateModel = null, bool? inlineCss = null);
+    IEmailBuilder WithTemplate(int templateId, object templateModel, bool? inlineCss = null);
 
     /// <summary>Applies a template to the email using an alias.</summary>
     /// <param name="templateAlias">The template alias.</param>
     /// <param name="templateModel">The template model data.</param>
     /// <param name="inlineCss">Whether CSS should be inlined.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IEmailBuilder WithTemplate(string templateAlias, object? templateModel = null, bool? inlineCss = null);
+    IEmailBuilder WithTemplate(string templateAlias, object templateModel, bool? inlineCss = null);
 }

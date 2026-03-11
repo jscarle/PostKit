@@ -21,7 +21,7 @@ partial class EmailBuilder
     private bool? _inlineCss;
 
     /// <inheritdoc/>
-    public IEmailBuilder WithTemplate(int templateId, object? templateModel, bool? inlineCss = null)
+    public IEmailBuilder WithTemplate(int templateId, object templateModel, bool? inlineCss = null)
     {
         _subject.EnsureNotSet(nameof(Email.Subject));
         _htmlBody.EnsureNotSet(nameof(Email.HtmlBody));
@@ -34,6 +34,8 @@ partial class EmailBuilder
         if (templateId <= 0)
             throw new ArgumentException("The template ID must be greater than zero.", nameof(templateId));
 
+        ArgumentNullException.ThrowIfNull(templateModel);
+
         _templateId = templateId;
         _templateModel = templateModel;
         _inlineCss = inlineCss;
@@ -42,7 +44,7 @@ partial class EmailBuilder
     }
 
     /// <inheritdoc/>
-    public IEmailBuilder WithTemplate(string templateAlias, object? templateModel, bool? inlineCss = null)
+    public IEmailBuilder WithTemplate(string templateAlias, object templateModel, bool? inlineCss = null)
     {
         _subject.EnsureNotSet(nameof(Email.Subject));
         _htmlBody.EnsureNotSet(nameof(Email.HtmlBody));
@@ -54,6 +56,8 @@ partial class EmailBuilder
 
         if (string.IsNullOrWhiteSpace(templateAlias))
             throw new ArgumentException("The template alias is required.", nameof(templateAlias));
+
+        ArgumentNullException.ThrowIfNull(templateModel);
 
         if (templateAlias.Length > TemplateAliasMaxLength)
             throw new ArgumentException($"The template alias must not exceed {TemplateAliasMaxLength} characters.", nameof(templateAlias));

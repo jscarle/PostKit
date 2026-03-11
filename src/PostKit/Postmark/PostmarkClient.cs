@@ -106,24 +106,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             var httpError = new HttpError(HttpStatusCode.ServiceUnavailable, "The Postmark API is currently unavailable.");
             return Result.Failure<TResponse>(httpError);
         }
-        
-        string responseBody;
-        try
-        {
-            responseBody = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
-        }
-        catch
-        {
-            responseBody = "";
-        }
-        var metadata = new Dictionary<string, object?>
-        {
-            { "Headers", responseMessage.Headers },
-            { "Body", responseBody },
-        };
-        var genericHttpError = new HttpError(responseMessage.StatusCode, $"An '{(int)responseMessage.StatusCode} {responseMessage.ReasonPhrase}' error occurred while processing the request to the '{endpoint}' endpoint of the Postmark API.",
-            metadata
-        );
+        var genericHttpError = new HttpError(responseMessage.StatusCode, $"An '{(int)responseMessage.StatusCode} {responseMessage.ReasonPhrase}' error occurred while processing the request to the '{endpoint}' endpoint of the Postmark API.");
         return Result.Failure<TResponse>(genericHttpError);
     }
 

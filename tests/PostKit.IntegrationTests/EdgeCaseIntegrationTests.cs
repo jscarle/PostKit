@@ -26,7 +26,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -184,7 +184,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -225,7 +225,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -244,7 +244,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -285,7 +285,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -311,7 +311,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -335,7 +335,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -359,7 +359,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -381,7 +381,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -402,10 +402,11 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Single(batchResponse.Results);
         var result0 = batchResponse.Results[0];
-        Assert.NotNull(result0.Response);
-        Assert.NotEmpty(result0.Response.MessageId);
+        Assert.True(result0.IsSuccess(out var response0), result0.ToString());
+        Assert.NotEqual(Guid.Empty, response0.MessageId);
     }
 
     [Fact]
@@ -424,7 +425,7 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -479,6 +480,6 @@ public class EdgeCaseIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 }

@@ -21,7 +21,10 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
+        Assert.Equal($"<{response.MessageId:D}@mtasv.net>", response.InternetMessageId);
+        Assert.Equal(TestConfiguration.TestToEmail, response.To);
+        Assert.NotEqual(default, response.SubmittedAt);
     }
 
     [Fact]
@@ -40,7 +43,8 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
+        Assert.Null(response.To);
     }
 
     [Fact]
@@ -60,7 +64,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -80,7 +84,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -100,7 +104,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -120,7 +124,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -140,7 +144,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -160,7 +164,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -181,7 +185,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -202,7 +206,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -222,7 +226,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -242,7 +246,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -265,7 +269,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -289,7 +293,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -309,7 +313,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -328,7 +332,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -347,7 +351,7 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact]
@@ -381,6 +385,6 @@ public class SendEmailIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 }

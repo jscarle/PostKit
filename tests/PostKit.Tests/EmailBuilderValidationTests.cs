@@ -128,7 +128,7 @@ public class EmailBuilderValidationTests
                     .From("sender@example.com")
                     .To("recipient@example.com")
                     .WithSubject("Body and Template Conflict")
-                    .WithTemplate(41813873)
+                    .WithTemplate(41813873, new { name = "Alice" })
                     .Build();
             }
         );
@@ -146,7 +146,7 @@ public class EmailBuilderValidationTests
                     .From("sender@example.com")
                     .To("recipient@example.com")
                     .WithTextBody("This should fail when combining body with template.")
-                    .WithTemplate(41813873)
+                    .WithTemplate(41813873, new { name = "Alice" })
                     .Build();
             }
         );
@@ -164,7 +164,7 @@ public class EmailBuilderValidationTests
                     .From("sender@example.com")
                     .To("recipient@example.com")
                     .WithHtmlBody("This should fail when combining body with template.")
-                    .WithTemplate(41813873)
+                    .WithTemplate(41813873, new { name = "Alice" })
                     .Build();
             }
         );
@@ -280,17 +280,17 @@ public class EmailBuilderValidationTests
     }
 
     [Fact]
-    public void EmailBuilder_WithNullTemplateModel_Succeeds()
+    public void EmailBuilder_WithNullTemplateModel_ThrowsException()
     {
-        // Arrange & Act
-        var email = Email.CreateBuilder()
-            .From("sender@example.com")
-            .To("recipient@example.com")
-            .WithTemplate(41813873)
-            .Build();
-
-        // Assert
-        Assert.NotNull(email);
-        Assert.Null(email.TemplateModel);
+        // Arrange & Act & Assert
+        Assert.Throws<ArgumentNullException>(() =>
+            {
+                Email.CreateBuilder()
+                    .From("sender@example.com")
+                    .To("recipient@example.com")
+                    .WithTemplate(41813873, null!)
+                    .Build();
+            }
+        );
     }
 }

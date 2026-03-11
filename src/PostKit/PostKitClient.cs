@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using MimeKit;
 using PostKit.Common;
+using PostKit.Errors;
 using PostKit.Postmark;
 using PostKit.Postmark.Email;
 using PostKit.Responses;
@@ -45,7 +46,13 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
         if (emailResponse.MessageId is null)
             return Result.Failure<SendEmailResponse>("Message ID was not returned from the Postmark API.");
 
-        var sendEmailResponse = new SendEmailResponse(emailResponse.MessageId);
+        if (!Guid.TryParse(emailResponse.MessageId, out var parsedMessageId))
+            return Result.Failure<SendEmailResponse>("Message ID returned from the Postmark API was not a valid GUID.");
+
+        if (emailResponse.SubmittedAt is null)
+            return Result.Failure<SendEmailResponse>("SubmittedAt was not returned from the Postmark API.");
+
+        var sendEmailResponse = new SendEmailResponse(parsedMessageId, emailResponse.To, emailResponse.SubmittedAt.Value);
 
         return Result.Success(sendEmailResponse);
     }
@@ -113,33 +120,38 @@ internal sealed partial class PostKitClient(IPostmarkClient postmark, ILogger<Po
         if (emailResponses.Count != emailList.Count)
             return Result.Failure<SendEmailBatchResponse>("Postmark returned an unexpected number of results for the batch request.");
 
-        var batchResults = new List<SendEmailBatchResult>(emailResponses.Count);
+        var batchResults = new List<Result<SendEmailResponse>>(emailResponses.Count);
 
         for (var index = 0; index < emailResponses.Count; index++)
         {
             var email = emailList[index];
             var emailResponse = emailResponses[index];
 
-            SendEmailResponse? sendEmailResponse = null;
-            if (emailResponse.MessageId is not null)
-                sendEmailResponse = new SendEmailResponse(emailResponse.MessageId);
-
-            var batchResult = new SendEmailBatchResult(email, emailResponse.Message, emailResponse.ErrorCode, emailResponse.To, emailResponse.SubmittedAt, sendEmailResponse);
-
-            batchResults.Add(batchResult);
-
-            if (batchResult.IsSuccessful)
+            if (emailResponse.ErrorCode == 0)
             {
+                if (emailResponse.MessageId is null)
+                    return Result.Failure<SendEmailBatchResponse>($"Message ID was not returned from the Postmark API for batch item {index}.");
+
+                if (!Guid.TryParse(emailResponse.MessageId, out var parsedMessageId))
+                    return Result.Failure<SendEmailBatchResponse>($"Message ID returned from the Postmark API for batch item {index} was not a valid GUID.");
+
+                if (emailResponse.SubmittedAt is null)
+                    return Result.Failure<SendEmailBatchResponse>($"SubmittedAt was not returned from the Postmark API for batch item {index}.");
+
                 if (email.To is not null)
                     LogEmailSent(email.To, emailResponse);
                 else if (email.Cc is not null)
                     LogEmailSent(email.Cc, emailResponse);
                 else if (email.Bcc is not null)
                     LogEmailSent(email.Bcc, emailResponse);
+
+                var sendEmailResponse = new SendEmailResponse(parsedMessageId, emailResponse.To, emailResponse.SubmittedAt.Value);
+                batchResults.Add(Result.Success(sendEmailResponse));
             }
             else
             {
                 LogBatchEmailFailure(index, emailResponse.Message, emailResponse.ErrorCode);
+                batchResults.Add(Result.Failure<SendEmailResponse>(new PostmarkError(emailResponse.ErrorCode, emailResponse.Message)));
             }
         }
 

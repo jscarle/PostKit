@@ -16,11 +16,16 @@ public sealed class PostmarkError : HttpError
     private static readonly int[] ValidErrorCodes = (int[])Enum.GetValuesAsUnderlyingType<PostmarkErrorCode>();
 
     internal PostmarkError(PostmarkResponse response)
-        : base(HttpStatusCode.UnprocessableEntity, response.Message)
+        : this(response.ErrorCode, response.Message)
     {
-        if (!ValidErrorCodes.Contains(response.ErrorCode))
+    }
+
+    internal PostmarkError(int errorCode, string message)
+        : base(HttpStatusCode.UnprocessableEntity, message)
+    {
+        if (!ValidErrorCodes.Contains(errorCode))
             throw new InvalidOperationException("The Postmark error code is not defined.");
 
-        ErrorCode = (PostmarkErrorCode)response.ErrorCode;
+        ErrorCode = (PostmarkErrorCode)errorCode;
     }
 }

@@ -1,188 +1,614 @@
-﻿openapi: 3.1.0
+---
+openapi: "3.0.3"
 info:
-  title: Postmark API (Reconstructed from API Explorer)
-  version: "1.0.0-reconstruction"
-  description: |
-    Best-effort OpenAPI 3.1 reconstruction of the Postmark API based on the public
-    API Explorer UI and documentation.
-
-    This spec intentionally avoids inventing fields that are not visible in
-    Postmark’s public explorer/examples. Some schemas are intentionally loose.
-
+  title: "Postmark API"
+  version: "2026-03-10-docs-reconstruction"
+  description: "Merged from the live Postmark API Explorer Swagger plus developer
+    docs and llms.txt patches as of 2026-03-10."
 servers:
-  - url: https://api.postmarkapp.com
-    description: Postmark API
-
+  - url: "https://api.postmarkapp.com"
+    description: "Postmark API"
 tags:
-  - name: Email
-  - name: Bulk Email
-  - name: Messages
-  - name: Servers
-  - name: Domains
-  - name: Message Streams
-  - name: Webhooks
-  - name: Stats
-  - name: Suppressions
-  - name: Inbound
-
-components:
-  securitySchemes:
-    serverToken:
-      type: apiKey
-      in: header
-      name: X-Postmark-Server-Token
-    accountToken:
-      type: apiKey
-      in: header
-      name: X-Postmark-Account-Token
-
-  schemas:
-    EmailRequest:
-      type: object
-      properties:
-        From:
-          type: string
-        To:
-          type: string
-        Cc:
-          type: string
-        Bcc:
-          type: string
-        Subject:
-          type: string
-        HtmlBody:
-          type: string
-        TextBody:
-          type: string
-        Tag:
-          type: string
-        ReplyTo:
-          type: string
-        Headers:
-          type: array
-          items:
-            type: object
-            properties:
-              Name:
-                type: string
-              Value:
-                type: string
-        Attachments:
-          type: array
-          items:
-            type: object
-            properties:
-              Name:
-                type: string
-              Content:
-                type: string
-              ContentType:
-                type: string
-        Metadata:
-          type: object
-          additionalProperties:
-            type: string
-        MessageStream:
-          type: string
-      required:
-        - From
-        - To
-        - Subject
-
-    EmailResponse:
-      type: object
-      properties:
-        MessageID:
-          type: string
-        ErrorCode:
-          type: integer
-        Message:
-          type: string
-        SubmittedAt:
-          type: string
-          format: date-time
-        To:
-          type: string
-
-    BulkEmailRequest:
-      type: object
-      properties:
-        Messages:
-          type: array
-          items:
-            $ref: "#/components/schemas/EmailRequest"
-
-    BulkEmailResponse:
-      type: array
-      items:
-        $ref: "#/components/schemas/EmailResponse"
-
-    Server:
-      type: object
-      properties:
-        ID:
-          type: integer
-        Name:
-          type: string
-        Color:
-          type: string
-        SmtpApiActivated:
-          type: boolean
-
-    Domain:
-      type: object
-      properties:
-        ID:
-          type: integer
-        Name:
-          type: string
-        DKIMVerified:
-          type: boolean
-        SPFVerified:
-          type: boolean
-        ReturnPathDomainVerified:
-          type: boolean
-
-    MessageStream:
-      type: object
-      properties:
-        ID:
-          type: string
-        Name:
-          type: string
-        MessageStreamType:
-          type: string
-
-    Webhook:
-      type: object
-      additionalProperties: true
-
+  - name: "Email"
+  - name: "Messages"
+  - name: "Bounces"
+  - name: "Templates"
+  - name: "Message Streams"
+  - name: "Webhooks"
+  - name: "Suppressions"
+  - name: "Server Configuration"
+  - name: "Stats"
+  - name: "Inbound Rules"
+  - name: "Servers"
+  - name: "Domains"
+  - name: "Sender Signatures"
+  - name: "Data Removal"
 paths:
-
-  /email:
-    post:
-      summary: Send a single email
-      tags: [Email]
+  /bounces:
+    get:
+      operationId: "getBounces"
+      tags:
+        - "Bounces"
+      summary: "Get bounces"
+      parameters:
+        - name: "count"
+          in: "query"
+          description: "Number of bounces to return per request. Max 500."
+          required: true
+          schema:
+            type: "integer"
+            maximum: 500
+        - name: "offset"
+          description: "Number of bounces to skip."
+          in: "query"
+          required: true
+          schema:
+            type: "integer"
+        - name: "type"
+          description: "Filter by type of bounce"
+          in: "query"
+          schema:
+            type: "string"
+            enum:
+              - "HardBounce"
+              - "Transient"
+              - "Unsubscribe"
+              - "Subscribe"
+              - "AutoResponder"
+              - "AddressChange"
+              - "DnsError"
+              - "SpamNotification"
+              - "OpenRelayTest"
+              - "Unknown"
+              - "SoftBounce"
+              - "VirusNotification"
+              - "MailFrontier Matador."
+              - "BadEmailAddress"
+              - "SpamComplaint"
+              - "ManuallyDeactivated"
+              - "Unconfirmed"
+              - "Blocked"
+              - "SMTPApiError"
+              - "InboundError"
+              - "DMARCPolicy"
+              - "TemplateRenderingFailed"
+        - name: "inactive"
+          description: "Filter by emails that were deactivated by Postmark due to the
+            bounce. Set to true or false. If this isn't specified it will return
+            both active and inactive."
+          in: "query"
+          schema:
+            type: "boolean"
+        - name: "emailFilter"
+          in: "query"
+          description: "Filter by email address"
+          schema:
+            type: "string"
+            format: "email"
+        - name: "messageID"
+          description: "Filter by messageID"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "todate"
+          in: "query"
+          description: "Filter messages up to the date specified. e.g. `2014-02-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "fromdate"
+          description: "Filter messages starting from the date specified. e.g. `2014-02-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BounceSearchResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
       security:
         - serverToken: []
+  /bounces/{bounceid}:
+    get:
+      operationId: "getSingleBounce"
+      tags:
+        - "Bounces"
+      summary: "Get a single bounce"
+      parameters:
+        - name: "bounceid"
+          in: "path"
+          description: "The ID of the bounce to retrieve."
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BounceInfoResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /bounces/{bounceid}/activate:
+    put:
+      operationId: "activateBounce"
+      tags:
+        - "Bounces"
+      summary: "Activate a bounce"
+      parameters:
+        - name: "bounceid"
+          in: "path"
+          description: "The ID of the Bounce to activate."
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BounceActivationResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /bounces/{bounceid}/dump:
+    get:
+      tags:
+        - "Bounces"
+      summary: "Get bounce dump"
+      parameters:
+        - name: "bounceid"
+          in: "path"
+          description: "The ID for the bounce dump to retrieve."
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BounceDumpResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /data-removals:
+    post:
+      operationId: "createDataRemovalRequest"
+      summary: "Create a data removal request"
+      tags:
+        - "Data Removal"
+      security:
+        - accountToken: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EmailRequest"
+              $ref: "#/components/schemas/DataRemovalRequest"
       responses:
-        "200":
-          description: Email accepted
+        200:
+          description: "OK"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EmailResponse"
+                $ref: "#/components/schemas/DataRemovalStatus"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /data-removals/{id}:
+    get:
+      operationId: "getDataRemovalRequest"
+      summary: "Check a data removal request status"
+      tags:
+        - "Data Removal"
+      security:
+        - accountToken: []
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: ""
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataRemovalStatus"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /deliverystats:
+    get:
+      operationId: "getDeliveryStats"
+      summary: "Get delivery stats"
+      tags:
+        - "Bounces"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryStatsResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /domains:
+    get:
+      operationId: "listDomains"
+      summary: "List Domains"
+      tags:
+        - "Domains"
+      parameters:
+        - name: "count"
+          required: true
+          in: "query"
+          description: "Number of records to return per request. Max 500."
+          schema:
+            type: "integer"
+            minimum: 1
+            maximum: 500
+        - name: "offset"
+          required: true
+          description: "Number of records to skip"
+          in: "query"
+          schema:
+            type: "integer"
+            minimum: 0
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainListingResults"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+    post:
+      operationId: "createDomain"
+      summary: "Create a Domain"
+      tags:
+        - "Domains"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DomainCreationModel"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainExtendedInformation"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /domains/{domainid}:
+    get:
+      operationId: "getDomain"
+      tags:
+        - "Domains"
+      summary: "Get a Domain"
+      parameters:
+        - name: "domainid"
+          in: "path"
+          description: "The ID for the Domain that should be retrieved."
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainExtendedInformation"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+    put:
+      operationId: "editDomain"
+      tags:
+        - "Domains"
+      summary: "Update a Domain"
+      parameters:
+        - name: "domainid"
+          in: "path"
+          description: "The ID for the Domain that should be modified by the request."
+          required: true
+          schema:
+            type: "integer"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DomainEditingModel"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainExtendedInformation"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+    delete:
+      operationId: "deleteDomain"
+      tags:
+        - "Domains"
+      summary: "Delete a Domain"
+      parameters:
+        - name: "domainid"
+          in: "path"
+          required: true
+          description: "The ID for the Domain that should be deleted by the request."
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardPostmarkResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /domains/{domainid}/rotatedkim:
+    post:
+      operationId: "rotateDKIMKeyForDomain"
+      tags:
+        - "Domains"
+      summary: "Rotate DKIM Key"
+      description: "Creates a new DKIM key to replace your current key. Until the DNS
+        entries are confirmed,
 
+        the new values will be in the `DKIMPendingHost` and
+        `DKIMPendingTextValue` fields.
+
+        After the new DKIM value is verified in DNS, the pending values will
+        migrate to
+
+        `DKIMTextValue` and `DKIMPendingTextValue` and Postmark will begin to
+        sign emails
+
+        with the new DKIM key.\n"
+      parameters:
+        - name: "domainid"
+          in: "path"
+          description: "The ID for the Sender Signature for which a new DKIM Key should be
+            generated."
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DKIMRotationResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /domains/{domainid}/verifydkim:
+    put:
+      operationId: "requestDkimVerificationForDomain"
+      tags:
+        - "Domains"
+      summary: "Request DNS Verification for DKIM"
+      parameters:
+        - name: "domainid"
+          in: "path"
+          required: true
+          description: "The ID for the Domain for which DKIM DNS records should be
+            verified."
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainExtendedInformation"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /domains/{domainid}/verifyreturnpath:
+    put:
+      operationId: "requestReturnPathVerificationForDomain"
+      tags:
+        - "Domains"
+      summary: "Request DNS Verification for Return-Path"
+      parameters:
+        - name: "domainid"
+          in: "path"
+          required: true
+          description: "The ID for the Domain for which Return-Path DNS records should be
+            verified."
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainExtendedInformation"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /domains/{domainid}/verifyspf:
+    post:
+      operationId: "requestSPFVerificationForDomain"
+      tags:
+        - "Domains"
+      summary: "Request DNS Verification for SPF"
+      parameters:
+        - name: "domainid"
+          in: "path"
+          required: true
+          description: "The ID for the Domain for which SPF DNS records should be verified."
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainSPFResult"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /email:
+    post:
+      operationId: "sendEmail"
+      tags:
+        - "Email"
+      summary: "Send a single email"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendEmailRequest"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendEmailResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
   /email/batch:
     post:
-      summary: Send batch emails
-      tags: [Bulk Email]
+      operationId: "sendEmailBatch"
+      tags:
+        - "Email"
+      summary: "Send a batch of emails"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendEmailBatchRequest"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendEmailBatchResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /email/batchWithTemplates:
+    post:
+      operationId: "sendEmailBatchWithTemplates"
+      tags:
+        - "Email"
+        - "Templates"
+      summary: "Send a batch of email using templates."
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendEmailTemplatedBatchRequest"
+        required: true
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendEmailBatchResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /email/bulk:
+    post:
+      operationId: "sendBulkEmail"
+      summary: "Send bulk email"
+      tags:
+        - "Email"
       security:
         - serverToken: []
       requestBody:
@@ -192,234 +618,4246 @@ paths:
             schema:
               $ref: "#/components/schemas/BulkEmailRequest"
       responses:
-        "200":
-          description: Batch response
+        200:
+          description: "OK"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BulkEmailResponse"
-
-  /messages/outbound:
+                $ref: "#/components/schemas/BulkEmailSubmitResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /email/bulk/{bulkRequestId}:
     get:
-      summary: List outbound messages
-      tags: [Messages]
+      operationId: "getBulkEmailStatus"
+      summary: "Get bulk email request status"
+      tags:
+        - "Email"
       security:
         - serverToken: []
       parameters:
-        - in: query
-          name: count
-          schema:
-            type: integer
-        - in: query
-          name: offset
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Outbound messages
-          content:
-            application/json:
-              schema:
-                type: object
-
-  /messages/outbound/{messageid}:
-    get:
-      summary: Get outbound message details
-      tags: [Messages]
-      security:
-        - serverToken: []
-      parameters:
-        - name: messageid
-          in: path
+        - name: "bulkRequestId"
+          in: "path"
           required: true
+          description: ""
           schema:
-            type: string
+            type: "string"
       responses:
-        "200":
-          description: Message detail
+        200:
+          description: "OK"
           content:
             application/json:
               schema:
-                type: object
-
-  /servers:
-    get:
-      summary: List servers
-      tags: [Servers]
-      security:
-        - accountToken: []
-      responses:
-        "200":
-          description: Server list
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Server"
-
+                $ref: "#/components/schemas/BulkEmailStatusResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /email/withTemplate:
     post:
-      summary: Create server
-      tags: [Servers]
-      security:
-        - accountToken: []
+      operationId: "sendEmailWithTemplate"
+      tags:
+        - "Email"
+        - "Templates"
+      summary: "Send an email using a Template"
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Server"
+              $ref: "#/components/schemas/EmailWithTemplateRequest"
+        required: true
       responses:
-        "200":
-          description: Created server
+        200:
+          description: "OK"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Server"
-
-  /servers/{serverid}:
-    get:
-      summary: Get server
-      tags: [Servers]
+                $ref: "#/components/schemas/SendEmailResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
       security:
-        - accountToken: []
-      parameters:
-        - name: serverid
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Server info
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Server"
-
-    delete:
-      summary: Delete server
-      tags: [Servers]
-      security:
-        - accountToken: []
-      parameters:
-        - name: serverid
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Deleted
-
-  /domains:
-    get:
-      summary: List domains
-      tags: [Domains]
-      security:
-        - accountToken: []
-      responses:
-        "200":
-          description: Domains
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Domain"
-
-    post:
-      summary: Create domain
-      tags: [Domains]
-      security:
-        - accountToken: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Domain"
-      responses:
-        "200":
-          description: Domain created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Domain"
-
+        - serverToken: []
   /message-streams:
     get:
-      summary: List message streams
-      tags: [Message Streams]
-      security:
-        - serverToken: []
-      responses:
-        "200":
-          description: Streams
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/MessageStream"
-
-  /webhooks:
-    get:
-      summary: List webhooks
-      tags: [Webhooks]
-      security:
-        - serverToken: []
-      responses:
-        "200":
-          description: Webhooks
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Webhook"
-
-  /stats/outbound:
-    get:
-      summary: Get outbound stats
-      tags: [Stats]
+      operationId: "listMessageStreams"
+      summary: "List message streams"
+      tags:
+        - "Message Streams"
       security:
         - serverToken: []
       parameters:
-        - name: tag
-          in: query
+        - name: "MessageStreamType"
+          in: "query"
           schema:
-            type: string
+            type: "string"
+            enum:
+              - "All"
+              - "Inbound"
+              - "Transactional"
+              - "Broadcasts"
+        - name: "IncludeArchivedStreams"
+          in: "query"
+          schema:
+            type: "boolean"
       responses:
-        "200":
-          description: Stats response
+        200:
+          description: "OK"
           content:
             application/json:
               schema:
-                type: object
-
-  /suppressions/bounces:
-    get:
-      summary: List bounce suppressions
-      tags: [Suppressions]
+                $ref: "#/components/schemas/MessageStreamListResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+    post:
+      operationId: "createMessageStream"
+      summary: "Create a message stream"
+      tags:
+        - "Message Streams"
       security:
         - serverToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageStreamCreateRequest"
       responses:
-        "200":
-          description: Bounce list
+        200:
+          description: "OK"
           content:
             application/json:
               schema:
-                type: object
-
-  /inbound/rules:
+                $ref: "#/components/schemas/MessageStream"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /message-streams/{streamId}:
     get:
-      summary: List inbound rules
-      tags: [Inbound]
+      operationId: "getMessageStream"
+      summary: "Get a message stream"
+      tags:
+        - "Message Streams"
       security:
         - serverToken: []
+      parameters:
+        - name: "streamId"
+          in: "path"
+          required: true
+          description: ""
+          schema:
+            type: "string"
       responses:
-        "200":
-          description: Inbound rules
+        200:
+          description: "OK"
           content:
             application/json:
               schema:
-                type: object
+                $ref: "#/components/schemas/MessageStream"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+    patch:
+      operationId: "updateMessageStream"
+      summary: "Edit a message stream"
+      tags:
+        - "Message Streams"
+      security:
+        - serverToken: []
+      parameters:
+        - name: "streamId"
+          in: "path"
+          required: true
+          description: ""
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageStreamUpdateRequest"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageStream"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /message-streams/{streamId}/archive:
+    post:
+      operationId: "archiveMessageStream"
+      summary: "Archive a message stream"
+      tags:
+        - "Message Streams"
+      security:
+        - serverToken: []
+      parameters:
+        - name: "streamId"
+          in: "path"
+          required: true
+          description: ""
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageStreamArchiveResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /message-streams/{streamId}/suppressions:
+    post:
+      operationId: "createSuppressions"
+      summary: "Create suppressions"
+      tags:
+        - "Suppressions"
+      security:
+        - serverToken: []
+      parameters:
+        - name: "streamId"
+          in: "path"
+          required: true
+          description: ""
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuppressionRequest"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuppressionBatchResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /message-streams/{streamId}/suppressions/delete:
+    post:
+      operationId: "deleteSuppressions"
+      summary: "Delete suppressions"
+      tags:
+        - "Suppressions"
+      security:
+        - serverToken: []
+      parameters:
+        - name: "streamId"
+          in: "path"
+          required: true
+          description: ""
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuppressionRequest"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuppressionBatchResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /message-streams/{streamId}/suppressions/dump:
+    get:
+      operationId: "dumpSuppressions"
+      summary: "Dump suppressions"
+      tags:
+        - "Suppressions"
+      security:
+        - serverToken: []
+      parameters:
+        - name: "streamId"
+          in: "path"
+          required: true
+          description: ""
+          schema:
+            type: "string"
+        - name: "SuppressionReason"
+          in: "query"
+          schema:
+            type: "string"
+            enum:
+              - "HardBounce"
+              - "SpamComplaint"
+              - "ManualSuppression"
+        - name: "Origin"
+          in: "query"
+          schema:
+            type: "string"
+            enum:
+              - "Recipient"
+              - "Customer"
+              - "Admin"
+        - name: "todate"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date-time"
+        - name: "fromdate"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date-time"
+        - name: "EmailAddress"
+          in: "query"
+          schema:
+            type: "string"
+            format: "email"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuppressionDumpResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /message-streams/{streamId}/unarchive:
+    post:
+      operationId: "unarchiveMessageStream"
+      summary: "Unarchive a message stream"
+      tags:
+        - "Message Streams"
+      security:
+        - serverToken: []
+      parameters:
+        - name: "streamId"
+          in: "path"
+          required: true
+          description: ""
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageStream"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /messages/inbound:
+    get:
+      operationId: "searchInboundMessages"
+      tags:
+        - "Messages"
+      summary: "Inbound message search"
+      parameters:
+        - name: "count"
+          in: "query"
+          required: true
+          description: "Number of messages to return per request. Max 500."
+          schema:
+            type: "integer"
+        - name: "offset"
+          description: "Number of messages to skip"
+          required: true
+          in: "query"
+          schema:
+            type: "integer"
+        - name: "recipient"
+          description: "Filter by the user who was receiving the email"
+          in: "query"
+          schema:
+            type: "string"
+            format: "email"
+        - name: "fromemail"
+          description: "Filter by the sender email address"
+          in: "query"
+          schema:
+            type: "string"
+            format: "email"
+        - name: "subject"
+          description: "Filter by email subject"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "mailboxhash"
+          description: "Filter by mailboxhash"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "tag"
+          in: "query"
+          description: "Filter by tag"
+          schema:
+            type: "string"
+        - name: "status"
+          description: "Filter by status (`blocked`, `processed`, `queued`, `failed`,
+            `scheduled`)"
+          in: "query"
+          schema:
+            type: "string"
+            enum:
+              - "blocked"
+              - "processed"
+              - "queued"
+              - "failed"
+              - "scheduled"
+        - name: "todate"
+          in: "query"
+          description: "Filter messages up to the date specified. e.g. `2014-02-01`"
+          schema:
+            type: "string"
+            format: "date-time"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter messages starting from the date specified. e.g. `2014-02-01`"
+          schema:
+            type: "string"
+            format: "date-time"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InboundSearchResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /messages/inbound/{messageid}/bypass:
+    put:
+      operationId: "bypassRulesForInboundMessage"
+      tags:
+        - "Messages"
+      summary: "Bypass rules for a blocked inbound message"
+      parameters:
+        - name: "messageid"
+          description: "The ID of the message which should bypass inbound rules."
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardPostmarkResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /messages/inbound/{messageid}/details:
+    get:
+      operationId: "getInboundMessageDetails"
+      tags:
+        - "Messages"
+      summary: "Inbound message details"
+      parameters:
+        - name: "messageid"
+          description: "The ID of the message for which to details will be retrieved."
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InboundMessageFullDetailsResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /messages/inbound/{messageid}/retry:
+    put:
+      operationId: "retryInboundMessageProcessing"
+      tags:
+        - "Messages"
+      summary: "Retry a failed inbound message for processing"
+      parameters:
+        - name: "messageid"
+          in: "path"
+          description: "The ID of the inbound message on which we should retry processing."
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardPostmarkResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /messages/outbound:
+    get:
+      operationId: "searchOutboundMessages"
+      tags:
+        - "Messages"
+      summary: "Outbound message search"
+      parameters:
+        - name: "count"
+          description: "Number of messages to return per request. Max 500."
+          in: "query"
+          required: true
+          schema:
+            type: "integer"
+        - name: "offset"
+          description: "Number of messages to skip"
+          required: true
+          in: "query"
+          schema:
+            type: "integer"
+        - name: "recipient"
+          description: "Filter by the user who was receiving the email"
+          in: "query"
+          schema:
+            type: "string"
+            format: "email"
+        - name: "fromemail"
+          description: "Filter by the sender email address"
+          in: "query"
+          schema:
+            type: "string"
+            format: "email"
+        - name: "tag"
+          in: "query"
+          description: "Filter by tag"
+          schema:
+            type: "string"
+        - name: "status"
+          in: "query"
+          description: "Filter by status (`queued` or `sent`)"
+          schema:
+            type: "string"
+            enum:
+              - "queued"
+              - "sent"
+              - "processed"
+        - name: "todate"
+          in: "query"
+          description: "Filter messages up to the date specified. e.g. `2014-02-01`"
+          schema:
+            type: "string"
+            format: "date-time"
+        - name: "fromdate"
+          description: "Filter messages starting from the date specified. e.g. `2014-02-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date-time"
+        - name: "subject"
+          in: "query"
+          schema:
+            type: "string"
+          description: ""
+        - name: "messagestream"
+          in: "query"
+          schema:
+            type: "string"
+          description: ""
+        - name: "metadata_"
+          in: "query"
+          schema:
+            type: "string"
+          description: "Dynamic metadata filter prefix, for example metadata_color."
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutboundSearchResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /messages/outbound/clicks:
+    get:
+      operationId: "searchClicksForOutboundMessages"
+      tags:
+        - "Messages"
+      summary: "Clicks for a all messages"
+      parameters:
+        - name: "count"
+          in: "query"
+          description: "Number of message clicks to return per request. Max 500."
+          required: true
+          schema:
+            type: "integer"
+        - name: "offset"
+          description: "Number of messages to skip"
+          in: "query"
+          required: true
+          schema:
+            type: "integer"
+        - name: "recipient"
+          description: "Filter by To, Cc, Bcc"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "client_name"
+          description: "Filter by client name, i.e. Outlook, Gmail"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "client_company"
+          description: "Filter by company, i.e. Microsoft, Apple, Google"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "client_family"
+          description: "Filter by client family, i.e. OS X, Chrome"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "os_name"
+          description: "Filter by full OS name and specific version, i.e. OS X 10.9
+            Mavericks, Windows 7"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "os_family"
+          description: "Filter by kind of OS used without specific version, i.e. OS X,
+            Windows"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "os_company"
+          description: "Filter by company which produced the OS, i.e. Apple Computer,
+            Inc., Microsoft Corporation"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "platform"
+          description: "Filter by platform, i.e. webmail, desktop, mobile"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "country"
+          description: "Filter by country messages were opened in, i.e. Denmark, Russia"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "region"
+          description: "Filter by full name of region messages were opened in, i.e.
+            Moscow, New York"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "city"
+          description: "Filter by full name of region messages were opened in, i.e.
+            Moscow, New York"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "messagestream"
+          in: "query"
+          schema:
+            type: "string"
+          description: ""
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageClickSearchResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /messages/outbound/clicks/{messageid}:
+    get:
+      operationId: "getClicksForSingleOutboundMessage"
+      tags:
+        - "Messages"
+      summary: "Retrieve Message Clicks"
+      parameters:
+        - name: "messageid"
+          description: "The ID of the Outbound Message for which click statistics should
+            be retrieved."
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+        - name: "count"
+          in: "query"
+          description: "Number of message clicks to return per request. Max 500."
+          required: true
+          schema:
+            type: "integer"
+            minimum: 1
+            maximum: 500
+            default: 1
+        - name: "offset"
+          in: "query"
+          description: "Number of messages to skip."
+          required: true
+          schema:
+            type: "integer"
+            minimum: 0
+            default: 0
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageClickSearchResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /messages/outbound/opens:
+    get:
+      operationId: "searchOpensForOutboundMessages"
+      tags:
+        - "Messages"
+      summary: "Opens for all messages"
+      parameters:
+        - name: "count"
+          in: "query"
+          description: "Number of message opens to return per request. Max 500."
+          required: true
+          schema:
+            type: "integer"
+        - name: "offset"
+          description: "Number of messages to skip"
+          in: "query"
+          required: true
+          schema:
+            type: "integer"
+        - name: "recipient"
+          description: "Filter by To, Cc, Bcc"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "client_name"
+          description: "Filter by client name, i.e. Outlook, Gmail"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "client_company"
+          description: "Filter by company, i.e. Microsoft, Apple, Google"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "client_family"
+          description: "Filter by client family, i.e. OS X, Chrome"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "os_name"
+          description: "Filter by full OS name and specific version, i.e. OS X 10.9
+            Mavericks, Windows 7"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "os_family"
+          description: "Filter by kind of OS used without specific version, i.e. OS X,
+            Windows"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "os_company"
+          description: "Filter by company which produced the OS, i.e. Apple Computer,
+            Inc., Microsoft Corporation"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "platform"
+          description: "Filter by platform, i.e. webmail, desktop, mobile"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "country"
+          description: "Filter by country messages were opened in, i.e. Denmark, Russia"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "region"
+          description: "Filter by full name of region messages were opened in, i.e.
+            Moscow, New York"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "city"
+          description: "Filter by full name of region messages were opened in, i.e.
+            Moscow, New York"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+        - name: "messagestream"
+          in: "query"
+          schema:
+            type: "string"
+          description: ""
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOpenSearchResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /messages/outbound/opens/{messageid}:
+    get:
+      operationId: "getOpensForSingleOutboundMessage"
+      tags:
+        - "Messages"
+      summary: "Retrieve Message Opens"
+      parameters:
+        - name: "messageid"
+          description: "The ID of the Outbound Message for which open statistics should be
+            retrieved."
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+        - name: "count"
+          in: "query"
+          description: "Number of message opens to return per request. Max 500."
+          required: true
+          schema:
+            type: "integer"
+            minimum: 1
+            maximum: 500
+            default: 1
+        - name: "offset"
+          in: "query"
+          description: "Number of messages to skip."
+          required: true
+          schema:
+            type: "integer"
+            minimum: 0
+            default: 0
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageOpenSearchResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /messages/outbound/{messageid}/details:
+    get:
+      operationId: "getOutboundMessageDetails"
+      tags:
+        - "Messages"
+      summary: "Outbound message details"
+      parameters:
+        - name: "messageid"
+          description: "The ID of the message for which to retrieve details."
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutboundMessageDetailsResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /messages/outbound/{messageid}/dump:
+    get:
+      operationId: "getOutboundMessageDump"
+      tags:
+        - "Messages"
+      summary: "Outbound message dump"
+      parameters:
+        - name: "messageid"
+          description: "The ID of the message for which to retrieve a dump."
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutboundMessageDumpResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /senders:
+    get:
+      operationId: "listSenderSignatures"
+      summary: "List Sender Signatures"
+      tags:
+        - "Sender Signatures"
+      parameters:
+        - name: "count"
+          required: true
+          in: "query"
+          description: "Number of records to return per request. Max 500."
+          schema:
+            type: "integer"
+            minimum: 1
+            maximum: 500
+        - name: "offset"
+          required: true
+          description: "Number of records to skip"
+          in: "query"
+          schema:
+            type: "integer"
+            minimum: 0
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SenderListingResults"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+    post:
+      operationId: "createSenderSignature"
+      summary: "Create a Sender Signature"
+      tags:
+        - "Sender Signatures"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SenderSignatureCreationModel"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SenderSignatureExtendedInformation"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /senders/{signatureid}:
+    get:
+      operationId: "getSenderSignature"
+      tags:
+        - "Sender Signatures"
+      summary: "Get a Sender Signature"
+      parameters:
+        - name: "signatureid"
+          in: "path"
+          description: "The ID for the Sender Signature that should be retrieved."
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SenderSignatureExtendedInformation"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+    put:
+      operationId: "editSenderSignature"
+      tags:
+        - "Sender Signatures"
+      summary: "Update a Sender Signature"
+      parameters:
+        - name: "signatureid"
+          in: "path"
+          description: "The ID for the Sender Signature that should be modified by the
+            request."
+          required: true
+          schema:
+            type: "integer"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SenderSignatureEditingModel"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SenderSignatureExtendedInformation"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+    delete:
+      operationId: "deleteSenderSignature"
+      tags:
+        - "Sender Signatures"
+      summary: "Delete a Sender Signature"
+      parameters:
+        - name: "signatureid"
+          in: "path"
+          required: true
+          description: "The ID for the Sender Signature that should be deleted by the
+            request."
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardPostmarkResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /senders/{signatureid}/requestnewdkim:
+    post:
+      operationId: "requestNewDKIMKeyForSenderSignature"
+      tags:
+        - "Sender Signatures"
+      summary: "Request a new DKIM Key"
+      description: "Requests a new DKIM key to be created. Until the DNS entries are
+        confirmed,
+
+        the new values will be in the `DKIMPendingHost` and
+        `DKIMPendingTextValue` fields.
+
+        After the new DKIM value is verified in DNS, the pending values will
+        migrate to
+
+        `DKIMTextValue` and `DKIMPendingTextValue` and Postmark will begin to
+        sign emails
+
+        with the new DKIM key.\n"
+      parameters:
+        - name: "signatureid"
+          in: "path"
+          description: "The ID for the Sender Signature for which a new DKIM Key should be
+            generated."
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardPostmarkResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /senders/{signatureid}/resend:
+    post:
+      operationId: "resendSenderSignatureConfirmationEmail"
+      tags:
+        - "Sender Signatures"
+      summary: "Resend Signature Confirmation Email"
+      parameters:
+        - name: "signatureid"
+          in: "path"
+          description: "The ID for the Sender Signature that should have its confirmation
+            email resent."
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardPostmarkResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /senders/{signatureid}/verifyspf:
+    post:
+      operationId: "requestSPFVerificationForSenderSignature"
+      tags:
+        - "Sender Signatures"
+      summary: "Request DNS Verification for SPF"
+      parameters:
+        - name: "signatureid"
+          in: "path"
+          required: true
+          description: "The ID for the Sender Signature for which SPF DNS records should
+            be verified."
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SenderSignatureExtendedInformation"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /server:
+    get:
+      summary: "Get Server Configuration"
+      operationId: "getCurrentServerConfiguration"
+      tags:
+        - "Server Configuration"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerConfigurationResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+    put:
+      summary: "Edit Server Configuration"
+      operationId: "editCurrentServerConfiguration"
+      tags:
+        - "Server Configuration"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditServerConfigurationRequest"
+        description: "The settings that should be modified for the current server."
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerConfigurationResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /servers:
+    get:
+      operationId: "listServers"
+      tags:
+        - "Servers"
+      summary: "List servers"
+      parameters:
+        - name: "count"
+          in: "query"
+          required: true
+          description: "Number of servers to return per request."
+          schema:
+            type: "integer"
+        - name: "offset"
+          in: "query"
+          required: true
+          description: "Number of servers to skip."
+          schema:
+            type: "integer"
+        - name: "name"
+          in: "query"
+          description: "Filter by a specific server name"
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerListingResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+    post:
+      operationId: "createServer"
+      tags:
+        - "Servers"
+      summary: "Create a Server"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServerPayload"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtendedServerInfo"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /servers/{serverid}:
+    get:
+      operationId: "getServerInformation"
+      tags:
+        - "Servers"
+      summary: "Get a Server"
+      parameters:
+        - name: "serverid"
+          description: "The ID of the Server to get."
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtendedServerInfo"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+    put:
+      operationId: "editServerInformation"
+      tags:
+        - "Servers"
+      summary: "Edit a Server"
+      parameters:
+        - name: "serverid"
+          description: "The ID of the Server to update."
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditServerPayload"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtendedServerInfo"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+    delete:
+      operationId: "deleteServer"
+      tags:
+        - "Servers"
+      summary: "Delete a Server"
+      parameters:
+        - name: "serverid"
+          description: "The ID of the Server that should be deleted."
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /stats/outbound:
+    get:
+      operationId: "getOutboundOverviewStatistics"
+      tags:
+        - "Stats"
+      summary: "Get outbound overview"
+      parameters:
+        - name: "tag"
+          in: "query"
+          description: "Filter by tag"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          in: "query"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutboundOverviewStatsResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /stats/outbound/bounces:
+    get:
+      operationId: "getBounceCounts"
+      tags:
+        - "Stats"
+      summary: "Get bounce counts"
+      parameters:
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          in: "query"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  HardBounce:
+                    type: "integer"
+                  SMTPApiError:
+                    type: "integer"
+                  SoftBounce:
+                    type: "integer"
+                  Transient:
+                    type: "integer"
+                  Days:
+                    type: "array"
+                    items:
+                      properties:
+                        Date:
+                          type: "string"
+                        HardBounce:
+                          type: "integer"
+                        SoftBounce:
+                          type: "integer"
+                        SMTPApiError:
+                          type: "integer"
+                        Transient:
+                          type: "integer"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /stats/outbound/clicks:
+    get:
+      operationId: "getOutboundClickCounts"
+      tags:
+        - "Stats"
+      summary: "Get click counts"
+      parameters:
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DynamicResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /stats/outbound/clicks/browserfamilies:
+    get:
+      operationId: "getOutboundClickCountsByBrowserFamily"
+      tags:
+        - "Stats"
+      summary: "Get browser usage by family"
+      parameters:
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /stats/outbound/clicks/location:
+    get:
+      operationId: "getOutboundClickCountsByLocation"
+      tags:
+        - "Stats"
+      summary: "Get clicks by body location"
+      parameters:
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DynamicResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /stats/outbound/clicks/platforms:
+    get:
+      operationId: "getOutboundClickCountsByPlatform"
+      tags:
+        - "Stats"
+      summary: "Get browser plaform usage"
+      parameters:
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DynamicResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /stats/outbound/opens:
+    get:
+      operationId: "getOutboundOpenCounts"
+      tags:
+        - "Stats"
+      summary: "Get email open counts"
+      parameters:
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  Opens:
+                    type: "integer"
+                  Unique:
+                    type: "integer"
+                  Days:
+                    type: "array"
+                    items:
+                      properties:
+                        Date:
+                          type: "string"
+                        Opens:
+                          type: "integer"
+                        Unique:
+                          type: "integer"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /stats/outbound/opens/emailclients:
+    get:
+      operationId: "getOutboundOpenCountsByEmailClient"
+      tags:
+        - "Stats"
+      summary: "Get email client usage"
+      parameters:
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  Desktop:
+                    type: "integer"
+                  WebMail:
+                    type: "integer"
+                  Mobile:
+                    type: "integer"
+                  Unknown:
+                    type: "integer"
+                  Days:
+                    type: "array"
+                    items:
+                      $ref: "#/components/schemas/DynamicResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /stats/outbound/opens/platforms:
+    get:
+      operationId: "getOutboundOpenCountsByPlatform"
+      tags:
+        - "Stats"
+      summary: "Get email platform usage"
+      parameters:
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  Desktop:
+                    type: "integer"
+                  WebMail:
+                    type: "integer"
+                  Mobile:
+                    type: "integer"
+                  Unknown:
+                    type: "integer"
+                  Days:
+                    type: "array"
+                    items:
+                      properties:
+                        Date:
+                          type: "string"
+                        Desktop:
+                          type: "integer"
+                        WebMail:
+                          type: "integer"
+                        Mobile:
+                          type: "integer"
+                        Unknown:
+                          type: "integer"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /stats/outbound/sends:
+    get:
+      operationId: "getSentCounts"
+      tags:
+        - "Stats"
+      summary: "Get sent counts"
+      parameters:
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SentCountsResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /stats/outbound/spam:
+    get:
+      operationId: "getSpamComplaints"
+      tags:
+        - "Stats"
+      summary: "Get spam complaints"
+      parameters:
+        - name: "tag"
+          in: "query"
+          description: "Filter by tag"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          in: "query"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  SpamComplaint:
+                    type: "integer"
+                  Days:
+                    type: "array"
+                    items:
+                      properties:
+                        Date:
+                          type: "string"
+                        SpamComplaint:
+                          type: "integer"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /stats/outbound/tracked:
+    get:
+      operationId: "getTrackedEmailCounts"
+      tags:
+        - "Stats"
+      summary: "Get tracked email counts"
+      parameters:
+        - name: "tag"
+          in: "query"
+          description: "Filter by tag"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  Tracked:
+                    type: "integer"
+                  Days:
+                    type: "array"
+                    items:
+                      properties:
+                        Date:
+                          type: "string"
+                        Tracked:
+                          type: "integer"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /templates:
+    get:
+      operationId: "listTemplates"
+      summary: "Get the Templates associated with this Server"
+      parameters:
+        - name: "Count"
+          in: "query"
+          description: "The number of Templates to return"
+          required: true
+          schema:
+            type: "number"
+            format: "int"
+        - name: "Offset"
+          in: "query"
+          description: 'The number of Templates to "skip" before returning results.'
+          required: true
+          schema:
+            type: "number"
+            format: "int"
+        - name: "TemplateType"
+          in: "query"
+          schema:
+            type: "string"
+            enum:
+              - "Standard"
+              - "Layout"
+          description: ""
+        - name: "LayoutTemplate"
+          in: "query"
+          schema:
+            type: "string"
+          description: ""
+      tags:
+        - "Templates"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateListingResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+    post:
+      summary: "Create a Template"
+      tags:
+        - "Templates"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTemplateRequest"
+        required: true
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateRecordResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /templates/push:
+    put:
+      operationId: "pushTemplates"
+      tags:
+        - "Templates"
+      summary: "Push templates from one server to another"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplatesPushModel"
+        required: true
+      responses:
+        200:
+          description: "ok"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplatesPushResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - accountToken: []
+  /templates/validate:
+    post:
+      operationId: "testTemplateContent"
+      summary: "Test Template Content"
+      tags:
+        - "Templates"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateValidationRequest"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateValidationResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /templates/{templateIdOrAlias}:
+    get:
+      operationId: "getSingleTemplate"
+      summary: "Get a Template"
+      parameters:
+        - name: "templateIdOrAlias"
+          in: "path"
+          required: true
+          description: "The 'TemplateID' or 'Alias' value for the Template you wish to
+            retrieve."
+          schema:
+            type: "string"
+      tags:
+        - "Templates"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateDetailResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+    put:
+      operationId: "updateTemplate"
+      summary: "Update a Template"
+      parameters:
+        - name: "templateIdOrAlias"
+          in: "path"
+          required: true
+          description: "The 'TemplateID' or 'Alias' value for the Template you wish to
+            update."
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditTemplateRequest"
+        required: true
+      tags:
+        - "Templates"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateRecordResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+    delete:
+      operationId: "deleteTemplate"
+      summary: "Delete a Template"
+      parameters:
+        - name: "templateIdOrAlias"
+          in: "path"
+          required: true
+          description: "The 'TemplateID' or 'Alias' value for the Template you wish to
+            delete."
+          schema:
+            type: "string"
+      tags:
+        - "Templates"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardPostmarkResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /triggers/inboundrules:
+    post:
+      operationId: "createInboundRule"
+      tags:
+        - "Inbound Rules"
+      summary: "Create an inbound rule trigger"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInboundRuleRequest"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  ID:
+                    type: "integer"
+                  Rule:
+                    type: "string"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+    get:
+      operationId: "listInboundRules"
+      tags:
+        - "Inbound Rules"
+      summary: "List inbound rule triggers"
+      parameters:
+        - name: "count"
+          in: "query"
+          required: true
+          description: "Number of records to return per request."
+          schema:
+            type: "integer"
+        - name: "offset"
+          in: "query"
+          required: true
+          description: "Number of records to skip."
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  TotalCount:
+                    type: "integer"
+                  InboundRules:
+                    type: "array"
+                    items:
+                      properties:
+                        ID:
+                          type: "integer"
+                        Rule:
+                          type: "string"
+                          format: "email"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /triggers/inboundrules/{triggerid}:
+    delete:
+      operationId: "deleteInboundRule"
+      tags:
+        - "Inbound Rules"
+      summary: "Delete a single trigger"
+      parameters:
+        - name: "triggerid"
+          in: "path"
+          description: "The ID of the Inbound Rule that should be deleted."
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardPostmarkResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: []
+  /webhooks:
+    get:
+      operationId: "listWebhooks"
+      summary: "List webhooks"
+      tags:
+        - "Webhooks"
+      security:
+        - serverToken: []
+      parameters:
+        - name: "MessageStream"
+          in: "query"
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookListResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+    post:
+      operationId: "createWebhook"
+      summary: "Create a webhook"
+      tags:
+        - "Webhooks"
+      security:
+        - serverToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookUpsertRequest"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /webhooks/{id}:
+    get:
+      operationId: "getWebhook"
+      summary: "Get a webhook"
+      tags:
+        - "Webhooks"
+      security:
+        - serverToken: []
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: ""
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+    put:
+      operationId: "updateWebhook"
+      summary: "Edit a webhook"
+      tags:
+        - "Webhooks"
+      security:
+        - serverToken: []
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: ""
+          schema:
+            type: "integer"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookUpsertRequest"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+    delete:
+      operationId: "deleteWebhook"
+      summary: "Delete a webhook"
+      tags:
+        - "Webhooks"
+      security:
+        - serverToken: []
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          description: ""
+          schema:
+            type: "integer"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardPostmarkResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+components:
+  schemas:
+    Attachment:
+      description: "An attachment for an email message."
+      properties:
+        Name:
+          type: "string"
+        Content:
+          type: "string"
+        ContentType:
+          type: "string"
+        ContentID:
+          type: "string"
+    AttachmentCollection:
+      type: "array"
+      items:
+        $ref: "#/components/schemas/Attachment"
+    BounceActivationResponse:
+      properties:
+        Message:
+          type: "string"
+        Bounce:
+          $ref: "#/components/schemas/BounceInfoResponse"
+    BounceCountElement:
+      properties:
+        Name:
+          type: "string"
+        Count:
+          type: "integer"
+        Type:
+          type: "string"
+    BounceDumpResponse:
+      properties:
+        Body:
+          description: "Raw source of bounce. If no dump is available this will return an
+            empty string."
+          type: "string"
+    BounceInfoResponse:
+      properties:
+        ID:
+          type: "string"
+        Type:
+          type: "string"
+        TypeCode:
+          type: "integer"
+        Name:
+          type: "string"
+        Tag:
+          type: "string"
+        MessageID:
+          type: "string"
+        Description:
+          type: "string"
+        Details:
+          type: "string"
+        Email:
+          type: "string"
+          format: "email"
+        BouncedAt:
+          type: "string"
+          format: "date-time"
+        DumpAvailable:
+          type: "boolean"
+        Inactive:
+          type: "boolean"
+        CanActivate:
+          type: "boolean"
+        Subject:
+          type: "string"
+        Content:
+          type: "string"
+    BounceSearchResponse:
+      description: ""
+      properties:
+        TotalCount:
+          type: "integer"
+        Bounces:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/BounceInfoResponse"
+    BulkEmailRecipient:
+      type: "object"
+      required:
+        - "To"
+      properties:
+        To:
+          type: "string"
+        Cc:
+          type: "string"
+        Bcc:
+          type: "string"
+        TemplateModel:
+          type: "object"
+          additionalProperties: true
+        Metadata:
+          $ref: "#/components/schemas/Metadata"
+        Headers:
+          $ref: "#/components/schemas/HeaderCollection"
+    BulkEmailRequest:
+      type: "object"
+      required:
+        - "From"
+        - "Messages"
+      properties:
+        From:
+          type: "string"
+        ReplyTo:
+          type: "string"
+        Subject:
+          type: "string"
+        HtmlBody:
+          type: "string"
+        TextBody:
+          type: "string"
+        TemplateId:
+          type: "integer"
+          nullable: true
+        TemplateAlias:
+          type: "string"
+          nullable: true
+        InlineCss:
+          type: "boolean"
+          default: true
+        Tag:
+          type: "string"
+        Metadata:
+          $ref: "#/components/schemas/Metadata"
+        MessageStream:
+          type: "string"
+        TrackOpens:
+          type: "boolean"
+        TrackLinks:
+          type: "string"
+          enum:
+            - "None"
+            - "HtmlAndText"
+            - "HtmlOnly"
+            - "TextOnly"
+        Attachments:
+          $ref: "#/components/schemas/AttachmentCollection"
+        Headers:
+          $ref: "#/components/schemas/HeaderCollection"
+        Messages:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/BulkEmailRecipient"
+    BulkEmailStatusResponse:
+      type: "object"
+      properties:
+        ID:
+          type: "string"
+        Id:
+          type: "string"
+        Status:
+          type: "string"
+          enum:
+            - "Accepted"
+            - "Processing"
+            - "Completed"
+        SubmittedAt:
+          type: "string"
+          format: "date-time"
+        TotalMessages:
+          type: "integer"
+        PercentageCompleted:
+          type: "number"
+        Subject:
+          type: "string"
+    BulkEmailSubmitResponse:
+      type: "object"
+      properties:
+        ID:
+          type: "string"
+        Status:
+          type: "string"
+          enum:
+            - "Accepted"
+            - "Failed"
+        SubmittedAt:
+          type: "string"
+          format: "date-time"
+    CreateInboundRuleRequest:
+      description: ""
+      properties:
+        Rule:
+          format: "email"
+          type: "string"
+    CreateServerPayload:
+      description: ""
+      properties:
+        Name:
+          type: "string"
+        Color:
+          type: "string"
+          enum:
+            - "purple"
+            - "blue"
+            - "turquoise"
+            - "green"
+            - "red"
+            - "orange"
+            - "yellow"
+            - "grey"
+        RawEmailEnabled:
+          type: "boolean"
+        DeliveryHookUrl:
+          type: "string"
+        SmtpApiActivated:
+          type: "boolean"
+        InboundHookUrl:
+          type: "string"
+        BounceHookUrl:
+          type: "string"
+        OpenHookUrl:
+          type: "string"
+        PostFirstOpenOnly:
+          type: "boolean"
+        TrackOpens:
+          type: "boolean"
+        TrackLinks:
+          type: "string"
+          enum:
+            - "None"
+            - "HtmlAndText"
+            - "HtmlOnly"
+            - "TextOnly"
+        ClickHookUrl:
+          type: "string"
+        InboundDomain:
+          type: "string"
+        InboundSpamThreshold:
+          type: "integer"
+        DeliveryType:
+          type: "string"
+          enum:
+            - "Live"
+            - "Sandbox"
+      type: "object"
+      required:
+        - "Name"
+    CreateTemplateRequest:
+      description: "The contents required for creating a new template."
+      properties:
+        Alias:
+          type: "string"
+          description: "The optional string identifier for referring to this Template
+            (numbers, letters, and '.', '-', '_' characters, starts with a
+            letter)."
+        Name:
+          type: "string"
+          description: "The friendly display name for the template."
+        Subject:
+          type: "string"
+          description: "The Subject template definition for this Template."
+        HtmlBody:
+          type: "string"
+          description: "The HTML template definition for this Template."
+        TextBody:
+          type: "string"
+          description: "The Text template definition for this Template."
+        TemplateType:
+          type: "string"
+          enum:
+            - "Standard"
+            - "Layout"
+        LayoutTemplate:
+          type: "string"
+          nullable: true
+      required:
+        - "Name"
+      type: "object"
+      anyOf:
+        - required:
+            - "HtmlBody"
+        - required:
+            - "TextBody"
+    DKIMRotationResponse:
+      description: ""
+      properties:
+        Name:
+          type: "string"
+        DKIMVerified:
+          type: "boolean"
+        WeakDKIM:
+          type: "boolean"
+        DKIMHost:
+          type: "string"
+        DKIMTestValue:
+          type: "string"
+        DKIMPendingHost:
+          type: "string"
+        DKIMPendingTextValue:
+          type: "string"
+        DKIMRevokedHost:
+          type: "string"
+        DKIMRevokedTextValue:
+          type: "string"
+        SafeToRemoveRevokedKeyFromDNS:
+          type: "boolean"
+        DKIMUpdateStatus:
+          type: "string"
+        ID:
+          type: "integer"
+          format: "int64"
+    DataRemovalRequest:
+      type: "object"
+      required:
+        - "RequestedBy"
+        - "RequestedFor"
+      properties:
+        RequestedBy:
+          type: "string"
+          format: "email"
+        RequestedFor:
+          type: "string"
+          format: "email"
+        NotifyWhenCompleted:
+          type: "boolean"
+    DataRemovalStatus:
+      type: "object"
+      properties:
+        ID:
+          type: "integer"
+        Status:
+          type: "string"
+          enum:
+            - "Pending"
+            - "Done"
+    DeliveryStatsResponse:
+      description: ""
+      properties:
+        InactiveMails:
+          type: "integer"
+        Bounces:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/BounceCountElement"
+    DomainCreationModel:
+      description: ""
+      properties:
+        Name:
+          type: "string"
+        ReturnPathDomain:
+          type: "string"
+    DomainEditingModel:
+      description: ""
+      properties:
+        ReturnPathDomain:
+          type: "string"
+    DomainExtendedInformation:
+      description: ""
+      properties:
+        Name:
+          type: "string"
+        SPFVerified:
+          type: "boolean"
+        SPFHost:
+          type: "string"
+        SPFTextValue:
+          type: "string"
+        DKIMVerified:
+          type: "boolean"
+        WeakDKIM:
+          type: "boolean"
+        DKIMHost:
+          type: "string"
+        DKIMTestValue:
+          type: "string"
+        DKIMPendingHost:
+          type: "string"
+        DKIMPendingTextValue:
+          type: "string"
+        DKIMRevokedHost:
+          type: "string"
+        DKIMRevokedTextValue:
+          type: "string"
+        SafeToRemoveRevokedKeyFromDNS:
+          type: "boolean"
+        DKIMUpdateStatus:
+          type: "string"
+        ReturnPathDomain:
+          type: "string"
+        ReturnPathDomainVerified:
+          type: "boolean"
+        ReturnPathDomainCNAMEValue:
+          type: "string"
+        ID:
+          type: "integer"
+          format: "int64"
+    DomainInformation:
+      description: ""
+      properties:
+        Name:
+          type: "string"
+        SPFVerified:
+          type: "boolean"
+        DKIMVerified:
+          type: "boolean"
+        WeakDKIM:
+          type: "boolean"
+        ReturnPathDomainVerified:
+          type: "boolean"
+        ID:
+          type: "integer"
+          format: "int64"
+    DomainListingResults:
+      description: ""
+      properties:
+        TotalCount:
+          type: "integer"
+        Domains:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/DomainInformation"
+    DomainSPFResult:
+      description: ""
+      properties:
+        SPFHost:
+          type: "string"
+        SPFVerified:
+          type: "boolean"
+        SPFTextValue:
+          type: "string"
+    DynamicResponse:
+      description: "The properties of this object will vary based request parameters."
+    EditServerConfigurationRequest:
+      properties:
+        Name:
+          type: "string"
+        Color:
+          type: "string"
+          enum:
+            - "purple"
+            - "blue"
+            - "turquoise"
+            - "green"
+            - "red"
+            - "orange"
+            - "yellow"
+            - "grey"
+        RawEmailEnabled:
+          type: "boolean"
+        DeliveryHookUrl:
+          type: "string"
+        SmtpApiActivated:
+          type: "boolean"
+        InboundHookUrl:
+          type: "string"
+        BounceHookUrl:
+          type: "string"
+        OpenHookUrl:
+          type: "string"
+        PostFirstOpenOnly:
+          type: "boolean"
+        TrackOpens:
+          type: "boolean"
+        TrackLinks:
+          type: "string"
+          enum:
+            - "None"
+            - "HtmlAndText"
+            - "HtmlOnly"
+            - "TextOnly"
+        ClickHookUrl:
+          description: "Webhook url allowing real-time notification when tracked links are
+            clicked."
+          type: "string"
+        InboundDomain:
+          type: "string"
+        InboundSpamThreshold:
+          type: "integer"
+        DeliveryType:
+          type: "string"
+          enum:
+            - "Live"
+            - "Sandbox"
+      type: "object"
+    EditServerPayload:
+      description: ""
+      properties:
+        Name:
+          type: "string"
+        Color:
+          type: "string"
+          enum:
+            - "purple"
+            - "blue"
+            - "turquoise"
+            - "green"
+            - "red"
+            - "orange"
+            - "yellow"
+            - "grey"
+        RawEmailEnabled:
+          type: "boolean"
+        DeliveryHookUrl:
+          type: "string"
+        SmtpApiActivated:
+          type: "boolean"
+        InboundHookUrl:
+          type: "string"
+        BounceHookUrl:
+          type: "string"
+        OpenHookUrl:
+          type: "string"
+        PostFirstOpenOnly:
+          type: "boolean"
+        TrackOpens:
+          type: "boolean"
+        TrackLinks:
+          type: "string"
+          enum:
+            - "None"
+            - "HtmlAndText"
+            - "HtmlOnly"
+            - "TextOnly"
+        ClickHookUrl:
+          type: "string"
+        InboundDomain:
+          type: "string"
+        InboundSpamThreshold:
+          type: "integer"
+        DeliveryType:
+          type: "string"
+          enum:
+            - "Live"
+            - "Sandbox"
+      type: "object"
+    EditTemplateRequest:
+      description: "The contents required for creating a new template."
+      properties:
+        Alias:
+          type: "string"
+          description: "The optional string identifier for referring to this Template
+            (numbers, letters, and '.', '-', '_' characters, starts with a
+            letter)."
+        Name:
+          type: "string"
+          description: "The friendly display name for the template."
+        Subject:
+          type: "string"
+          description: "The Subject template definition for this Template."
+        HtmlBody:
+          type: "string"
+          description: "The HTML template definition for this Template."
+        TextBody:
+          type: "string"
+          description: "The Text template definition for this Template."
+        TemplateType:
+          type: "string"
+          enum:
+            - "Standard"
+            - "Layout"
+        LayoutTemplate:
+          type: "string"
+          nullable: true
+      required:
+        - "Name"
+      type: "object"
+      anyOf:
+        - required:
+            - "HtmlBody"
+        - required:
+            - "TextBody"
+    EmailNameAddressPair:
+      description: ""
+      properties:
+        Name:
+          type: "string"
+        Email:
+          type: "string"
+    EmailWithTemplateRequest:
+      properties:
+        TemplateId:
+          description: "Required if 'TemplateAlias' is not specified."
+          type: "integer"
+        TemplateAlias:
+          description: "Required if 'TemplateId' is not specified."
+          type: "string"
+        TemplateModel:
+          type: "object"
+        InlineCss:
+          type: "boolean"
+          default: true
+        From:
+          type: "string"
+          description: "The sender email address. Must have a registered and confirmed
+            Sender Signature."
+        To:
+          description: "Recipient email address. Multiple addresses are comma seperated.
+            Max 50."
+          type: "string"
+        Cc:
+          description: "Recipient email address. Multiple addresses are comma seperated.
+            Max 50."
+          type: "string"
+        Bcc:
+          description: "Bcc recipient email address. Multiple addresses are comma
+            seperated. Max 50."
+          type: "string"
+        Tag:
+          type: "string"
+        ReplyTo:
+          description: "Reply To override email address. Multiple addresses are comma
+            seperated. Defaults to the Reply To set in the sender signature."
+          type: "string"
+        Headers:
+          $ref: "#/components/schemas/HeaderCollection"
+        TrackOpens:
+          description: "Activate open tracking for this email."
+          type: "boolean"
+        TrackLinks:
+          description: 'Replace links in content to enable "click tracking" stats. Default
+            is ''null'', which uses the server''s LinkTracking setting''.'
+          type: "string"
+          enum:
+            - "None"
+            - "HtmlAndText"
+            - "HtmlOnly"
+            - "TextOnly"
+        Attachments:
+          $ref: "#/components/schemas/AttachmentCollection"
+        Metadata:
+          $ref: "#/components/schemas/Metadata"
+        MessageStream:
+          type: "string"
+      required:
+        - "TemplateModel"
+        - "From"
+      type: "object"
+      allOf:
+        - anyOf:
+            - required:
+                - "TemplateId"
+            - required:
+                - "TemplateAlias"
+        - anyOf:
+            - required:
+                - "To"
+            - required:
+                - "Cc"
+            - required:
+                - "Bcc"
+    ExtendedMessageClickEventInformation:
+      description: ""
+      properties:
+        ClickLocation:
+          type: "string"
+        Client:
+          description: ""
+          properties:
+            Name:
+              type: "string"
+            Company:
+              type: "string"
+            Family:
+              type: "string"
+        OS:
+          properties:
+            Name:
+              type: "string"
+            Company:
+              type: "string"
+            Family:
+              type: "string"
+        Platform:
+          type: "string"
+        UserAgent:
+          type: "string"
+        OriginalLink:
+          type: "string"
+        Geo:
+          properties:
+            CountryISOCode:
+              type: "string"
+            Country:
+              type: "string"
+            RegionISOCode:
+              type: "string"
+            Region:
+              type: "string"
+            City:
+              type: "string"
+            Zip:
+              type: "string"
+            Coords:
+              type: "string"
+            IP:
+              type: "string"
+        MessageID:
+          type: "string"
+        ReceivedAt:
+          type: "string"
+          format: "date-time"
+        Tag:
+          type: "string"
+        Recipient:
+          type: "string"
+          format: "email"
+        RecordType:
+          type: "string"
+          example: "Click"
+        MessageStream:
+          type: "string"
+        Metadata:
+          $ref: "#/components/schemas/Metadata"
+      type: "object"
+    ExtendedMessageOpenEventInformation:
+      description: ""
+      properties:
+        FirstOpen:
+          type: "boolean"
+        Client:
+          description: ""
+          properties:
+            Name:
+              type: "string"
+            Company:
+              type: "string"
+            Family:
+              type: "string"
+        OS:
+          properties:
+            Name:
+              type: "string"
+            Company:
+              type: "string"
+            Family:
+              type: "string"
+        Platform:
+          type: "string"
+        UserAgent:
+          type: "string"
+        Geo:
+          properties:
+            CountryISOCode:
+              type: "string"
+            Country:
+              type: "string"
+            RegionISOCode:
+              type: "string"
+            Region:
+              type: "string"
+            City:
+              type: "string"
+            Zip:
+              type: "string"
+            Coords:
+              type: "string"
+            IP:
+              type: "string"
+        MessageID:
+          type: "string"
+        ReceivedAt:
+          type: "string"
+          format: "date-time"
+        Tag:
+          type: "string"
+        Recipient:
+          type: "string"
+          format: "email"
+        RecordType:
+          type: "string"
+          example: "Open"
+        MessageStream:
+          type: "string"
+        Metadata:
+          $ref: "#/components/schemas/Metadata"
+      type: "object"
+    ExtendedServerInfo:
+      description: ""
+      properties:
+        ID:
+          type: "integer"
+        Name:
+          type: "string"
+        ApiTokens:
+          type: "array"
+          items:
+            type: "string"
+        ServerLink:
+          type: "string"
+        Color:
+          type: "string"
+          enum:
+            - "purple"
+            - "blue"
+            - "turquoise"
+            - "green"
+            - "red"
+            - "orange"
+            - "yellow"
+            - "grey"
+        SmtpApiActivated:
+          type: "boolean"
+        RawEmailEnabled:
+          type: "boolean"
+        DeliveryHookUrl:
+          type: "string"
+        InboundAddress:
+          type: "string"
+        InboundHookUrl:
+          type: "string"
+        BounceHookUrl:
+          type: "string"
+        OpenHookUrl:
+          type: "string"
+        PostFirstOpenOnly:
+          type: "boolean"
+        TrackOpens:
+          type: "boolean"
+        TrackLinks:
+          type: "string"
+          enum:
+            - "None"
+            - "HtmlAndText"
+            - "HtmlOnly"
+            - "TextOnly"
+        ClickHookUrl:
+          type: "string"
+        InboundDomain:
+          type: "string"
+        InboundHash:
+          type: "string"
+        InboundSpamThreshold:
+          type: "integer"
+        DeliveryType:
+          type: "string"
+          enum:
+            - "Live"
+            - "Sandbox"
+      type: "object"
+    HeaderCollection:
+      type: "array"
+      items:
+        $ref: "#/components/schemas/MessageHeader"
+    InboundMessageDetail:
+      description: ""
+      properties:
+        From:
+          type: "string"
+        FromName:
+          type: "string"
+        FromFull:
+          description: ""
+          properties:
+            Email:
+              type: "string"
+            Name:
+              type: "string"
+        To:
+          type: "string"
+        ToFull:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmailNameAddressPair"
+        Cc:
+          type: "string"
+        CcFull:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmailNameAddressPair"
+        ReplyTo:
+          type: "string"
+        OriginalRecipient:
+          type: "string"
+        Subject:
+          type: "string"
+        Date:
+          type: "string"
+        MailboxHash:
+          type: "string"
+        Tag:
+          type: "string"
+        Attachments:
+          $ref: "#/components/schemas/AttachmentCollection"
+        MessageID:
+          type: "string"
+        Status:
+          type: "string"
+    InboundMessageFullDetailsResponse:
+      properties:
+        From:
+          type: "string"
+        FromName:
+          type: "string"
+        FromFull:
+          description: ""
+          properties:
+            Email:
+              type: "string"
+            Name:
+              type: "string"
+        To:
+          type: "string"
+        ToFull:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmailNameAddressPair"
+        Cc:
+          type: "string"
+        CcFull:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmailNameAddressPair"
+        ReplyTo:
+          type: "string"
+        OriginalRecipient:
+          type: "string"
+        Subject:
+          type: "string"
+        Date:
+          type: "string"
+        MailboxHash:
+          type: "string"
+        TextBody:
+          type: "string"
+        HtmlBody:
+          type: "string"
+        Tag:
+          type: "string"
+        Headers:
+          $ref: "#/components/schemas/HeaderCollection"
+        Attachments:
+          $ref: "#/components/schemas/AttachmentCollection"
+        MessageID:
+          type: "string"
+        BlockedReason:
+          type: "string"
+        Status:
+          type: "string"
+    InboundSearchResponse:
+      description: ""
+      properties:
+        TotalCount:
+          type: "integer"
+        InboundMessages:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/InboundMessageDetail"
+    MessageClickSearchResponse:
+      properties:
+        TotalCount:
+          type: "integer"
+        Clicks:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ExtendedMessageClickEventInformation"
+    MessageEventDetails:
+      description: ""
+      properties:
+        Recipient:
+          type: "string"
+        Type:
+          type: "string"
+        ReceivedAt:
+          type: "string"
+          format: "date-time"
+        Details:
+          type: "object"
+          properties:
+            Summary:
+              type: "string"
+            BounceID:
+              type: "string"
+            DeliveryMessage:
+              type: "string"
+            DestinationServer:
+              type: "string"
+            DestinationIP:
+              type: "string"
+            Origin:
+              type: "string"
+            SuppressSending:
+              type: "string"
+            Link:
+              type: "string"
+            ClickLocation:
+              type: "string"
+          additionalProperties: true
+      type: "object"
+    MessageHeader:
+      description: "A single header for an email message."
+      properties:
+        Name:
+          description: "The header's name."
+          type: "string"
+        Value:
+          description: "The header's value."
+          type: "string"
+    MessageOpenSearchResponse:
+      properties:
+        TotalCount:
+          type: "integer"
+        Opens:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ExtendedMessageOpenEventInformation"
+    MessageStream:
+      type: "object"
+      properties:
+        ID:
+          type: "string"
+        ServerID:
+          type: "integer"
+        Name:
+          type: "string"
+        Description:
+          type: "string"
+          nullable: true
+        MessageStreamType:
+          type: "string"
+          enum:
+            - "Inbound"
+            - "Broadcasts"
+            - "Transactional"
+        CreatedAt:
+          type: "string"
+          format: "date-time"
+        UpdatedAt:
+          type: "string"
+          format: "date-time"
+          nullable: true
+        ArchivedAt:
+          type: "string"
+          format: "date-time"
+          nullable: true
+        ExpectedPurgeDate:
+          type: "string"
+          format: "date-time"
+          nullable: true
+        SubscriptionManagementConfiguration:
+          $ref: "#/components/schemas/SubscriptionManagementConfiguration"
+    MessageStreamArchiveResponse:
+      type: "object"
+      properties:
+        ID:
+          type: "string"
+        ServerID:
+          type: "integer"
+        ExpectedPurgeDate:
+          type: "string"
+          format: "date-time"
+    MessageStreamCreateRequest:
+      type: "object"
+      required:
+        - "ID"
+        - "Name"
+        - "MessageStreamType"
+      properties:
+        ID:
+          type: "string"
+        Name:
+          type: "string"
+        Description:
+          type: "string"
+        MessageStreamType:
+          type: "string"
+          enum:
+            - "Broadcasts"
+            - "Transactional"
+        SubscriptionManagementConfiguration:
+          $ref: "#/components/schemas/SubscriptionManagementConfiguration"
+    MessageStreamListResponse:
+      type: "object"
+      properties:
+        MessageStreams:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/MessageStream"
+        TotalCount:
+          type: "integer"
+    MessageStreamUpdateRequest:
+      type: "object"
+      properties:
+        Name:
+          type: "string"
+        Description:
+          type: "string"
+        SubscriptionManagementConfiguration:
+          $ref: "#/components/schemas/SubscriptionManagementConfiguration"
+    Metadata:
+      type: "object"
+      additionalProperties:
+        type: "string"
+    OutboundMessageDetail:
+      description: ""
+      properties:
+        Tag:
+          type: "string"
+        MessageID:
+          type: "string"
+        To:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmailNameAddressPair"
+        Cc:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmailNameAddressPair"
+        Bcc:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmailNameAddressPair"
+        Recipients:
+          type: "array"
+          items:
+            type: "string"
+        ReceivedAt:
+          type: "string"
+          format: "date-time"
+        From:
+          type: "string"
+        Subject:
+          type: "string"
+        Attachments:
+          $ref: "#/components/schemas/AttachmentCollection"
+        Status:
+          type: "string"
+        TrackOpens:
+          type: "boolean"
+        TrackLinks:
+          type: "string"
+          enum:
+            - "None"
+            - "HtmlAndText"
+            - "HtmlOnly"
+            - "TextOnly"
+        MessageStream:
+          type: "string"
+        Metadata:
+          $ref: "#/components/schemas/Metadata"
+        Sandboxed:
+          type: "boolean"
+      type: "object"
+    OutboundMessageDetailsResponse:
+      properties:
+        TextBody:
+          type: "string"
+        HtmlBody:
+          type: "string"
+        Body:
+          type: "string"
+        Tag:
+          type: "string"
+        MessageID:
+          type: "string"
+        To:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmailNameAddressPair"
+        Cc:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmailNameAddressPair"
+        Bcc:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmailNameAddressPair"
+        Recipients:
+          type: "array"
+          items:
+            type: "string"
+        ReceivedAt:
+          type: "string"
+          format: "date-time"
+        From:
+          type: "string"
+        Subject:
+          type: "string"
+        Attachments:
+          type: "array"
+          items:
+            oneOf:
+              - type: "string"
+              - type: "object"
+        Status:
+          type: "string"
+        TrackOpens:
+          type: "boolean"
+        TrackLinks:
+          type: "string"
+          enum:
+            - "None"
+            - "HtmlAndText"
+            - "HtmlOnly"
+            - "TextOnly"
+        MessageEvents:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/MessageEventDetails"
+        MessageStream:
+          type: "string"
+        Metadata:
+          $ref: "#/components/schemas/Metadata"
+        Sandboxed:
+          type: "boolean"
+      type: "object"
+    OutboundMessageDumpResponse:
+      properties:
+        Body:
+          description: "Raw source of message. If no dump is available this will return an
+            empty string."
+          type: "string"
+    OutboundOverviewStatsResponse:
+      description: ""
+      properties:
+        Sent:
+          type: "integer"
+        Bounced:
+          type: "integer"
+        SMTPAPIErrors:
+          type: "integer"
+        BounceRate:
+          type: "integer"
+        SpamComplaints:
+          type: "integer"
+        SpamComplaintsRate:
+          type: "integer"
+        Opens:
+          type: "integer"
+        UniqueOpens:
+          type: "integer"
+        Tracked:
+          type: "integer"
+        WithOpenTracking:
+          type: "integer"
+        WithLinkTracking:
+          type: "integer"
+        TotalClicks:
+          type: "integer"
+        UniqueLinksClicked:
+          type: "integer"
+        TotalTrackedLinksSent:
+          type: "integer"
+        WithClientRecorded:
+          type: "integer"
+        WithPlatformRecorded:
+          type: "integer"
+    OutboundSearchResponse:
+      description: ""
+      properties:
+        TotalCount:
+          type: "integer"
+        Messages:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/OutboundMessageDetail"
+    SendEmailBatchRequest:
+      type: "array"
+      items:
+        $ref: "#/components/schemas/SendEmailRequest"
+    SendEmailBatchResponse:
+      type: "array"
+      items:
+        $ref: "#/components/schemas/SendEmailResponse"
+    SendEmailRequest:
+      properties:
+        From:
+          description: "The sender email address. Must have a registered and confirmed
+            Sender Signature."
+          type: "string"
+        To:
+          description: "Recipient email address. Multiple addresses are comma seperated.
+            Max 50."
+          type: "string"
+        Cc:
+          description: "Recipient email address. Multiple addresses are comma seperated.
+            Max 50."
+          type: "string"
+        Bcc:
+          description: "Bcc recipient email address. Multiple addresses are comma
+            seperated. Max 50."
+          type: "string"
+        Subject:
+          description: "Email Subject"
+          type: "string"
+        Tag:
+          description: "Email tag that allows you to categorize outgoing emails and get
+            detailed statistics."
+          type: "string"
+        HtmlBody:
+          description: "If no TextBody specified HTML email message"
+          type: "string"
+        TextBody:
+          description: "If no HtmlBody specified Plain text email message"
+          type: "string"
+        ReplyTo:
+          description: "Reply To override email address. Multiple addresses are comma
+            seperated. Defaults to the Reply To set in the sender signature."
+          type: "string"
+        TrackOpens:
+          description: "Activate open tracking for this email."
+          type: "boolean"
+        TrackLinks:
+          description: 'Replace links in content to enable "click tracking" stats. Default
+            is ''null'', which uses the server''s LinkTracking setting''.'
+          type: "string"
+          enum:
+            - "None"
+            - "HtmlAndText"
+            - "HtmlOnly"
+            - "TextOnly"
+        Headers:
+          $ref: "#/components/schemas/HeaderCollection"
+        Attachments:
+          $ref: "#/components/schemas/AttachmentCollection"
+        Metadata:
+          $ref: "#/components/schemas/Metadata"
+        MessageStream:
+          type: "string"
+      type: "object"
+      required:
+        - "From"
+        - "Subject"
+      allOf:
+        - anyOf:
+            - required:
+                - "To"
+            - required:
+                - "Cc"
+            - required:
+                - "Bcc"
+        - anyOf:
+            - required:
+                - "HtmlBody"
+            - required:
+                - "TextBody"
+    SendEmailResponse:
+      description: "The standard response when a postmark message is sent"
+      properties:
+        To:
+          type: "string"
+        SubmittedAt:
+          type: "string"
+          format: "date-time"
+        MessageID:
+          type: "string"
+        ErrorCode:
+          type: "integer"
+        Message:
+          type: "string"
+    SendEmailTemplatedBatchRequest:
+      properties:
+        Messages:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmailWithTemplateRequest"
+      type: "object"
+      required:
+        - "Messages"
+    SenderListingResults:
+      description: ""
+      properties:
+        TotalCount:
+          type: "integer"
+        SenderSignatures:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/SenderSignatureInformation"
+    SenderSignatureCreationModel:
+      description: ""
+      properties:
+        FromEmail:
+          type: "string"
+          format: "email"
+        Name:
+          type: "string"
+        ReplyToEmail:
+          type: "string"
+          format: "email"
+        ReturnPathDomain:
+          type: "string"
+        ConfirmationPersonalNote:
+          type: "string"
+      type: "object"
+    SenderSignatureEditingModel:
+      description: ""
+      properties:
+        Name:
+          type: "string"
+        ReplyToEmail:
+          type: "string"
+          format: "email"
+        ReturnPathDomain:
+          type: "string"
+    SenderSignatureExtendedInformation:
+      description: ""
+      properties:
+        Domain:
+          type: "string"
+        EmailAddress:
+          type: "string"
+          format: "email"
+        ReplyToEmailAddress:
+          type: "string"
+          format: "email"
+        Name:
+          type: "string"
+        Confirmed:
+          type: "boolean"
+        SPFVerified:
+          type: "boolean"
+        SPFHost:
+          type: "string"
+        SPFTextValue:
+          type: "string"
+        DKIMVerified:
+          type: "boolean"
+        WeakDKIM:
+          type: "boolean"
+        DKIMHost:
+          type: "string"
+        DKIMTestValue:
+          type: "string"
+        DKIMPendingHost:
+          type: "string"
+        DKIMPendingTextValue:
+          type: "string"
+        DKIMRevokedHost:
+          type: "string"
+        DKIMRevokedTextValue:
+          type: "string"
+        SafeToRemoveRevokedKeyFromDNS:
+          type: "boolean"
+        DKIMUpdateStatus:
+          type: "string"
+        ReturnPathDomain:
+          type: "string"
+        ReturnPathDomainVerified:
+          type: "boolean"
+        ReturnPathDomainCNAMEValue:
+          type: "string"
+        ID:
+          type: "integer"
+          format: "int64"
+    SenderSignatureInformation:
+      description: ""
+      properties:
+        Domain:
+          type: "string"
+        EmailAddress:
+          type: "string"
+          format: "email"
+        ReplyToEmailAddress:
+          type: "string"
+          format: "email"
+        Name:
+          type: "string"
+        Confirmed:
+          type: "boolean"
+        ID:
+          type: "integer"
+          format: "int64"
+    SentCountsResponse:
+      description: "The result of a get sent counts operation."
+      properties:
+        Sent:
+          type: "integer"
+        Days:
+          type: "array"
+          items:
+            properties:
+              Date:
+                type: "string"
+              Sent:
+                type: "integer"
+    ServerConfigurationResponse:
+      properties:
+        ID:
+          type: "integer"
+        Name:
+          type: "string"
+        ApiTokens:
+          type: "array"
+          items:
+            type: "string"
+        ServerLink:
+          type: "string"
+        Color:
+          type: "string"
+          enum:
+            - "purple"
+            - "blue"
+            - "turquoise"
+            - "green"
+            - "red"
+            - "orange"
+            - "yellow"
+            - "grey"
+        InboundAddress:
+          type: "string"
+          format: "email"
+        RawEmailEnabled:
+          type: "boolean"
+        DeliveryHookUrl:
+          type: "string"
+        SmtpApiActivated:
+          type: "boolean"
+        InboundHookUrl:
+          type: "string"
+        BounceHookUrl:
+          type: "string"
+        OpenHookUrl:
+          type: "string"
+        PostFirstOpenOnly:
+          type: "boolean"
+        TrackOpens:
+          type: "boolean"
+        TrackLinks:
+          type: "string"
+          enum:
+            - "None"
+            - "HtmlAndText"
+            - "HtmlOnly"
+            - "TextOnly"
+        ClickHookUrl:
+          type: "string"
+        InboundDomain:
+          type: "string"
+        InboundHash:
+          type: "string"
+        InboundSpamThreshold:
+          type: "integer"
+        DeliveryType:
+          type: "string"
+          enum:
+            - "Live"
+            - "Sandbox"
+      type: "object"
+    ServerListingResponse:
+      description: "The results of listing servers."
+      properties:
+        TotalCount:
+          type: "integer"
+        Servers:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ExtendedServerInfo"
+    StandardPostmarkResponse:
+      type: "object"
+      properties:
+        ErrorCode:
+          type: "integer"
+        Message:
+          type: "string"
+        Errors:
+          type: "object"
+          additionalProperties:
+            type: "array"
+            items:
+              type: "object"
+              properties:
+                ErrorCode:
+                  type: "integer"
+                Message:
+                  type: "string"
+    SubscriptionManagementConfiguration:
+      type: "object"
+      properties:
+        UnsubscribeHandlingType:
+          type: "string"
+          enum:
+            - "None"
+            - "none"
+            - "Custom"
+            - "Postmark"
+    SuppressionBatchResponse:
+      type: "object"
+      properties:
+        Suppressions:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/SuppressionResult"
+    SuppressionDumpItem:
+      type: "object"
+      properties:
+        EmailAddress:
+          type: "string"
+          format: "email"
+        SuppressionReason:
+          type: "string"
+          enum:
+            - "HardBounce"
+            - "SpamComplaint"
+            - "ManualSuppression"
+        Origin:
+          type: "string"
+          enum:
+            - "Recipient"
+            - "Customer"
+            - "Admin"
+        CreatedAt:
+          type: "string"
+          format: "date-time"
+    SuppressionDumpResponse:
+      type: "object"
+      properties:
+        Suppressions:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/SuppressionDumpItem"
+    SuppressionRequest:
+      type: "object"
+      required:
+        - "Suppressions"
+      properties:
+        Suppressions:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/SuppressionRequestItem"
+    SuppressionRequestItem:
+      type: "object"
+      required:
+        - "EmailAddress"
+      properties:
+        EmailAddress:
+          type: "string"
+          format: "email"
+    SuppressionResult:
+      type: "object"
+      properties:
+        EmailAddress:
+          type: "string"
+          format: "email"
+        Status:
+          type: "string"
+        Message:
+          type: "string"
+          nullable: true
+    TemplateDetailResponse:
+      type: "object"
+      properties:
+        TemplateId:
+          type: "integer"
+        Name:
+          type: "string"
+        Subject:
+          type: "string"
+        HtmlBody:
+          type: "string"
+        TextBody:
+          type: "string"
+        AssociatedServerId:
+          type: "integer"
+        Active:
+          type: "boolean"
+        Alias:
+          type: "string"
+        TemplateType:
+          type: "string"
+          enum:
+            - "Standard"
+            - "Layout"
+        LayoutTemplate:
+          type: "string"
+          nullable: true
+    TemplateListingResponse:
+      type: "object"
+      properties:
+        TotalCount:
+          type: "integer"
+        Templates:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/TemplateRecordResponse"
+    TemplateRecordResponse:
+      properties:
+        Name:
+          type: "string"
+          description: "The display name for this template."
+        Alias:
+          type: "string"
+          description: "The user-supplied alias for this template."
+        TemplateId:
+          type: "number"
+          format: "int"
+          description: "The associated ID for this template."
+        Active:
+          type: "boolean"
+          description: "True if this template is currently available for use."
+        TemplateType:
+          type: "string"
+          enum:
+            - "Standard"
+            - "Layout"
+        LayoutTemplate:
+          type: "string"
+          nullable: true
+      type: "object"
+    TemplateValidationError:
+      properties:
+        Message:
+          type: "string"
+        Line:
+          type: "integer"
+        CharacterPosition:
+          type: "integer"
+    TemplateValidationRequest:
+      properties:
+        Subject:
+          type: "string"
+          description: "The subject content to validate. Must be specified if HtmlBody or
+
+            TextBody are not. See our template language documentation for more
+
+            information on the syntax for this field.\n"
+        HtmlBody:
+          type: "string"
+          description: "The html body content to validate. Must be specified if Subject or
+
+            TextBody are not. See our template language documentation for more
+
+            information on the syntax for this field.\n"
+        TextBody:
+          type: "string"
+          description: "The text body content to validate. Must be specified if HtmlBody
+            or
+
+            Subject are not. See our template language documentation for more
+
+            information on the syntax for this field.\n"
+        TestRenderModel:
+          type: "object"
+          description: "The model to be used when rendering test content."
+        InlineCssForHtmlTestRender:
+          type: "boolean"
+          default: true
+          description: "When HtmlBody is specified, the test render will have style blocks
+
+            inlined as style attributes on matching html elements. You may
+            disable
+
+            the css inlining behavior by passing false for this parameter.\n"
+        TemplateType:
+          type: "string"
+          enum:
+            - "Standard"
+            - "Layout"
+        LayoutTemplate:
+          type: "string"
+          nullable: true
+      type: "object"
+    TemplateValidationResponse:
+      properties:
+        AllContentIsValid:
+          type: "boolean"
+        TextBody:
+          $ref: "#/components/schemas/TemplateValidationResult"
+        HtmlBody:
+          $ref: "#/components/schemas/TemplateValidationResult"
+        Subject:
+          $ref: "#/components/schemas/TemplateValidationResult"
+        SuggestedTemplateModel:
+          type: "object"
+    TemplateValidationResult:
+      properties:
+        ContentIsValid:
+          type: "boolean"
+        ValidationErrors:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/TemplateValidationError"
+        RenderedContent:
+          type: "string"
+    TemplatesPushModel:
+      type: "object"
+      required:
+        - "SourceServerID"
+        - "DestinationServerID"
+        - "PerformChanges"
+      properties:
+        SourceServerID:
+          type: "integer"
+        DestinationServerID:
+          type: "integer"
+        PerformChanges:
+          type: "boolean"
+    TemplatesPushResponse:
+      type: "object"
+      properties:
+        TotalCount:
+          type: "integer"
+        Templates:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+              Action:
+                type: "string"
+                enum:
+                  - "Create"
+                  - "Edit"
+              TemplateId:
+                type: "integer"
+              Alias:
+                type: "string"
+              Name:
+                type: "string"
+              TemplateType:
+                type: "string"
+                enum:
+                  - "Standard"
+                  - "Layout"
+    Webhook:
+      type: "object"
+      properties:
+        ID:
+          type: "integer"
+        Url:
+          type: "string"
+        MessageStream:
+          type: "string"
+        HttpAuth:
+          $ref: "#/components/schemas/WebhookHttpAuth"
+        HttpHeaders:
+          $ref: "#/components/schemas/HeaderCollection"
+        Triggers:
+          $ref: "#/components/schemas/WebhookTriggers"
+    WebhookContentTrigger:
+      type: "object"
+      properties:
+        Enabled:
+          type: "boolean"
+        IncludeContent:
+          type: "boolean"
+    WebhookHttpAuth:
+      type: "object"
+      properties:
+        Username:
+          type: "string"
+        Password:
+          type: "string"
+    WebhookListResponse:
+      type: "object"
+      properties:
+        Webhooks:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Webhook"
+    WebhookOpenTrigger:
+      type: "object"
+      properties:
+        Enabled:
+          type: "boolean"
+        PostFirstOpenOnly:
+          type: "boolean"
+    WebhookToggle:
+      type: "object"
+      properties:
+        Enabled:
+          type: "boolean"
+    WebhookTriggers:
+      type: "object"
+      properties:
+        Open:
+          $ref: "#/components/schemas/WebhookOpenTrigger"
+        Click:
+          $ref: "#/components/schemas/WebhookToggle"
+        Delivery:
+          $ref: "#/components/schemas/WebhookToggle"
+        Bounce:
+          $ref: "#/components/schemas/WebhookContentTrigger"
+        SpamComplaint:
+          $ref: "#/components/schemas/WebhookContentTrigger"
+        SubscriptionChange:
+          $ref: "#/components/schemas/WebhookToggle"
+    WebhookUpsertRequest:
+      type: "object"
+      required:
+        - "Url"
+      properties:
+        Url:
+          type: "string"
+        MessageStream:
+          type: "string"
+        HttpAuth:
+          $ref: "#/components/schemas/WebhookHttpAuth"
+        HttpHeaders:
+          $ref: "#/components/schemas/HeaderCollection"
+        Triggers:
+          $ref: "#/components/schemas/WebhookTriggers"
+  responses:
+    422:
+      description: "An error was generated due to incorrect use of the API. See the
+        Message associated with this response for more information."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StandardPostmarkResponse"
+    500:
+      description: "Indicates an internal server error occurred."
+  securitySchemes:
+    serverToken:
+      type: "apiKey"
+      in: "header"
+      name: "X-Postmark-Server-Token"
+    accountToken:
+      type: "apiKey"
+      in: "header"
+      name: "X-Postmark-Account-Token"

@@ -23,7 +23,7 @@ public class TemplateIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact(Skip = "Cannot be tested with test API token.")]
@@ -43,7 +43,7 @@ public class TemplateIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact(Skip = "Cannot be tested with test API token.")]
@@ -63,7 +63,7 @@ public class TemplateIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact(Skip = "Cannot be tested with test API token.")]
@@ -85,7 +85,7 @@ public class TemplateIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact(Skip = "Cannot be tested with test API token.")]
@@ -107,7 +107,7 @@ public class TemplateIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact(Skip = "Cannot be tested with test API token.")]
@@ -128,7 +128,7 @@ public class TemplateIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact(Skip = "Cannot be tested with test API token.")]
@@ -150,7 +150,7 @@ public class TemplateIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact(Skip = "Cannot be tested with test API token.")]
@@ -173,7 +173,7 @@ public class TemplateIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact(Skip = "Cannot be tested with test API token.")]
@@ -199,12 +199,12 @@ public class TemplateIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
         Assert.All(batchResponse.Results, r =>
             {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
+                Assert.True(r.IsSuccess(out var response), r.ToString());
+                Assert.NotEqual(Guid.Empty, response.MessageId);
             }
         );
     }
@@ -234,7 +234,7 @@ public class TemplateIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 
     [Fact(Skip = "Cannot be tested with test API token.")]
@@ -265,6 +265,6 @@ public class TemplateIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.NotEmpty(response.MessageId);
+        Assert.NotEqual(Guid.Empty, response.MessageId);
     }
 }
