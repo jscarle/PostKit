@@ -1,4 +1,5 @@
 using PostKit;
+using PostKit.Emails;
 
 var builder = WebApplication.CreateBuilder(args);
 

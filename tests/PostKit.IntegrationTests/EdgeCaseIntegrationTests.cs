@@ -1,3 +1,6 @@
+using PostKit.Common;
+using PostKit.Emails;
+
 namespace PostKit.IntegrationTests;
 
 /// <summary>Integration tests for edge cases and boundary conditions with Postmark API.</summary>

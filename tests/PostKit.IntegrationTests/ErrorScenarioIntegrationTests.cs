@@ -1,3 +1,5 @@
+using PostKit.Emails;
+
 namespace PostKit.IntegrationTests;
 
 /// <summary>Integration tests for error scenarios and edge cases with Postmark API.</summary>

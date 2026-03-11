@@ -1,3 +1,6 @@
+using PostKit.Common;
+using PostKit.Emails;
+
 namespace PostKit.IntegrationTests;
 
 /// <summary>Integration tests for sending emails through Postmark API.</summary>

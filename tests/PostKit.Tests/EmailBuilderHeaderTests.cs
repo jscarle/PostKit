@@ -1,3 +1,5 @@
+using PostKit.Emails;
+
 namespace PostKit.Tests;
 
 public class EmailBuilderHeaderTests

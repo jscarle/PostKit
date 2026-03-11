@@ -1,5 +1,6 @@
 ﻿using LightResults;
-using PostKit.Responses;
+using PostKit.BulkEmails;
+using PostKit.Emails;
 
 namespace PostKit;
 
@@ -17,4 +18,16 @@ public interface IPostKitClient
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the batch send response or error information.</returns>
     Task<Result<SendEmailBatchResponse>> SendEmailBatchAsync(IReadOnlyCollection<Email> emails, CancellationToken cancellationToken = default);
+
+    /// <summary>Sends a bulk email request asynchronously.</summary>
+    /// <param name="bulkEmail">The bulk email request to submit.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the current bulk email request status or error information.</returns>
+    Task<Result<BulkEmailStatusResponse>> SendBulkEmailAsync(BulkEmail bulkEmail, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets the current status of a bulk email request asynchronously.</summary>
+    /// <param name="id">The identifier of the bulk email request.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the current bulk email request status or error information.</returns>
+    Task<Result<BulkEmailStatusResponse>> GetBulkEmailStatusAsync(Guid id, CancellationToken cancellationToken = default);
 }

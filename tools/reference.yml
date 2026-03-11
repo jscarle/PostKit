@@ -623,7 +623,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BulkEmailSubmitResponse"
+                $ref: "#/components/schemas/BulkEmailStatusResponse"
         422:
           $ref: "#/components/responses/422"
         500:
@@ -3042,8 +3042,6 @@ components:
             $ref: "#/components/schemas/BounceInfoResponse"
     BulkEmailRecipient:
       type: "object"
-      required:
-        - "To"
       properties:
         To:
           type: "string"
@@ -3058,6 +3056,14 @@ components:
           $ref: "#/components/schemas/Metadata"
         Headers:
           $ref: "#/components/schemas/HeaderCollection"
+      allOf:
+        - anyOf:
+            - required:
+                - "To"
+            - required:
+                - "Cc"
+            - required:
+                - "Bcc"
     BulkEmailRequest:
       type: "object"
       required:
@@ -3089,6 +3095,7 @@ components:
           $ref: "#/components/schemas/Metadata"
         MessageStream:
           type: "string"
+          description: "Broadcast message stream ID. If omitted, Postmark uses the default broadcast stream."
         TrackOpens:
           type: "boolean"
         TrackLinks:
@@ -3108,9 +3115,14 @@ components:
             $ref: "#/components/schemas/BulkEmailRecipient"
     BulkEmailStatusResponse:
       type: "object"
+      required:
+        - "Id"
+        - "Status"
+        - "SubmittedAt"
+        - "TotalMessages"
+        - "PercentageCompleted"
+        - "Subject"
       properties:
-        ID:
-          type: "string"
         Id:
           type: "string"
         Status:
@@ -3119,6 +3131,7 @@ components:
             - "Accepted"
             - "Processing"
             - "Completed"
+            - "Failed"
         SubmittedAt:
           type: "string"
           format: "date-time"
@@ -3130,17 +3143,32 @@ components:
           type: "string"
     BulkEmailSubmitResponse:
       type: "object"
+      required:
+        - "Id"
+        - "Status"
+        - "SubmittedAt"
+        - "TotalMessages"
+        - "PercentageCompleted"
+        - "Subject"
       properties:
-        ID:
+        Id:
           type: "string"
         Status:
           type: "string"
           enum:
             - "Accepted"
             - "Failed"
+            - "Processing"
+            - "Completed"
         SubmittedAt:
           type: "string"
           format: "date-time"
+        TotalMessages:
+          type: "integer"
+        PercentageCompleted:
+          type: "number"
+        Subject:
+          type: "string"
     CreateInboundRuleRequest:
       description: ""
       properties:

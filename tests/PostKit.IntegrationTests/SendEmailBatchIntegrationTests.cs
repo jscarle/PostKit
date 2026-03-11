@@ -1,5 +1,6 @@
 using LightResults;
-using PostKit.Responses;
+using PostKit.Common;
+using PostKit.Emails;
 
 namespace PostKit.IntegrationTests;
 

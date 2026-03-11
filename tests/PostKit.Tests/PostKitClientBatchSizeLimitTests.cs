@@ -1,7 +1,8 @@
 using LightResults;
 using Microsoft.Extensions.Logging;
-using PostKit.Common;
+using PostKit.Emails;
 using PostKit.Postmark;
+using PostKit.Postmark.Common;
 
 namespace PostKit.Tests;
 
@@ -40,6 +41,12 @@ public class PostKitClientBatchSizeLimitTests
         public int CallCount { get; private set; }
 
         public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+            throw new InvalidOperationException("Postmark should not be called for oversized batches.");
+        }
+
+        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
         {
             CallCount++;
             throw new InvalidOperationException("Postmark should not be called for oversized batches.");

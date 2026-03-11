@@ -1,4 +1,5 @@
-using PostKit.Common;
+using PostKit.Emails;
+using PostKit.Postmark.Common;
 
 namespace PostKit.Tests;
 

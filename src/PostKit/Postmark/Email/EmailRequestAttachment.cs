@@ -1,18 +1,19 @@
 ﻿using System.Text.Json.Serialization;
+using JetBrains.Annotations;
 
 namespace PostKit.Postmark.Email;
 
 internal sealed class EmailRequestAttachment
 {
     [JsonPropertyName("Name")]
-    public string? Name { get; set; }
+    public string? Name { [UsedImplicitly] get; set; }
 
     [JsonPropertyName("ContentID")]
-    public string? ContentId { get; set; }
+    public string? ContentId { [UsedImplicitly] get; set; }
 
     [JsonPropertyName("ContentType")]
-    public string? ContentType { get; set; }
+    public string? ContentType { [UsedImplicitly] get; set; }
 
     [JsonPropertyName("Content")]
-    public string? Content { get; set; }
+    public string? Content { [UsedImplicitly] get; set; }
 }

@@ -1,5 +1,6 @@
 using LightResults;
 using Microsoft.Extensions.Logging;
+using PostKit.Emails;
 using PostKit.Postmark;
 using PostKit.Postmark.Email;
 
@@ -153,6 +154,11 @@ public class EmailBuilderTemplateTests
                 throw new InvalidOperationException("Unexpected response type.");
 
             return Task.FromResult(Result.Success((TResponse)(object)_response));
+        }
+
+        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("GetAsync should not be called in this test.");
         }
     }
 

@@ -6,9 +6,9 @@ using JetBrains.Annotations;
 using LightResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PostKit.Common;
 using PostKit.Configuration;
 using PostKit.Errors;
+using PostKit.Postmark.Common;
 using PostKit.Postmark.Email;
 
 namespace PostKit.Postmark;
@@ -40,8 +40,19 @@ internal sealed partial class PostmarkClient : IPostmarkClient
     {
         var jsonToSend = JsonSerializer.Serialize(body, PostmarkConfiguration.JsonSerializerOptions);
         LogApiRequest(jsonToSend);
-        var contentToSend = new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json);
+        using var contentToSend = new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json);
         using var responseMessage = await _httpClient.PostAsync(endpoint, contentToSend, cancellationToken);
+        return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
+    }
+
+    public async Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+    {
+        using var responseMessage = await _httpClient.GetAsync(endpoint, cancellationToken);
+        return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
+    }
+
+    private async Task<Result<TResponse>> GetResponse<TResponse>(string endpoint, HttpResponseMessage responseMessage, CancellationToken cancellationToken)
+    {
         if (responseMessage.IsSuccessStatusCode)
         {
             var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);

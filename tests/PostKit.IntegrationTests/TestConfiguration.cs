@@ -13,6 +13,7 @@ internal static class TestConfiguration
     private const string DefaultTestReplyToEmail = "replyto@example.com";
 
     private static readonly Lazy<IConfigurationRoot> Configuration = new(CreateConfiguration);
+    private static readonly Lazy<IConfigurationRoot> DevelopmentConfiguration = new(CreateDevelopmentConfiguration);
 
     /// <summary>Postmark test API token - This is a special test token provided by Postmark.</summary>
     public static string ApiToken => GetValue("ApiToken", DefaultApiToken);
@@ -24,6 +25,14 @@ internal static class TestConfiguration
     public static string TestCcEmail => GetValue("CcEmail", DefaultTestCcEmail);
     public static string TestBccEmail => GetValue("BccEmail", DefaultTestBccEmail);
     public static string TestReplyToEmail => GetValue("ReplyToEmail", DefaultTestReplyToEmail);
+
+    /// <summary>Values loaded directly from appsettings.Development.json for live-server-only integration tests.</summary>
+    public static string? DevelopmentApiToken => GetDevelopmentValue("ApiToken");
+    public static string? DevelopmentFromEmail => GetDevelopmentValue("FromEmail");
+    public static string? DevelopmentToEmail => GetDevelopmentValue("ToEmail");
+    public static string? DevelopmentCcEmail => GetDevelopmentValue("CcEmail");
+    public static string? DevelopmentBccEmail => GetDevelopmentValue("BccEmail");
+    public static string? DevelopmentReplyToEmail => GetDevelopmentValue("ReplyToEmail");
 
     private static IConfigurationRoot CreateConfiguration()
     {
@@ -38,9 +47,23 @@ internal static class TestConfiguration
             .Build();
     }
 
+    private static IConfigurationRoot CreateDevelopmentConfiguration()
+    {
+        return new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.Development.json", optional: true)
+            .Build();
+    }
+
     private static string GetValue(string key, string fallback)
     {
         var value = Configuration.Value[key];
         return string.IsNullOrWhiteSpace(value) ? fallback : value;
+    }
+
+    private static string? GetDevelopmentValue(string key)
+    {
+        var value = DevelopmentConfiguration.Value[key];
+        return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 }

@@ -67,53 +67,15 @@
         <None Include="..\..\Icon.png" Pack="true" PackagePath="\" Visible="false"/>
     </ItemGroup>
 
-    <!-- Content -->
     <ItemGroup>
-        <Compile Update="EmailBuilder.Bcc.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.Cc.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.From.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.To.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.Body.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.ReplyTo.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.Subject.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.Tag.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.Header.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.Attachments.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.LinkTracking.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.MessageStream.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.Metadata.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.OpenTracking.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
-        <Compile Update="EmailBuilder.Templates.cs">
-            <DependentUpon>EmailBuilder.cs</DependentUpon>
-        </Compile>
+      <Compile Update="PostKitClient.Emails.cs">
+        <DependentUpon>PostKitClient.cs</DependentUpon>
+      </Compile>
+      <Compile Update="PostKitClient.BulkEmails.cs">
+        <DependentUpon>PostKitClient.cs</DependentUpon>
+      </Compile>
     </ItemGroup>
+
+    <!-- Content -->
 
 </Project>

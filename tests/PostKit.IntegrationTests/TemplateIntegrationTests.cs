@@ -1,3 +1,6 @@
+using PostKit.Common;
+using PostKit.Emails;
+
 namespace PostKit.IntegrationTests;
 
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local

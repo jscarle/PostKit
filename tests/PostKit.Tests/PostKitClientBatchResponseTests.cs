@@ -1,9 +1,9 @@
 using LightResults;
 using Microsoft.Extensions.Logging;
+using PostKit.Emails;
 using PostKit.Errors;
 using PostKit.Postmark;
 using PostKit.Postmark.Email;
-using PostKit.Responses;
 
 namespace PostKit.Tests;
 
@@ -89,6 +89,11 @@ public class PostKitClientBatchResponseTests
                 throw new InvalidOperationException("Unexpected response type.");
 
             return Task.FromResult(Result.Success((TResponse)(object)response));
+        }
+
+        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("GetAsync should not be called in this test.");
         }
     }
 

@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PostKit.Common;
+using PostKit.Emails;
 
 namespace PostKit.Tests;
 
