@@ -31,16 +31,7 @@ public static class PostKitExtensions
     /// <returns>The same <paramref name="services"/> instance so calls can be chained.</returns>
     public static IServiceCollection AddPostKit(this IServiceCollection services)
     {
-        services.AddHttpClient("Postmark").AddHttpRawMessageLogging(options =>
-        {
-            options.Level = LogLevel.Information;
-            options.IgnoreRequestHeaders = [];
-            options.RedactRequestHeaders = [];
-            options.IgnoreRequestContent = false;
-            options.IgnoreResponseHeaders = [];
-            options.RedactResponseHeaders = [];
-            options.IgnoreResponseContent = false;
-        });
+        services.AddHttpClient("Postmark");
 
         services.AddOptions<PostKitOptions>()
             .Configure<IConfiguration>((options, configuration) =>
