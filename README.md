@@ -8,6 +8,24 @@ A MimeKit infused implementation of the Postmark API.
 [![nuget](https://img.shields.io/nuget/v/PostKit)](https://www.nuget.org/packages/PostKit)
 [![downloads](https://img.shields.io/nuget/dt/PostKit)](https://www.nuget.org/packages/PostKit)
 
+## Version 10.1.0 Breaking Changes Since v10.0.3
+
+Upgrading to `10.1.0` requires a few source changes:
+
+- Public email types now live in `PostKit.Emails`. Add `using PostKit.Emails;` for `Email`, `EmailBuilder`, `SendEmailResponse`, and `SendEmailBatchResponse`.
+- Shared email primitives now live in `PostKit.Common`. Add `using PostKit.Common;` for `Attachment`, `LinkTracking`, and `MessageStream`.
+- Bulk email types are new and live in `PostKit.BulkEmails`.
+- `SendEmailResponse.MessageId` is now a `Guid` containing Postmark's message identifier. Use `InternetMessageId` when you need the RFC-style `<...@mtasv.net>` value.
+- `SendEmailBatchResponse.Results` now exposes `IReadOnlyList<Result<SendEmailResponse>>`. Per-email failures are represented as failed item results, typically with a `PostmarkError`, instead of `SendEmailResponse` entries.
+
+Typical upgrade imports:
+
+```csharp
+using PostKit;
+using PostKit.Common;
+using PostKit.Emails;
+```
+
 ## Quickstart
 
 ### Prerequisites
@@ -23,6 +41,8 @@ Install PostKit via NuGet:
 ```bash
 dotnet add package PostKit
 ```
+
+Current package targets `net8.0`, `net9.0`, and `net10.0`.
 
 ### Configuration
 
@@ -84,18 +104,37 @@ builder.Services.AddKeyedPostKit(PostmarkServer.Production, "Default"); // binds
 }
 ```
 
+Resolve keyed clients with the standard keyed DI APIs:
+
+```csharp
+var marketingClient = app.Services.GetRequiredKeyedService<IPostKitClient>("Marketing");
+```
+
 ### Basic Usage
+
+Most application code will use these namespaces:
+
+```csharp
+using PostKit;
+using PostKit.Common;
+using PostKit.Emails;
+```
+
+Add `using PostKit.BulkEmails;` when working with the Bulk Email API.
 
 PostKit uses a fluent builder pattern with the following capabilities:
 
 - **Email Addresses**: Support for simple strings, name/address pairs, or MimeKit `MailboxAddress` objects
-- **Multiple Recipients**: Chain `AlsoTo()`, `AlsoCc()`, or `AlsoBcc()` to add additional recipients
-- **Validation**: Automatic validation of email addresses, character limits, and required fields
+- **Multiple Recipients**: Chain `AlsoTo()`, `AlsoCc()`, `AlsoBcc()`, or `AlsoReplyTo()` to add additional recipients
+- **Templates**: Send templated emails by template ID or alias, including batch template sends
+- **Bulk Email API**: Submit broadcast bulk email jobs and poll their processing status
+- **Validation**: Builder validation covers required fields, recipient counts, headers, metadata, message streams, template/body exclusivity, and size limits. Postmark still performs final sender and recipient validation
 
 #### Simple Email
 
 ```csharp
 using PostKit;
+using PostKit.Emails;
 
 // Inject IPostKitClient via dependency injection
 public class EmailService
@@ -177,14 +216,32 @@ if (batchResult.IsSuccess(out var batchResponse))
 {
     if (!batchResponse.IsSuccessful)
     {
-        foreach (var result in batchResponse.Results.Where(static result => !result.IsSuccess()))
+        foreach (var result in batchResponse.Results)
         {
-            if (result.IsFailure(out var error, out _) && error is PostmarkError postmarkError)
-                Console.WriteLine($"Batch item failed: {postmarkError.ErrorCode} - {postmarkError.Message}");
+            if (result.IsFailure(out var error, out _))
+                Console.WriteLine($"Batch item failed: {error.Message}");
         }
     }
 }
 ```
+
+#### Templates
+
+```csharp
+var email = Email.CreateBuilder()
+    .From("noreply@yourapp.com")
+    .To("user@example.com")
+    .WithTemplate("welcome-email", new
+    {
+        Name = "Alice",
+        Product = "PostKit"
+    }, inlineCss: true)
+    .Build();
+
+await _postKitClient.SendEmailAsync(email);
+```
+
+When batching template emails, every email in the batch must use a template. Mixing templated and non-templated emails in the same batch is rejected by the client.
 
 #### Advanced Features
 
@@ -233,6 +290,34 @@ var email = Email.CreateBuilder()
 await _postKitClient.SendEmailAsync(email);
 ```
 
+#### Bulk Emails
+
+```csharp
+var bulkEmail = BulkEmail.CreateBuilder()
+    .From("newsletter@company.com")
+    .WithSubject("Hello, {{FirstName}}")
+    .WithHtmlBody("<h1>Hello, {{FirstName}}</h1><p>Thanks for subscribing.</p>")
+    .UsingMessageStream(MessageStream.Broadcast)
+    .AddMessage(BulkEmailMessage.CreateBuilder()
+        .To("alice@example.com")
+        .WithTemplateModel(new { FirstName = "Alice" })
+        .Build())
+    .AddMessage(BulkEmailMessage.CreateBuilder()
+        .To("bob@example.com")
+        .WithTemplateModel(new { FirstName = "Bob" })
+        .Build())
+    .Build();
+
+var submitResult = await _postKitClient.SendBulkEmailAsync(bulkEmail);
+
+if (submitResult.IsSuccess(out var submitted))
+{
+    var statusResult = await _postKitClient.GetBulkEmailStatusAsync(submitted.Id);
+}
+```
+
+PostKit enforces the Bulk Email API's broadcast-stream requirement. `MessageStream.Transactional` and the `outbound` stream ID are rejected by the bulk builder.
+
 ### Size Limits
 
 Postmark limits `TextBody` and `HtmlBody` to 5 MB each, and total message size (including attachments) to 10 MB. When batching, Postmark accepts up to 500 emails per batch and batch payloads are limited to 50 MB. PostKit uses a conservative
@@ -240,7 +325,9 @@ estimate to prevent grossly oversized requests. Actual size limits will be enfor
 
 ### Error Handling
 
-PostKit uses [LightResults](https://github.com/jscarle/LightResults) for error handling. `SendEmailAsync` returns a `Result<SendEmailResponse>` that contains either the response or error information:
+PostKit uses [LightResults](https://github.com/jscarle/LightResults) for error handling. `SendEmailAsync`, `SendEmailBatchAsync`, `SendBulkEmailAsync`, and `GetBulkEmailStatusAsync` all return `Result<T>` values. Add `using PostKit.Errors;` when you want to inspect concrete error types.
+
+`SendEmailAsync` returns a `Result<SendEmailResponse>` that contains either the response or error information:
 
 ```csharp
 var result = await _postKitClient.SendEmailAsync(email);
@@ -298,7 +385,7 @@ See `PostmarkErrorCode` enum for the complete list of possible Postmark error co
 
 ### Message Streams
 
-Postmark supports different message streams for different types of emails:
+Postmark supports different message streams for different types of emails. PostKit maps `MessageStream.Transactional` to `outbound` and `MessageStream.Broadcast` to `broadcast`. The Bulk Email API only supports broadcast streams.
 
 ```csharp
 // For transactional emails (default)
@@ -318,6 +405,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PostKit;
+using PostKit.Emails;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -356,12 +444,12 @@ The following tables track development progress and map the different Postmark A
 
 ---
 
-## Bulk Email
+## Bulk Email API
 
 |    | Endpoint                                                                                                                                           | Implementation |
 |----|----------------------------------------------------------------------------------------------------------------------------------------------------|----------------|
-| ✏️ | [Send bulk emails BETA](https://postmarkapp.com/developer/api/bulk-email#send-bulk-emails)                                                         |                |
-| ✏️ | [Get the status/details of a bulk API request BETA](https://postmarkapp.com/developer/api/bulk-email#get-the-status-details-of-a-bulk-api-request) |                |
+| ✅ | [Send bulk emails BETA](https://postmarkapp.com/developer/api/bulk-email#send-bulk-emails)                                                         | `IPostKitClient.SendBulkEmailAsync`      |
+| ✅ | [Get the status/details of a bulk API request BETA](https://postmarkapp.com/developer/api/bulk-email#get-the-status-details-of-a-bulk-api-request) | `IPostKitClient.GetBulkEmailStatusAsync` |
 
 ---
 
