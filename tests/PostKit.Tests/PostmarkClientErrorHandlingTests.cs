@@ -32,6 +32,25 @@ public class PostmarkClientErrorHandlingTests
         Assert.Equal(HttpStatusCode.UnprocessableEntity, postmarkError.StatusCode);
     }
 
+    [Fact]
+    public async Task PostAsync_WithStructuredForbiddenError_ReturnsPostmarkError()
+    {
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.Forbidden)
+            {
+                Content = new StringContent("""{"ErrorCode":10,"Message":"The Postmark Test API Token may only be used on the /email endpoint."}""", Encoding.UTF8, MediaTypeNames.Application.Json),
+            }
+        ));
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>());
+
+        var result = await client.PostAsync<object, EmailResponse>("/email/bulk", new { Name = "Alice" }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out EmailResponse? _), result.ToString());
+        var postmarkError = Assert.IsType<PostmarkError>(error);
+        Assert.Equal((PostmarkErrorCode)10, postmarkError.ErrorCode);
+        Assert.Equal("The Postmark Test API Token may only be used on the /email endpoint.", postmarkError.Message);
+        Assert.Equal(HttpStatusCode.Forbidden, postmarkError.StatusCode);
+    }
+
     private sealed class StubHttpMessageHandler(HttpResponseMessage responseMessage) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

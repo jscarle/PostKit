@@ -68,4 +68,7 @@ public enum BounceType
 
     /// <summary>A template rendering failure.</summary>
     TemplateRenderingFailed,
+
+    /// <summary>A spam challenge verification response.</summary>
+    ChallengeVerification,
 }

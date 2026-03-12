@@ -15,6 +15,7 @@ namespace PostKit;
 internal sealed partial class PostKitClient
 {
     private const int MaxBounceCount = 500;
+    private const int MaxBounceSearchWindow = 10_000;
 
     public async Task<Result<BouncePage>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default)
     {
@@ -187,6 +188,9 @@ internal sealed partial class PostKitClient
 
         if (query.Offset < 0)
             return "The bounce query offset must be zero or greater.";
+
+        if ((long)query.Count + query.Offset > MaxBounceSearchWindow)
+            return $"The bounce query count and offset cannot exceed {MaxBounceSearchWindow} when combined.";
 
         if (query.EmailFilter is not null && string.IsNullOrWhiteSpace(query.EmailFilter))
             return "The bounce query email filter must not be empty.";
@@ -483,6 +487,7 @@ internal sealed partial class PostKitClient
             BounceType.InboundError => "InboundError",
             BounceType.DmarcPolicy => "DMARCPolicy",
             BounceType.TemplateRenderingFailed => "TemplateRenderingFailed",
+            BounceType.ChallengeVerification => "ChallengeVerification",
             _ => throw new System.Diagnostics.UnreachableException($"Enum value of '{nameof(BounceType)}.{type}' has not been handled."),
         };
     }
@@ -513,6 +518,7 @@ internal sealed partial class PostKitClient
             "InboundError" => BounceType.InboundError,
             "DMARCPolicy" => BounceType.DmarcPolicy,
             "TemplateRenderingFailed" => BounceType.TemplateRenderingFailed,
+            "ChallengeVerification" => BounceType.ChallengeVerification,
             _ => null,
         };
     }

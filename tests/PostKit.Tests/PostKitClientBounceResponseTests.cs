@@ -156,6 +156,47 @@ public class PostKitClientBounceResponseTests
     }
 
     [Fact]
+    public async Task GetBouncesAsync_WithChallengeVerification_MapsSupportedBounceType()
+    {
+        const string responseJson = """
+                                    {
+                                      "TotalCount": 1,
+                                      "Bounces": [
+                                        {
+                                          "RecordType": "Bounce",
+                                          "ID": 1599950051,
+                                          "Type": "ChallengeVerification",
+                                          "TypeCode": 16384,
+                                          "Name": "Challenge verification",
+                                          "Tag": "",
+                                          "MessageID": "69ce4784-c202-41c6-a1a9-91757022b25e",
+                                          "ServerID": 18451835,
+                                          "MessageStream": "outbound",
+                                          "Description": "Challenge verification response.",
+                                          "Details": "smtp; challenge verification",
+                                          "Email": "ChallengeVerification@bounce-testing.postmarkapp.com",
+                                          "From": "from@publi-7.com",
+                                          "BouncedAt": "2026-03-11T17:33:38Z",
+                                          "DumpAvailable": true,
+                                          "Inactive": false,
+                                          "CanActivate": false,
+                                          "Subject": "PostKit Bounces API probe"
+                                        }
+                                      ]
+                                    }
+                                    """;
+
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/bounces?count=10&offset=0"] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBouncesAsync(new BounceQuery(10, 0), CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal(BounceType.ChallengeVerification, Assert.Single(response.Bounces).Type);
+    }
+
+    [Fact]
     public async Task GetBounceAsync_WithWhitespaceOnlySubject_PreservesSubject()
     {
         const string responseJson = """
@@ -229,6 +270,32 @@ public class PostKitClientBounceResponseTests
     }
 
     [Fact]
+    public async Task GetDeliveryStatsAsync_WithChallengeVerification_MapsSupportedBounceType()
+    {
+        const string responseJson = """
+                                    {
+                                      "InactiveMails": 0,
+                                      "Bounces": [
+                                        {
+                                          "Type": "ChallengeVerification",
+                                          "Name": "Challenge verification",
+                                          "Count": 1
+                                        }
+                                      ]
+                                    }
+                                    """;
+
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/deliverystats"] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetDeliveryStatsAsync(CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal(BounceType.ChallengeVerification, Assert.Single(response.Bounces).Type);
+    }
+
+    [Fact]
     public async Task GetBounceDumpAsync_UsesBounceDumpEndpointAndMapsResponse()
     {
         const string responseJson = """
@@ -298,6 +365,19 @@ public class PostKitClientBounceResponseTests
         var client = new PostKitClient(postmark, logger);
 
         var result = await client.GetBouncesAsync(new BounceQuery(0, 0), CancellationToken.None);
+
+        Assert.True(result.IsFailure());
+        Assert.Null(postmark.LastEndpoint);
+    }
+
+    [Fact]
+    public async Task GetBouncesAsync_WhenCountAndOffsetExceedSearchWindow_Fails()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBouncesAsync(new BounceQuery(500, 9800), CancellationToken.None);
 
         Assert.True(result.IsFailure());
         Assert.Null(postmark.LastEndpoint);

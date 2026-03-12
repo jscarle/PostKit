@@ -75,6 +75,13 @@ internal sealed partial class PostmarkClient : IPostmarkClient
 
     private async Task<Result<TResponse>> GetRequestFailure<TResponse>(string endpoint, HttpResponseMessage responseMessage, CancellationToken cancellationToken)
     {
+        var parsedErrorResponse = await TryGetPostmarkErrorResponse(endpoint, responseMessage, strict: responseMessage.StatusCode == HttpStatusCode.UnprocessableEntity, cancellationToken);
+        if (parsedErrorResponse.IsFailure(out var parseError, out var postmarkErrorResponse))
+            return Result.Failure<TResponse>(parseError);
+
+        if (postmarkErrorResponse is not null)
+            return Result.Failure<TResponse>(new PostmarkError(responseMessage.StatusCode, postmarkErrorResponse));
+
         if (responseMessage.StatusCode == HttpStatusCode.Unauthorized)
         {
             var httpError = new HttpError(HttpStatusCode.Unauthorized, "The server API token is invalid.");
@@ -91,19 +98,6 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         {
             var httpError = new HttpError(HttpStatusCode.RequestEntityTooLarge, $"The payload for the request to the '{endpoint}' endpoint of the Postmark API was too large.");
             return Result.Failure<TResponse>(httpError);
-        }
-
-        if (responseMessage.StatusCode == HttpStatusCode.UnprocessableEntity)
-        {
-            var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
-            LogApiResponse(receivedContent);
-            var response = JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
-
-            if (response == null)
-                return Result.Failure<TResponse>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
-
-            var postmarkError = new PostmarkError(response);
-            return Result.Failure<TResponse>(postmarkError);
         }
 
         if (responseMessage.StatusCode == HttpStatusCode.TooManyRequests)
@@ -125,6 +119,32 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         }
         var genericHttpError = new HttpError(responseMessage.StatusCode, $"An '{(int)responseMessage.StatusCode} {responseMessage.ReasonPhrase}' error occurred while processing the request to the '{endpoint}' endpoint of the Postmark API.");
         return Result.Failure<TResponse>(genericHttpError);
+    }
+
+    private async Task<Result<PostmarkResponse?>> TryGetPostmarkErrorResponse(string endpoint, HttpResponseMessage responseMessage, bool strict, CancellationToken cancellationToken)
+    {
+        var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(receivedContent))
+            return Result.Success<PostmarkResponse?>(null);
+
+        LogApiResponse(receivedContent);
+
+        try
+        {
+            var response = JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
+            if (response is null && strict)
+                return Result.Failure<PostmarkResponse?>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
+
+            return Result.Success<PostmarkResponse?>(response);
+        }
+        catch (JsonException) when (!strict)
+        {
+            return Result.Success<PostmarkResponse?>(null);
+        }
+        catch (JsonException)
+        {
+            return Result.Failure<PostmarkResponse?>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
+        }
     }
 
     [LoggerMessage(LogLevel.Trace, "Postmark API request: {Content}")]
