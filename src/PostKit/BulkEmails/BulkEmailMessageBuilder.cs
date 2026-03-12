@@ -1,6 +1,8 @@
 // ReSharper disable RedundantExtendsListEntry
 // Intentional reference as the code is separated into multiple files.
 
+using PostKit.Postmark.Common;
+
 namespace PostKit.BulkEmails;
 
 /// <summary>Provides a fluent interface for constructing <see cref="BulkEmailMessage"/> values.</summary>
@@ -22,12 +24,12 @@ public sealed partial class BulkEmailMessageBuilder : IBulkEmailMessageBuilder
 
         return new BulkEmailMessage
         {
-            To = _to?.AsReadOnly(),
-            Cc = _cc?.AsReadOnly(),
-            Bcc = _bcc?.AsReadOnly(),
+            To = _to?.SnapshotReadOnly(),
+            Cc = _cc?.SnapshotReadOnly(),
+            Bcc = _bcc?.SnapshotReadOnly(),
             TemplateModel = _templateModel,
-            Metadata = _metadata?.AsReadOnly(),
-            Headers = _headers?.AsReadOnly(),
+            Metadata = _metadata?.SnapshotReadOnly(),
+            Headers = _headers?.SnapshotReadOnly(),
         };
     }
 }

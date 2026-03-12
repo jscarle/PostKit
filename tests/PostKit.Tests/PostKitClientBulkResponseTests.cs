@@ -15,10 +15,7 @@ public class PostKitClientBulkResponseTests
                                     {
                                       "Id": "c42d4a19-b645-4cdd-9859-08d8f24b649a",
                                       "SubmittedAt": "2026-03-11T00:31:10.9843566Z",
-                                      "TotalMessages": 2,
-                                      "PercentageCompleted": 0,
-                                      "Status": "Accepted",
-                                      "Subject": "Bulk hello"
+                                      "Status": "Accepted"
                                     }
                                     """;
 
@@ -48,6 +45,36 @@ public class PostKitClientBulkResponseTests
         Assert.Equal(0, response.PercentageCompleted);
         Assert.Equal("Bulk hello", response.Subject);
         Assert.Contains("\"Cc\":\"cc@postkit.com\"", postmark.LastRequestJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendBulkEmailAsync_WhenSubmitStatusIsFailed_ReturnsFailure()
+    {
+        const string responseJson = """
+                                    {
+                                      "Id": "c42d4a19-b645-4cdd-9859-08d8f24b649a",
+                                      "SubmittedAt": "2026-03-11T00:31:10.9843566Z",
+                                      "Status": "Failed"
+                                    }
+                                    """;
+
+        var bulkEmail = BulkEmail.CreateBuilder()
+            .From("sender@postkit.com")
+            .WithSubject("Bulk hello")
+            .WithTextBody("Hello world")
+            .AddMessage(BulkEmailMessage.CreateBuilder()
+                .To("recipient@postkit.com")
+                .Build())
+            .Build();
+
+        var postmark = new RecordingPostmarkClient(responseJson);
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendBulkEmailAsync(bulkEmail, CancellationToken.None);
+
+        Assert.True(result.IsFailure(), result.ToString());
+        Assert.Equal("/email/bulk", postmark.LastEndpoint);
     }
 
     [Fact]

@@ -35,6 +35,20 @@ public class EmailBuilderSizeLimitTests
     }
 
     [Fact]
+    public void Build_WithUtf8BodyExceedingLimit_ThrowsInvalidOperationException()
+    {
+        var oversizedText = new string('é', (int)(PostmarkSizeEstimator.BodySizeLimitInBytes / 2) + 1);
+
+        var builder = Email.CreateBuilder()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .WithSubject("Oversized UTF-8 text body")
+            .WithTextBody(oversizedText);
+
+        Assert.Throws<InvalidOperationException>(() => builder.Build());
+    }
+
+    [Fact]
     public void Build_WithAttachmentsPushingPastMessageLimit_ThrowsInvalidOperationException()
     {
         var textBody = new string('a', (int)PostmarkSizeEstimator.BodySizeLimitInBytes);
@@ -50,5 +64,20 @@ public class EmailBuilderSizeLimitTests
             .WithAttachment(attachment);
 
         Assert.Throws<InvalidOperationException>(() => builder.Build());
+    }
+
+    [Fact]
+    public void Build_WithAttachmentWhoseBase64EncodingExceedsLimit_ThrowsInvalidOperationException()
+    {
+        var rawAttachmentBytes = new byte[(int)(PostmarkSizeEstimator.MessageSizeLimitInBytes / 4 * 3) + 1];
+        var attachment = Attachment.Create("large.bin", "application/octet-stream", rawAttachmentBytes);
+
+        var builder = Email.CreateBuilder()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .WithSubject("Oversized attachment")
+            .WithTextBody("Hello world");
+
+        Assert.Throws<InvalidOperationException>(() => builder.WithAttachment(attachment));
     }
 }

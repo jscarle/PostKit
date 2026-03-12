@@ -44,22 +44,24 @@ public sealed partial class BulkEmailBuilder : IBulkEmailBuilder
 
         return new BulkEmail
         {
-            From = _from,
-            ReplyTo = _replyTo?.AsReadOnly(),
+            From = _from.Snapshot(),
+            ReplyTo = _replyTo?.SnapshotReadOnly(),
             Subject = _subject,
             HtmlBody = _htmlBody,
             TextBody = _textBody,
             Tag = _tag,
-            Headers = _headers?.AsReadOnly(),
-            Metadata = _metadata?.AsReadOnly(),
+            Headers = _headers?.SnapshotReadOnly(),
+            Metadata = _metadata?.SnapshotReadOnly(),
             OpenTracking = _openTracking,
             LinkTracking = _linkTracking,
             MessageStream = _messageStream,
-            Attachments = _attachments?.AsReadOnly(),
+            Attachments = _attachments?.ToList()
+                .AsReadOnly(),
             TemplateId = _templateId,
             TemplateAlias = _templateAlias,
             InlineCss = _inlineCss,
-            Messages = _messages.AsReadOnly(),
+            Messages = _messages.ToList()
+                .AsReadOnly(),
         };
     }
 }

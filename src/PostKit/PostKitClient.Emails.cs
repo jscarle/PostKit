@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LightResults;
 using Microsoft.Extensions.Logging;
 using MimeKit;
@@ -80,7 +81,6 @@ internal sealed partial class PostKitClient
         var emailList = emails.ToList();
         var requests = new List<EmailRequest>(emailList.Count);
         var templateCount = 0;
-        long estimatedBatchSize = 0;
 
         foreach (var email in emailList)
         {
@@ -89,7 +89,6 @@ internal sealed partial class PostKitClient
             if (email.TemplateId.HasValue || email.TemplateAlias is not null)
                 templateCount++;
 
-            estimatedBatchSize += PostmarkSizeEstimator.EstimateMessageSizeLowerBound(email);
             try
             {
                 requests.Add(email.ToEmailRequest());
@@ -104,11 +103,16 @@ internal sealed partial class PostKitClient
         if (templateCount > 0 && templateCount < emailList.Count)
             return Result.Failure<EmailBatchSubmission>("Each email in a batch must either use a template or none may use a template.");
 
-        if (estimatedBatchSize > PostmarkSizeEstimator.BatchPayloadSizeLimitInBytes)
-            return Result.Failure<EmailBatchSubmission>("Batch payload size exceeds Postmark's 50 MB limit.");
-
         var sendWithTemplates = templateCount > 0;
         var endpoint = sendWithTemplates ? "/email/batchWithTemplates" : "/email/batch";
+        var serializedPayloadSize = sendWithTemplates
+            ? JsonSerializer.SerializeToUtf8Bytes(new EmailBatchRequest { Messages = requests }, PostmarkConfiguration.JsonSerializerOptions)
+                .LongLength
+            : JsonSerializer.SerializeToUtf8Bytes(requests, PostmarkConfiguration.JsonSerializerOptions)
+                .LongLength;
+
+        if (serializedPayloadSize > PostmarkSizeEstimator.BatchPayloadSizeLimitInBytes)
+            return Result.Failure<EmailBatchSubmission>("Batch payload size exceeds Postmark's 50 MB limit.");
 
         Result<List<EmailResponse>> response;
         try
