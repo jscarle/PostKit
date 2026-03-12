@@ -116,9 +116,9 @@ public class BounceIntegrationTests
         return RequireSendResult(result);
     }
 
-    private async Task<BounceSearchResponse> WaitForBounceAsync(Guid messageId, bool inactive, CancellationToken cancellationToken)
+    private async Task<GetBouncesResponse> WaitForBounceAsync(Guid messageId, bool inactive, CancellationToken cancellationToken)
     {
-        BounceSearchResponse? lastResponse = null;
+        GetBouncesResponse? lastResponse = null;
 
         for (var attempt = 0; attempt < 24; attempt++)
         {
@@ -140,9 +140,9 @@ public class BounceIntegrationTests
         return lastResponse;
     }
 
-    private async Task<DeliveryStatsResponse> WaitForDeliveryStatsAsync(CancellationToken cancellationToken)
+    private async Task<GetDeliveryStatsResponse> WaitForDeliveryStatsAsync(CancellationToken cancellationToken)
     {
-        DeliveryStatsResponse? lastResponse = null;
+        GetDeliveryStatsResponse? lastResponse = null;
 
         for (var attempt = 0; attempt < 6; attempt++)
         {
@@ -206,9 +206,9 @@ public class BounceIntegrationTests
         return response.Bounces.FirstOrDefault();
     }
 
-    private async Task<BounceDetails> WaitForBounceStateAsync(long id, bool inactive, CancellationToken cancellationToken)
+    private async Task<GetBounceResponse> WaitForBounceStateAsync(long id, bool inactive, CancellationToken cancellationToken)
     {
-        BounceDetails? lastResponse = null;
+        GetBounceResponse? lastResponse = null;
 
         for (var attempt = 0; attempt < 12; attempt++)
         {

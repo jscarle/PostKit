@@ -4,7 +4,7 @@ using JetBrains.Annotations;
 namespace PostKit.Bounces;
 
 /// <summary>Represents delivery statistics returned by Postmark.</summary>
-public sealed record DeliveryStatsResponse
+public sealed record GetDeliveryStatsResponse
 {
     /// <summary>Gets the number of currently inactive email addresses.</summary>
     public int InactiveMails { [UsedImplicitly] get; }
@@ -12,7 +12,7 @@ public sealed record DeliveryStatsResponse
     /// <summary>Gets the bounce counts grouped by type.</summary>
     public IReadOnlyList<BounceTypeCount> Bounces { [UsedImplicitly] get; }
 
-    internal DeliveryStatsResponse(int inactiveMails, IReadOnlyList<BounceTypeCount> bounces)
+    internal GetDeliveryStatsResponse(int inactiveMails, IReadOnlyList<BounceTypeCount> bounces)
     {
         InactiveMails = inactiveMails;
         Bounces = bounces switch

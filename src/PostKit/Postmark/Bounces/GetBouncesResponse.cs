@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 
 namespace PostKit.Postmark.Bounces;
 
-internal sealed class BounceSearchResponse
+internal sealed class GetBouncesResponse
 {
     [JsonPropertyName("TotalCount")]
     public int? TotalCount { get; [UsedImplicitly] init; }

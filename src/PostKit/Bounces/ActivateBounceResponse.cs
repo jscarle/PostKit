@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 namespace PostKit.Bounces;
 
 /// <summary>Represents the response returned after reactivating a bounce.</summary>
-public sealed record BounceActivationResponse
+public sealed record ActivateBounceResponse
 {
     /// <summary>Gets the status message returned by Postmark.</summary>
     public string Message { [UsedImplicitly] get; }
@@ -11,7 +11,7 @@ public sealed record BounceActivationResponse
     /// <summary>Gets the bounce returned by Postmark for the activation request.</summary>
     public Bounce Bounce { [UsedImplicitly] get; }
 
-    internal BounceActivationResponse(string message, Bounce bounce)
+    internal ActivateBounceResponse(string message, Bounce bounce)
     {
         Message = message;
         Bounce = bounce;

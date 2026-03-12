@@ -24,40 +24,40 @@ public interface IPostKitClient
     /// <param name="query">The bounce query to execute.</param>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the bounce search response or error information.</returns>
-    Task<Result<BounceSearchResponse>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default);
+    Task<Result<GetBouncesResponse>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default);
 
     /// <summary>Gets a single bounce asynchronously.</summary>
     /// <param name="id">The identifier of the bounce to retrieve.</param>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the bounce details or error information.</returns>
-    Task<Result<BounceDetails>> GetBounceAsync(long id, CancellationToken cancellationToken = default);
+    Task<Result<GetBounceResponse>> GetBounceAsync(long id, CancellationToken cancellationToken = default);
 
     /// <summary>Gets delivery statistics for the current server asynchronously.</summary>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing delivery statistics or error information.</returns>
-    Task<Result<DeliveryStatsResponse>> GetDeliveryStatsAsync(CancellationToken cancellationToken = default);
+    Task<Result<GetDeliveryStatsResponse>> GetDeliveryStatsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Gets the raw dump for a bounce asynchronously.</summary>
     /// <param name="id">The identifier of the bounce dump to retrieve.</param>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the raw bounce dump or error information.</returns>
-    Task<Result<BounceDumpResponse>> GetBounceDumpAsync(long id, CancellationToken cancellationToken = default);
+    Task<Result<GetBounceDumpResponse>> GetBounceDumpAsync(long id, CancellationToken cancellationToken = default);
 
     /// <summary>Reactivates a bounce asynchronously.</summary>
     /// <param name="id">The identifier of the bounce to reactivate.</param>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the activation response or error information.</returns>
-    Task<Result<BounceActivationResponse>> ActivateBounceAsync(long id, CancellationToken cancellationToken = default);
+    Task<Result<ActivateBounceResponse>> ActivateBounceAsync(long id, CancellationToken cancellationToken = default);
 
     /// <summary>Sends a bulk email request asynchronously.</summary>
     /// <param name="bulkEmail">The bulk email request to submit.</param>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the current bulk email request status or error information.</returns>
-    Task<Result<BulkEmailStatusResponse>> SendBulkEmailAsync(BulkEmail bulkEmail, CancellationToken cancellationToken = default);
+    Task<Result<SendBulkEmailResponse>> SendBulkEmailAsync(BulkEmail bulkEmail, CancellationToken cancellationToken = default);
 
     /// <summary>Gets the current status of a bulk email request asynchronously.</summary>
     /// <param name="id">The identifier of the bulk email request.</param>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the current bulk email request status or error information.</returns>
-    Task<Result<BulkEmailStatusResponse>> GetBulkEmailStatusAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Result<SendBulkEmailResponse>> GetBulkEmailStatusAsync(Guid id, CancellationToken cancellationToken = default);
 }

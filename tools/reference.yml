@@ -122,7 +122,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BounceSearchResponse"
+                $ref: "#/components/schemas/GetBouncesResponse"
         422:
           $ref: "#/components/responses/422"
         500:
@@ -176,7 +176,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BounceActivationResponse"
+                $ref: "#/components/schemas/ActivateBounceResponse"
         422:
           $ref: "#/components/responses/422"
         500:
@@ -202,7 +202,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BounceDumpResponse"
+                $ref: "#/components/schemas/GetBounceDumpResponse"
         422:
           $ref: "#/components/responses/422"
         500:
@@ -272,7 +272,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeliveryStatsResponse"
+                $ref: "#/components/schemas/GetDeliveryStatsResponse"
         422:
           $ref: "#/components/responses/422"
         500:
@@ -632,7 +632,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BulkEmailStatusResponse"
+                $ref: "#/components/schemas/SendBulkEmailResponse"
         422:
           $ref: "#/components/responses/422"
         500:
@@ -658,7 +658,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BulkEmailStatusResponse"
+                $ref: "#/components/schemas/SendBulkEmailResponse"
         422:
           $ref: "#/components/responses/422"
         500:
@@ -2986,7 +2986,7 @@ components:
       type: "array"
       items:
         $ref: "#/components/schemas/Attachment"
-    BounceActivationResponse:
+    ActivateBounceResponse:
       description: "Response returned when reactivating a bounce. In live testing on
         2026-03-11, the nested Bounce payload could reflect the pre-activation state;
         follow up with `GET /bounces/{bounceid}` to confirm the updated `Inactive`
@@ -3006,7 +3006,7 @@ components:
           description: "The bounce type associated with the count. Omitted for aggregate
             rows such as `All`."
           type: "string"
-    BounceDumpResponse:
+    GetBounceDumpResponse:
       properties:
         Body:
           description: "Raw source of bounce. If no dump is available this will return an
@@ -3059,7 +3059,7 @@ components:
           description: "Raw source of bounce content. Returned by the single-bounce
             endpoint."
           type: "string"
-    BounceSearchResponse:
+    GetBouncesResponse:
       description: ""
       properties:
         TotalCount:
@@ -3141,7 +3141,7 @@ components:
           type: "array"
           items:
             $ref: "#/components/schemas/BulkEmailRecipient"
-    BulkEmailStatusResponse:
+    SendBulkEmailResponse:
       type: "object"
       required:
         - "Id"
@@ -3344,7 +3344,7 @@ components:
           enum:
             - "Pending"
             - "Done"
-    DeliveryStatsResponse:
+    GetDeliveryStatsResponse:
       description: ""
       properties:
         InactiveMails:

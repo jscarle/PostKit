@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 
 namespace PostKit.Postmark.Bulk;
 
-internal sealed class BulkEmailStatusResponse
+internal sealed class SendBulkEmailResponse
 {
     [JsonPropertyName("Id")]
     public string? Id { get; [UsedImplicitly] init; }

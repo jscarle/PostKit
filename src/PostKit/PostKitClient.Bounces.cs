@@ -3,12 +3,12 @@ using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.Bounces;
 using PostKit.Errors;
-using BounceActivationModel = PostKit.Postmark.Bounces.BounceActivationResponse;
+using ActivateBounceModel = PostKit.Postmark.Bounces.ActivateBounceResponse;
 using BounceModel = PostKit.Postmark.Bounces.BounceResponse;
-using BounceDumpModel = PostKit.Postmark.Bounces.BounceDumpResponse;
-using BounceSearchModel = PostKit.Postmark.Bounces.BounceSearchResponse;
+using GetBounceDumpModel = PostKit.Postmark.Bounces.GetBounceDumpResponse;
+using GetBouncesModel = PostKit.Postmark.Bounces.GetBouncesResponse;
+using GetDeliveryStatsModel = PostKit.Postmark.Bounces.GetDeliveryStatsResponse;
 using BounceTypeCountModel = PostKit.Postmark.Bounces.BounceCountElement;
-using DeliveryStatsModel = PostKit.Postmark.Bounces.DeliveryStatsResponse;
 
 namespace PostKit;
 
@@ -16,47 +16,47 @@ internal sealed partial class PostKitClient
 {
     private const int MaxBounceCount = 500;
 
-    public async Task<Result<BounceSearchResponse>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default)
+    public async Task<Result<GetBouncesResponse>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
 
         var validationError = ValidateBounceQuery(query);
         if (validationError is not null)
-            return Result.Failure<BounceSearchResponse>(validationError);
+            return Result.Failure<GetBouncesResponse>(validationError);
 
         var endpoint = BuildBounceSearchEndpoint(query);
 
-        Result<BounceSearchModel> response;
+        Result<GetBouncesModel> response;
         try
         {
-            response = await postmark.GetAsync<BounceSearchModel>(endpoint, cancellationToken);
+            response = await postmark.GetAsync<GetBouncesModel>(endpoint, cancellationToken);
         }
         catch (Exception ex)
         {
             LogBouncesException(ex);
-            return Result.Failure<BounceSearchResponse>(ex);
+            return Result.Failure<GetBouncesResponse>(ex);
         }
 
         if (response.IsFailure(out var error, out var bounceSearchModel))
         {
             LogBouncesError(error.Message, error);
-            return Result.Failure<BounceSearchResponse>(error);
+            return Result.Failure<GetBouncesResponse>(error);
         }
 
-        var mappedResponse = CreateBounceSearchResponse(bounceSearchModel);
-        if (mappedResponse.IsFailure(out var mappingError, out var bounceSearchResponse))
+        var mappedResponse = CreateGetBouncesResponse(bounceSearchModel);
+        if (mappedResponse.IsFailure(out var mappingError, out var getBouncesResponse))
         {
             LogBouncesError(mappingError.Message, mappingError);
-            return Result.Failure<BounceSearchResponse>(mappingError);
+            return Result.Failure<GetBouncesResponse>(mappingError);
         }
 
-        return Result.Success(bounceSearchResponse);
+        return Result.Success(getBouncesResponse);
     }
 
-    public async Task<Result<BounceDetails>> GetBounceAsync(long id, CancellationToken cancellationToken = default)
+    public async Task<Result<GetBounceResponse>> GetBounceAsync(long id, CancellationToken cancellationToken = default)
     {
         if (id <= 0)
-            return Result.Failure<BounceDetails>("The bounce ID must be greater than zero.");
+            return Result.Failure<GetBounceResponse>("The bounce ID must be greater than zero.");
 
         Result<BounceModel> response;
         try
@@ -66,118 +66,118 @@ internal sealed partial class PostKitClient
         catch (Exception ex)
         {
             LogBounceException(ex);
-            return Result.Failure<BounceDetails>(ex);
+            return Result.Failure<GetBounceResponse>(ex);
         }
 
         if (response.IsFailure(out var error, out var bounceModel))
         {
             LogBounceError(error.Message, error);
-            return Result.Failure<BounceDetails>(error);
+            return Result.Failure<GetBounceResponse>(error);
         }
 
-        var mappedResponse = CreateBounceDetails(bounceModel);
-        if (mappedResponse.IsFailure(out var mappingError, out var bounceDetails))
+        var mappedResponse = CreateGetBounceResponse(bounceModel);
+        if (mappedResponse.IsFailure(out var mappingError, out var getBounceResponse))
         {
             LogBounceError(mappingError.Message, mappingError);
-            return Result.Failure<BounceDetails>(mappingError);
+            return Result.Failure<GetBounceResponse>(mappingError);
         }
 
-        return Result.Success(bounceDetails);
+        return Result.Success(getBounceResponse);
     }
 
-    public async Task<Result<DeliveryStatsResponse>> GetDeliveryStatsAsync(CancellationToken cancellationToken = default)
+    public async Task<Result<GetDeliveryStatsResponse>> GetDeliveryStatsAsync(CancellationToken cancellationToken = default)
     {
-        Result<DeliveryStatsModel> response;
+        Result<GetDeliveryStatsModel> response;
         try
         {
-            response = await postmark.GetAsync<DeliveryStatsModel>("/deliverystats", cancellationToken);
+            response = await postmark.GetAsync<GetDeliveryStatsModel>("/deliverystats", cancellationToken);
         }
         catch (Exception ex)
         {
             LogDeliveryStatsException(ex);
-            return Result.Failure<DeliveryStatsResponse>(ex);
+            return Result.Failure<GetDeliveryStatsResponse>(ex);
         }
 
         if (response.IsFailure(out var error, out var deliveryStatsModel))
         {
             LogDeliveryStatsError(error.Message, error);
-            return Result.Failure<DeliveryStatsResponse>(error);
+            return Result.Failure<GetDeliveryStatsResponse>(error);
         }
 
-        var mappedResponse = CreateDeliveryStatsResponse(deliveryStatsModel);
-        if (mappedResponse.IsFailure(out var mappingError, out var deliveryStatsResponse))
+        var mappedResponse = CreateGetDeliveryStatsResponse(deliveryStatsModel);
+        if (mappedResponse.IsFailure(out var mappingError, out var getDeliveryStatsResponse))
         {
             LogDeliveryStatsError(mappingError.Message, mappingError);
-            return Result.Failure<DeliveryStatsResponse>(mappingError);
+            return Result.Failure<GetDeliveryStatsResponse>(mappingError);
         }
 
-        return Result.Success(deliveryStatsResponse);
+        return Result.Success(getDeliveryStatsResponse);
     }
 
-    public async Task<Result<BounceDumpResponse>> GetBounceDumpAsync(long id, CancellationToken cancellationToken = default)
+    public async Task<Result<GetBounceDumpResponse>> GetBounceDumpAsync(long id, CancellationToken cancellationToken = default)
     {
         if (id <= 0)
-            return Result.Failure<BounceDumpResponse>("The bounce ID must be greater than zero.");
+            return Result.Failure<GetBounceDumpResponse>("The bounce ID must be greater than zero.");
 
-        Result<BounceDumpModel> response;
+        Result<GetBounceDumpModel> response;
         try
         {
-            response = await postmark.GetAsync<BounceDumpModel>($"/bounces/{id}/dump", cancellationToken);
+            response = await postmark.GetAsync<GetBounceDumpModel>($"/bounces/{id}/dump", cancellationToken);
         }
         catch (Exception ex)
         {
             LogBounceDumpException(ex);
-            return Result.Failure<BounceDumpResponse>(ex);
+            return Result.Failure<GetBounceDumpResponse>(ex);
         }
 
         if (response.IsFailure(out var error, out var bounceDumpModel))
         {
             LogBounceDumpError(error.Message, error);
-            return Result.Failure<BounceDumpResponse>(error);
+            return Result.Failure<GetBounceDumpResponse>(error);
         }
 
         if (bounceDumpModel.Body is null)
-            return Result.Failure<BounceDumpResponse>("Body was not returned from the Postmark Bounces API.");
+            return Result.Failure<GetBounceDumpResponse>("Body was not returned from the Postmark Bounces API.");
 
-        return Result.Success(new BounceDumpResponse(bounceDumpModel.Body));
+        return Result.Success(new GetBounceDumpResponse(bounceDumpModel.Body));
     }
 
-    public async Task<Result<BounceActivationResponse>> ActivateBounceAsync(long id, CancellationToken cancellationToken = default)
+    public async Task<Result<ActivateBounceResponse>> ActivateBounceAsync(long id, CancellationToken cancellationToken = default)
     {
         if (id <= 0)
-            return Result.Failure<BounceActivationResponse>("The bounce ID must be greater than zero.");
+            return Result.Failure<ActivateBounceResponse>("The bounce ID must be greater than zero.");
 
-        Result<BounceActivationModel> response;
+        Result<ActivateBounceModel> response;
         try
         {
-            response = await postmark.PutAsync<BounceActivationModel>($"/bounces/{id}/activate", cancellationToken);
+            response = await postmark.PutAsync<ActivateBounceModel>($"/bounces/{id}/activate", cancellationToken);
         }
         catch (Exception ex)
         {
             LogActivateBounceException(ex);
-            return Result.Failure<BounceActivationResponse>(ex);
+            return Result.Failure<ActivateBounceResponse>(ex);
         }
 
         if (response.IsFailure(out var error, out var bounceActivationModel))
         {
             LogActivateBounceError(error.Message, error);
-            return Result.Failure<BounceActivationResponse>(error);
+            return Result.Failure<ActivateBounceResponse>(error);
         }
 
         if (string.IsNullOrWhiteSpace(bounceActivationModel.Message))
-            return Result.Failure<BounceActivationResponse>("Message was not returned from the Postmark Bounces API.");
+            return Result.Failure<ActivateBounceResponse>("Message was not returned from the Postmark Bounces API.");
 
         if (bounceActivationModel.Bounce is null)
-            return Result.Failure<BounceActivationResponse>("Bounce was not returned from the Postmark Bounces API.");
+            return Result.Failure<ActivateBounceResponse>("Bounce was not returned from the Postmark Bounces API.");
 
         var mappedBounce = CreateBounce(bounceActivationModel.Bounce);
         if (mappedBounce.IsFailure(out var mappingError, out var bounce))
         {
             LogActivateBounceError(mappingError.Message, mappingError);
-            return Result.Failure<BounceActivationResponse>(mappingError);
+            return Result.Failure<ActivateBounceResponse>(mappingError);
         }
 
-        return Result.Success(new BounceActivationResponse(bounceActivationModel.Message, bounce));
+        return Result.Success(new ActivateBounceResponse(bounceActivationModel.Message, bounce));
     }
 
     private static string? ValidateBounceQuery(BounceQuery query)
@@ -245,28 +245,28 @@ internal sealed partial class PostKitClient
             : value.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
     }
 
-    private static Result<BounceSearchResponse> CreateBounceSearchResponse(BounceSearchModel response)
+    private static Result<GetBouncesResponse> CreateGetBouncesResponse(GetBouncesModel response)
     {
         if (response.TotalCount is null)
-            return Result.Failure<BounceSearchResponse>("TotalCount was not returned from the Postmark Bounces API.");
+            return Result.Failure<GetBouncesResponse>("TotalCount was not returned from the Postmark Bounces API.");
 
         if (response.TotalCount.Value < 0)
-            return Result.Failure<BounceSearchResponse>("TotalCount returned from the Postmark Bounces API was invalid.");
+            return Result.Failure<GetBouncesResponse>("TotalCount returned from the Postmark Bounces API was invalid.");
 
         if (response.Bounces is null)
-            return Result.Failure<BounceSearchResponse>("Bounces were not returned from the Postmark Bounces API.");
+            return Result.Failure<GetBouncesResponse>("Bounces were not returned from the Postmark Bounces API.");
 
         var bounces = new List<Bounce>(response.Bounces.Count);
         for (var index = 0; index < response.Bounces.Count; index++)
         {
             var mappedBounce = CreateBounce(response.Bounces[index]);
             if (mappedBounce.IsFailure(out var error, out var bounce))
-                return Result.Failure<BounceSearchResponse>($"Bounce item {index} could not be mapped: {error.Message}");
+                return Result.Failure<GetBouncesResponse>($"Bounce item {index} could not be mapped: {error.Message}");
 
             bounces.Add(bounce);
         }
 
-        return Result.Success(new BounceSearchResponse(response.TotalCount.Value, bounces));
+        return Result.Success(new GetBouncesResponse(response.TotalCount.Value, bounces));
     }
 
     private static Result<Bounce> CreateBounce(BounceModel response)
@@ -297,16 +297,16 @@ internal sealed partial class PostKitClient
         ));
     }
 
-    private static Result<BounceDetails> CreateBounceDetails(BounceModel response)
+    private static Result<GetBounceResponse> CreateGetBounceResponse(BounceModel response)
     {
         var mappedCore = CreateBounceCore(response);
         if (mappedCore.IsFailure(out var error, out var bounceCore))
-            return Result.Failure<BounceDetails>(error);
+            return Result.Failure<GetBounceResponse>(error);
 
         if (response.Content is null)
-            return Result.Failure<BounceDetails>("Content was not returned from the Postmark Bounces API.");
+            return Result.Failure<GetBounceResponse>("Content was not returned from the Postmark Bounces API.");
 
-        return Result.Success(new BounceDetails(
+        return Result.Success(new GetBounceResponse(
             bounceCore.RecordType,
             bounceCore.Id,
             bounceCore.Type,
@@ -329,28 +329,28 @@ internal sealed partial class PostKitClient
         ));
     }
 
-    private static Result<DeliveryStatsResponse> CreateDeliveryStatsResponse(DeliveryStatsModel response)
+    private static Result<GetDeliveryStatsResponse> CreateGetDeliveryStatsResponse(GetDeliveryStatsModel response)
     {
         if (response.InactiveMails is null)
-            return Result.Failure<DeliveryStatsResponse>("InactiveMails was not returned from the Postmark Bounces API.");
+            return Result.Failure<GetDeliveryStatsResponse>("InactiveMails was not returned from the Postmark Bounces API.");
 
         if (response.InactiveMails.Value < 0)
-            return Result.Failure<DeliveryStatsResponse>("InactiveMails returned from the Postmark Bounces API was invalid.");
+            return Result.Failure<GetDeliveryStatsResponse>("InactiveMails returned from the Postmark Bounces API was invalid.");
 
         if (response.Bounces is null)
-            return Result.Failure<DeliveryStatsResponse>("Bounces were not returned from the Postmark Bounces API.");
+            return Result.Failure<GetDeliveryStatsResponse>("Bounces were not returned from the Postmark Bounces API.");
 
         var bounces = new List<BounceTypeCount>(response.Bounces.Count);
         for (var index = 0; index < response.Bounces.Count; index++)
         {
             var mappedCount = CreateBounceTypeCount(response.Bounces[index]);
             if (mappedCount.IsFailure(out var error, out var bounceTypeCount))
-                return Result.Failure<DeliveryStatsResponse>($"Delivery stats bounce item {index} could not be mapped: {error.Message}");
+                return Result.Failure<GetDeliveryStatsResponse>($"Delivery stats bounce item {index} could not be mapped: {error.Message}");
 
             bounces.Add(bounceTypeCount);
         }
 
-        return Result.Success(new DeliveryStatsResponse(response.InactiveMails.Value, bounces));
+        return Result.Success(new GetDeliveryStatsResponse(response.InactiveMails.Value, bounces));
     }
 
     private static Result<BounceTypeCount> CreateBounceTypeCount(BounceTypeCountModel response)

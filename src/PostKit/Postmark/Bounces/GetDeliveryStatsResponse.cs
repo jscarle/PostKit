@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 
 namespace PostKit.Postmark.Bounces;
 
-internal sealed class DeliveryStatsResponse
+internal sealed class GetDeliveryStatsResponse
 {
     [JsonPropertyName("InactiveMails")]
     public int? InactiveMails { get; [UsedImplicitly] init; }

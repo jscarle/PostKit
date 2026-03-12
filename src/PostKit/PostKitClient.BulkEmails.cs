@@ -3,103 +3,103 @@ using Microsoft.Extensions.Logging;
 using PostKit.BulkEmails;
 using PostKit.Postmark.Bulk;
 using PostKit.Postmark.Common;
-using BulkEmailStatusResponse = PostKit.Postmark.Bulk.BulkEmailStatusResponse;
+using SendBulkEmailModel = PostKit.Postmark.Bulk.SendBulkEmailResponse;
 
 namespace PostKit;
 
 internal sealed partial class PostKitClient
 {
-    public async Task<Result<BulkEmails.BulkEmailStatusResponse>> SendBulkEmailAsync(BulkEmail bulkEmail, CancellationToken cancellationToken = default)
+    public async Task<Result<BulkEmails.SendBulkEmailResponse>> SendBulkEmailAsync(BulkEmail bulkEmail, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(bulkEmail);
 
         var request = bulkEmail.ToBulkEmailRequest();
 
-        Result<BulkEmailStatusResponse> response;
+        Result<SendBulkEmailModel> response;
         try
         {
-            response = await postmark.PostAsync<BulkEmailRequest, BulkEmailStatusResponse>("/email/bulk", request, cancellationToken);
+            response = await postmark.PostAsync<BulkEmailRequest, SendBulkEmailModel>("/email/bulk", request, cancellationToken);
         }
         catch (Exception ex)
         {
             LogBulkException(ex);
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>(ex);
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>(ex);
         }
 
         if (response.IsFailure(out var error, out var bulkEmailStatusModel))
         {
             LogBulkError(error.Message, error);
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>(error);
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>(error);
         }
 
-        var mappedResponse = CreateBulkEmailStatusResponse(bulkEmailStatusModel);
-        if (mappedResponse.IsFailure(out var mappingError, out var bulkEmailStatusResponse))
+        var mappedResponse = CreateSendBulkEmailResponse(bulkEmailStatusModel);
+        if (mappedResponse.IsFailure(out var mappingError, out var sendBulkEmailResponse))
         {
             LogBulkError(mappingError.Message, mappingError);
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>(mappingError);
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>(mappingError);
         }
 
-        LogBulkEmailSubmitted(bulkEmailStatusResponse.Id, bulkEmailStatusResponse.Status, bulkEmailStatusResponse.TotalMessages);
-        return Result.Success(bulkEmailStatusResponse);
+        LogBulkEmailSubmitted(sendBulkEmailResponse.Id, sendBulkEmailResponse.Status, sendBulkEmailResponse.TotalMessages);
+        return Result.Success(sendBulkEmailResponse);
     }
 
-    public async Task<Result<BulkEmails.BulkEmailStatusResponse>> GetBulkEmailStatusAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Result<BulkEmails.SendBulkEmailResponse>> GetBulkEmailStatusAsync(Guid id, CancellationToken cancellationToken = default)
     {
         if (id == Guid.Empty)
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>("The bulk request ID must not be empty.");
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>("The bulk request ID must not be empty.");
 
-        Result<BulkEmailStatusResponse> response;
+        Result<SendBulkEmailModel> response;
         try
         {
-            response = await postmark.GetAsync<BulkEmailStatusResponse>($"/email/bulk/{id:D}", cancellationToken);
+            response = await postmark.GetAsync<SendBulkEmailModel>($"/email/bulk/{id:D}", cancellationToken);
         }
         catch (Exception ex)
         {
             LogBulkStatusException(ex);
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>(ex);
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>(ex);
         }
 
         if (response.IsFailure(out var error, out var bulkEmailStatusModel))
         {
             LogBulkStatusError(error.Message, error);
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>(error);
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>(error);
         }
 
-        var mappedResponse = CreateBulkEmailStatusResponse(bulkEmailStatusModel);
-        if (mappedResponse.IsFailure(out var mappingError, out var bulkEmailStatusResponse))
+        var mappedResponse = CreateSendBulkEmailResponse(bulkEmailStatusModel);
+        if (mappedResponse.IsFailure(out var mappingError, out var sendBulkEmailResponse))
         {
             LogBulkStatusError(mappingError.Message, mappingError);
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>(mappingError);
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>(mappingError);
         }
 
-        return Result.Success(bulkEmailStatusResponse);
+        return Result.Success(sendBulkEmailResponse);
     }
 
-    private static Result<BulkEmails.BulkEmailStatusResponse> CreateBulkEmailStatusResponse(BulkEmailStatusResponse response)
+    private static Result<BulkEmails.SendBulkEmailResponse> CreateSendBulkEmailResponse(SendBulkEmailModel response)
     {
         if (response.Id is null)
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>("Id was not returned from the Postmark Bulk API.");
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>("Id was not returned from the Postmark Bulk API.");
 
         if (!Guid.TryParse(response.Id, out var bulkRequestId))
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>("Id returned from the Postmark Bulk API was not a valid GUID.");
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>("Id returned from the Postmark Bulk API was not a valid GUID.");
 
         if (response.SubmittedAt is null)
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>("SubmittedAt was not returned from the Postmark Bulk API.");
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>("SubmittedAt was not returned from the Postmark Bulk API.");
 
         if (response.TotalMessages is null)
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>("TotalMessages was not returned from the Postmark Bulk API.");
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>("TotalMessages was not returned from the Postmark Bulk API.");
 
         if (response.TotalMessages.Value < 0)
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>("TotalMessages returned from the Postmark Bulk API was invalid.");
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>("TotalMessages returned from the Postmark Bulk API was invalid.");
 
         if (response.PercentageCompleted is null)
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>("PercentageCompleted was not returned from the Postmark Bulk API.");
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>("PercentageCompleted was not returned from the Postmark Bulk API.");
 
         if (response.PercentageCompleted.Value is < 0 or > 100)
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>("PercentageCompleted returned from the Postmark Bulk API was invalid.");
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>("PercentageCompleted returned from the Postmark Bulk API was invalid.");
 
         if (response.Status is null)
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>("Status was not returned from the Postmark Bulk API.");
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>("Status was not returned from the Postmark Bulk API.");
 
         var status = response.Status switch
         {
@@ -111,12 +111,12 @@ internal sealed partial class PostKitClient
         };
 
         if (status is null)
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>($"Status '{response.Status}' returned from the Postmark Bulk API is not supported.");
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>($"Status '{response.Status}' returned from the Postmark Bulk API is not supported.");
 
         if (response.Subject is null)
-            return Result.Failure<BulkEmails.BulkEmailStatusResponse>("Subject was not returned from the Postmark Bulk API.");
+            return Result.Failure<BulkEmails.SendBulkEmailResponse>("Subject was not returned from the Postmark Bulk API.");
 
-        return Result.Success(new BulkEmails.BulkEmailStatusResponse(
+        return Result.Success(new BulkEmails.SendBulkEmailResponse(
             bulkRequestId,
             status.Value,
             response.SubmittedAt.Value,

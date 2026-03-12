@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 
 namespace PostKit.Postmark.Bounces;
 
-internal sealed class BounceDumpResponse
+internal sealed class GetBounceDumpResponse
 {
     [JsonPropertyName("Body")]
     public string? Body { get; [UsedImplicitly] init; }
