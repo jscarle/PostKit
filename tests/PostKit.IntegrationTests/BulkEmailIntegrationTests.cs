@@ -66,9 +66,9 @@ public class BulkEmailIntegrationTests
         Assert.InRange(status.PercentageCompleted, 100, 100);
     }
 
-    private async Task<SendBulkEmailResponse> WaitForCompletionAsync(Guid bulkRequestId, CancellationToken cancellationToken)
+    private async Task<BulkEmailJob> WaitForCompletionAsync(Guid bulkRequestId, CancellationToken cancellationToken)
     {
-        SendBulkEmailResponse? lastStatus = null;
+        BulkEmailJob? lastStatus = null;
 
         for (var attempt = 0; attempt < 20; attempt++)
         {
@@ -85,12 +85,12 @@ public class BulkEmailIntegrationTests
         return lastStatus;
     }
 
-    private static SendBulkEmailResponse RequireBulkApi(Result<SendBulkEmailResponse> result)
+    private static BulkEmailJob RequireBulkApi(Result<BulkEmailJob> result)
     {
         if (result.IsSuccess(out var response))
             return response;
 
-        Assert.True(result.IsFailure(out var error, out SendBulkEmailResponse? _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out BulkEmailJob? _), result.ToString());
 
         if (ShouldSkip(error))
             Assert.Skip($"Bulk API is not available in this environment: {error.Message}");

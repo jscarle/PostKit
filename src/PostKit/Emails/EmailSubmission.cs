@@ -3,7 +3,7 @@
 namespace PostKit.Emails;
 
 /// <summary>Represents the response returned after Postmark accepts an email for delivery.</summary>
-public sealed record SendEmailResponse
+public sealed record EmailSubmission
 {
     /// <summary>Gets the identifier assigned to the accepted message.</summary>
     public Guid MessageId { [UsedImplicitly] get; }
@@ -17,7 +17,7 @@ public sealed record SendEmailResponse
     /// <summary>Gets the time Postmark accepted the email.</summary>
     public DateTimeOffset SubmittedAt { [UsedImplicitly] get; }
 
-    internal SendEmailResponse(Guid messageId, string? to, DateTimeOffset submittedAt)
+    internal EmailSubmission(Guid messageId, string? to, DateTimeOffset submittedAt)
     {
         MessageId = messageId;
         InternetMessageId = FormatInternetMessageId(messageId);

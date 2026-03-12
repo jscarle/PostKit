@@ -278,7 +278,7 @@ public class SendEmailBatchIntegrationTests
         Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
-    private static void AssertSuccessfulBatchResult(Result<SendEmailResponse> result)
+    private static void AssertSuccessfulBatchResult(Result<EmailSubmission> result)
     {
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.NotEqual(Guid.Empty, response.MessageId);

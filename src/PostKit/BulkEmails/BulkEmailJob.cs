@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 namespace PostKit.BulkEmails;
 
 /// <summary>Represents the status returned for a Postmark bulk email request.</summary>
-public sealed record SendBulkEmailResponse
+public sealed record BulkEmailJob
 {
     /// <summary>Gets the identifier assigned to the bulk email request.</summary>
     public Guid Id { [UsedImplicitly] get; }
@@ -23,7 +23,7 @@ public sealed record SendBulkEmailResponse
     /// <summary>Gets the subject associated with the bulk request.</summary>
     public string Subject { [UsedImplicitly] get; }
 
-    internal SendBulkEmailResponse(Guid id, BulkEmailStatus status, DateTimeOffset submittedAt, int totalMessages, double percentageCompleted, string subject)
+    internal BulkEmailJob(Guid id, BulkEmailStatus status, DateTimeOffset submittedAt, int totalMessages, double percentageCompleted, string subject)
     {
         Id = id;
         Status = status;

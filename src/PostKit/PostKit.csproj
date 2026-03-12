@@ -77,6 +77,135 @@
         <Compile Update="PostKitClient.BulkEmails.cs">
             <DependentUpon>PostKitClient.cs</DependentUpon>
         </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.Attachments.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.Body.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.From.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.Header.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.LinkTracking.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.Messages.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.MessageStream.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.Metadata.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.OpenTracking.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.ReplyTo.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.Subject.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.Tag.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailBuilder.Templates.cs">
+          <DependentUpon>BulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailMessageBuilder.cs">
+          <DependentUpon>BulkEmailMessage.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailMessageBuilder.Bcc.cs">
+          <DependentUpon>BulkEmailMessage.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailMessageBuilder.Cc.cs">
+          <DependentUpon>BulkEmailMessage.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailMessageBuilder.Header.cs">
+          <DependentUpon>BulkEmailMessage.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailMessageBuilder.Metadata.cs">
+          <DependentUpon>BulkEmailMessage.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailMessageBuilder.TemplateModel.cs">
+          <DependentUpon>BulkEmailMessage.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\BulkEmailMessageBuilder.To.cs">
+          <DependentUpon>BulkEmailMessage.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\IBulkEmailMessageBccBuilder.cs">
+          <DependentUpon>IBulkEmailMessageBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\IBulkEmailMessageToBuilder.cs">
+          <DependentUpon>IBulkEmailMessageBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\IBulkEmailMessageCcBuilder.cs">
+          <DependentUpon>IBulkEmailMessageBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="BulkEmails\IBulkEmailReplyToBuilder.cs">
+          <DependentUpon>IBulkEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.Attachments.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.Bcc.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.Body.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.Cc.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.From.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.Header.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.LinkTracking.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.MessageStream.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.Metadata.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.OpenTracking.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.ReplyTo.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.Subject.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.Tag.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.Templates.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\EmailBuilder.To.cs">
+          <DependentUpon>EmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\IEmailToBuilder.cs">
+          <DependentUpon>IEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\IEmailReplyToBuilder.cs">
+          <DependentUpon>IEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\IEmailCcBuilder.cs">
+          <DependentUpon>IEmailBuilder.cs</DependentUpon>
+        </Compile>
+        <Compile Update="Emails\IEmailBccBuilder.cs">
+          <DependentUpon>IEmailBuilder.cs</DependentUpon>
+        </Compile>
     </ItemGroup>
 
     <!-- Content -->

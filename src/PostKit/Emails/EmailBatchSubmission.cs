@@ -5,20 +5,20 @@ using LightResults;
 namespace PostKit.Emails;
 
 /// <summary>Represents the response returned after Postmark processes a batch of emails.</summary>
-public sealed record SendEmailBatchResponse
+public sealed record EmailBatchSubmission
 {
     /// <summary>Gets a value indicating whether every email in the batch was accepted for delivery.</summary>
     public bool IsSuccessful { [UsedImplicitly] get; }
 
     /// <summary>Gets the individual results for each email in the batch.</summary>
-    public IReadOnlyList<Result<SendEmailResponse>> Results { [UsedImplicitly] get; }
+    public IReadOnlyList<Result<EmailSubmission>> Results { [UsedImplicitly] get; }
 
-    internal SendEmailBatchResponse(IReadOnlyList<Result<SendEmailResponse>> results)
+    internal EmailBatchSubmission(IReadOnlyList<Result<EmailSubmission>> results)
     {
         Results = results switch
         {
-            ReadOnlyCollection<Result<SendEmailResponse>> collection => collection,
-            _ => new ReadOnlyCollection<Result<SendEmailResponse>>(results.ToList()),
+            ReadOnlyCollection<Result<EmailSubmission>> collection => collection,
+            _ => new ReadOnlyCollection<Result<EmailSubmission>>(results.ToList()),
         };
 
         IsSuccessful = Results.All(static result => result.IsSuccess());

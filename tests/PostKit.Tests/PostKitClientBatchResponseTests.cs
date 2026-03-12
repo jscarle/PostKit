@@ -75,7 +75,7 @@ public class PostKitClientBatchResponseTests
         Assert.False(batchResponse.IsSuccessful);
 
         var itemResult = Assert.Single(batchResponse.Results);
-        Assert.True(itemResult.IsFailure(out var error, out SendEmailResponse? _), itemResult.ToString());
+        Assert.True(itemResult.IsFailure(out var error, out EmailSubmission? _), itemResult.ToString());
         var postmarkError = Assert.IsType<PostmarkError>(error);
         Assert.Equal(PostmarkErrorCode.InvalidEmailRequest, postmarkError.ErrorCode);
         Assert.Equal("Invalid email request.", postmarkError.Message);

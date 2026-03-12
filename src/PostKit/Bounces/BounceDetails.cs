@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 namespace PostKit.Bounces;
 
 /// <summary>Represents a single bounce returned from the Postmark bounce details endpoint.</summary>
-public sealed record GetBounceResponse
+public sealed record BounceDetails
 {
     /// <summary>Gets the record type returned by Postmark.</summary>
     public string RecordType { [UsedImplicitly] get; }
@@ -62,7 +62,7 @@ public sealed record GetBounceResponse
     /// <summary>Gets the raw bounce dump content.</summary>
     public string Content { [UsedImplicitly] get; }
 
-    internal GetBounceResponse(
+    internal BounceDetails(
         string recordType,
         long id,
         BounceType type,

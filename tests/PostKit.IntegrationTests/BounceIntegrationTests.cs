@@ -96,12 +96,12 @@ public class BounceIntegrationTests
         Assert.False(reactivated.Inactive);
     }
 
-    private async Task<SendEmailResponse> SendSoftBounceAsync(CancellationToken cancellationToken)
+    private async Task<EmailSubmission> SendSoftBounceAsync(CancellationToken cancellationToken)
     {
         return await SendBounceAsync(SoftBounceRecipient, "Generate a fake soft bounce for Bounces API integration testing.", cancellationToken);
     }
 
-    private async Task<SendEmailResponse> SendBounceAsync(string recipient, string textBody, CancellationToken cancellationToken)
+    private async Task<EmailSubmission> SendBounceAsync(string recipient, string textBody, CancellationToken cancellationToken)
     {
         var subject = $"PostKit bounce integration {Guid.NewGuid():N}";
         var email = Email.CreateBuilder()
@@ -116,9 +116,9 @@ public class BounceIntegrationTests
         return RequireSendResult(result);
     }
 
-    private async Task<GetBouncesResponse> WaitForBounceAsync(Guid messageId, bool inactive, CancellationToken cancellationToken)
+    private async Task<BouncePage> WaitForBounceAsync(Guid messageId, bool inactive, CancellationToken cancellationToken)
     {
-        GetBouncesResponse? lastResponse = null;
+        BouncePage? lastResponse = null;
 
         for (var attempt = 0; attempt < 24; attempt++)
         {
@@ -140,9 +140,9 @@ public class BounceIntegrationTests
         return lastResponse;
     }
 
-    private async Task<GetDeliveryStatsResponse> WaitForDeliveryStatsAsync(CancellationToken cancellationToken)
+    private async Task<DeliveryStats> WaitForDeliveryStatsAsync(CancellationToken cancellationToken)
     {
-        GetDeliveryStatsResponse? lastResponse = null;
+        DeliveryStats? lastResponse = null;
 
         for (var attempt = 0; attempt < 6; attempt++)
         {
@@ -179,7 +179,7 @@ public class BounceIntegrationTests
             return Assert.Single(searchResponse.Bounces);
         }
 
-        Assert.True(sendResult.IsFailure(out var sendError, out SendEmailResponse? _), sendResult.ToString());
+        Assert.True(sendResult.IsFailure(out var sendError, out EmailSubmission? _), sendResult.ToString());
 
         if (sendError.Message.Contains("inactive", StringComparison.OrdinalIgnoreCase))
         {
@@ -206,9 +206,9 @@ public class BounceIntegrationTests
         return response.Bounces.FirstOrDefault();
     }
 
-    private async Task<GetBounceResponse> WaitForBounceStateAsync(long id, bool inactive, CancellationToken cancellationToken)
+    private async Task<BounceDetails> WaitForBounceStateAsync(long id, bool inactive, CancellationToken cancellationToken)
     {
-        GetBounceResponse? lastResponse = null;
+        BounceDetails? lastResponse = null;
 
         for (var attempt = 0; attempt < 12; attempt++)
         {
@@ -225,7 +225,7 @@ public class BounceIntegrationTests
         return lastResponse;
     }
 
-    private static SendEmailResponse RequireSendResult(Result<SendEmailResponse> result)
+    private static EmailSubmission RequireSendResult(Result<EmailSubmission> result)
     {
         if (result.IsSuccess(out var response))
             return response;
