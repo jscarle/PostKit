@@ -14,7 +14,18 @@ internal sealed partial class PostKitClient
 
     public async Task<Result<EmailSubmission>> SendEmailAsync(Email email, CancellationToken cancellationToken = default)
     {
-        var request = email.ToEmailRequest();
+        ArgumentNullException.ThrowIfNull(email);
+
+        EmailRequest request;
+        try
+        {
+            request = email.ToEmailRequest();
+        }
+        catch (Exception ex)
+        {
+            LogRequestSerializationException(ex);
+            return Result.Failure<EmailSubmission>(ex);
+        }
 
         var endpoint = email.TemplateId.HasValue || email.TemplateAlias is not null ? "/email/withTemplate" : "/email";
 
@@ -79,7 +90,15 @@ internal sealed partial class PostKitClient
                 templateCount++;
 
             estimatedBatchSize += PostmarkSizeEstimator.EstimateMessageSizeLowerBound(email);
-            requests.Add(email.ToEmailRequest());
+            try
+            {
+                requests.Add(email.ToEmailRequest());
+            }
+            catch (Exception ex)
+            {
+                LogBatchRequestSerializationException(index: requests.Count, ex);
+                return Result.Failure<EmailBatchSubmission>(ex);
+            }
         }
 
         if (templateCount > 0 && templateCount < emailList.Count)
@@ -162,6 +181,9 @@ internal sealed partial class PostKitClient
     [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to send the email.")]
     private partial void LogException(Exception ex);
 
+    [LoggerMessage(LogLevel.Error, "An exception occurred while serializing the email request.")]
+    private partial void LogRequestSerializationException(Exception ex);
+
     [LoggerMessage(LogLevel.Error, "Failed to send email. {Message}")]
     private partial void LogError(string message, [LogProperties] IError error);
 
@@ -170,6 +192,9 @@ internal sealed partial class PostKitClient
 
     [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to send the batch of emails.")]
     private partial void LogBatchException(Exception ex);
+
+    [LoggerMessage(LogLevel.Error, "An exception occurred while serializing email {Index} for the batch request.")]
+    private partial void LogBatchRequestSerializationException(int index, Exception ex);
 
     [LoggerMessage(LogLevel.Error, "Failed to send the batch of emails. {Message}")]
     private partial void LogBatchError(string message, [LogProperties] IError error);

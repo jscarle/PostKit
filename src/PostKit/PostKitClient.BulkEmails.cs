@@ -13,7 +13,16 @@ internal sealed partial class PostKitClient
     {
         ArgumentNullException.ThrowIfNull(bulkEmail);
 
-        var request = bulkEmail.ToBulkEmailRequest();
+        BulkEmailRequest request;
+        try
+        {
+            request = bulkEmail.ToBulkEmailRequest();
+        }
+        catch (Exception ex)
+        {
+            LogBulkRequestSerializationException(ex);
+            return Result.Failure<BulkEmails.BulkEmailJob>(ex);
+        }
 
         Result<SendBulkEmailModel> response;
         try
@@ -128,6 +137,9 @@ internal sealed partial class PostKitClient
 
     [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to submit the bulk email request.")]
     private partial void LogBulkException(Exception ex);
+
+    [LoggerMessage(LogLevel.Error, "An exception occurred while serializing the bulk email request.")]
+    private partial void LogBulkRequestSerializationException(Exception ex);
 
     [LoggerMessage(LogLevel.Error, "Failed to submit the bulk email request. {Message}")]
     private partial void LogBulkError(string message, [LogProperties] IError error);

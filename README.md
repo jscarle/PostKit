@@ -12,11 +12,11 @@ A MimeKit infused implementation of the Postmark API.
 
 Upgrading to `10.1.0` requires a few source changes:
 
-- Public email types now live in `PostKit.Emails`. Add `using PostKit.Emails;` for `Email`, `EmailBuilder`, `SendEmailResponse`, and `SendEmailBatchResponse`.
+- Public email types now live in `PostKit.Emails`. Add `using PostKit.Emails;` for `Email`, `EmailBuilder`, `EmailSubmission`, and `EmailBatchSubmission`.
 - Shared email primitives now live in `PostKit.Common`. Add `using PostKit.Common;` for `Attachment`, `LinkTracking`, and `MessageStream`.
 - Bulk email types are new and live in `PostKit.BulkEmails`.
-- `SendEmailResponse.MessageId` is now a `Guid` containing Postmark's message identifier. Use `InternetMessageId` when you need the RFC-style `<...@mtasv.net>` value.
-- `SendEmailBatchResponse.Results` now exposes `IReadOnlyList<Result<SendEmailResponse>>`. Per-email failures are represented as failed item results, typically with a `PostmarkError`, instead of `SendEmailResponse` entries.
+- `EmailSubmission.MessageId` is now a `Guid` containing Postmark's message identifier. Use `InternetMessageId` when you need the RFC-style `<...@mtasv.net>` value.
+- `EmailBatchSubmission.Results` now exposes `IReadOnlyList<Result<EmailSubmission>>`. Per-email failures are represented as failed item results, typically with a `PostmarkError`, instead of `EmailSubmission` entries.
 
 Typical upgrade imports:
 
@@ -120,7 +120,7 @@ using PostKit.Common;
 using PostKit.Emails;
 ```
 
-Add `using PostKit.BulkEmails;` when working with the Bulk Email API.
+Add `using PostKit.BulkEmails;` when working with the Bulk Email API, and `using PostKit.Bounces;` when working with bounce queries and responses.
 
 PostKit uses a fluent builder pattern with the following capabilities:
 
@@ -327,7 +327,7 @@ estimate to prevent grossly oversized requests. Actual size limits will be enfor
 
 PostKit uses [LightResults](https://github.com/jscarle/LightResults) for error handling. `SendEmailAsync`, `SendEmailBatchAsync`, `SendBulkEmailAsync`, and `GetBulkEmailStatusAsync` all return `Result<T>` values. Add `using PostKit.Errors;` when you want to inspect concrete error types.
 
-`SendEmailAsync` returns a `Result<SendEmailResponse>` that contains either the response or error information:
+`SendEmailAsync` returns a `Result<EmailSubmission>` that contains either the response or error information:
 
 ```csharp
 var result = await _postKitClient.SendEmailAsync(email);
@@ -401,21 +401,27 @@ Postmark supports different message streams for different types of emails. PostK
 ### Complete Console Application Example
 
 ```csharp
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 using PostKit;
 using PostKit.Emails;
 
-var builder = Host.CreateApplicationBuilder(args);
+var configuration = new ConfigurationBuilder()
+    .AddInMemoryCollection(new Dictionary<string, string?>
+    {
+        ["PostKit:ServerApiToken"] = "your-postmark-server-token-here",
+    })
+    .Build();
 
-// Add PostKit
-builder.Services.AddPostKit();
+var services = new ServiceCollection();
+services.AddSingleton<IConfiguration>(configuration);
+services.AddLogging();
+services.AddPostKit();
 
-var host = builder.Build();
+using var serviceProvider = services.BuildServiceProvider();
 
 // Get the PostKit client
-var postKitClient = host.Services.GetRequiredService<IPostKitClient>();
+var postKitClient = serviceProvider.GetRequiredService<IPostKitClient>();
 
 // Create and send an email
 var email = Email.CreateBuilder()
@@ -457,11 +463,11 @@ The following tables track development progress and map the different Postmark A
 
 |    | Endpoint                                                                                    | Implementation |
 |----|---------------------------------------------------------------------------------------------|----------------|
-| ✏️ | [Get delivery stats](https://postmarkapp.com/developer/api/bounce-api#get-delivery-stats)   |                |
-| ✏️ | [Get bounces](https://postmarkapp.com/developer/api/bounce-api#get-bounces)                 |                |
-| ✏️ | [Get a single bounce](https://postmarkapp.com/developer/api/bounce-api#get-a-single-bounce) |                |
-| ✏️ | [Get bounce dump](https://postmarkapp.com/developer/api/bounce-api#get-bounce-dump)         |                |
-| ✏️ | [Activate a bounce](https://postmarkapp.com/developer/api/bounce-api#activate-a-bounce)     |                |
+| ✅ | [Get delivery stats](https://postmarkapp.com/developer/api/bounce-api#get-delivery-stats)   | `IPostKitClient.GetDeliveryStatsAsync` |
+| ✅ | [Get bounces](https://postmarkapp.com/developer/api/bounce-api#get-bounces)                 | `IPostKitClient.GetBouncesAsync` |
+| ✅ | [Get a single bounce](https://postmarkapp.com/developer/api/bounce-api#get-a-single-bounce) | `IPostKitClient.GetBounceAsync` |
+| ✅ | [Get bounce dump](https://postmarkapp.com/developer/api/bounce-api#get-bounce-dump)         | `IPostKitClient.GetBounceDumpAsync` |
+| ✅ | [Activate a bounce](https://postmarkapp.com/developer/api/bounce-api#activate-a-bounce)     | `IPostKitClient.ActivateBounceAsync` |
 | ✏️ | [Bounce types](https://postmarkapp.com/developer/api/bounce-api#bounce-types)               |                |
 | ✏️ | [Rebound](https://postmarkapp.com/developer/api/bounce-api#rebound)                         |                |
 

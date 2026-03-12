@@ -81,6 +81,39 @@ public class PostKitClientBatchResponseTests
         Assert.Equal("Invalid email request.", postmarkError.Message);
     }
 
+    [Fact]
+    public async Task SendEmailBatchAsync_MapsUnknownRejectedItemsToFailedResults()
+    {
+        var email = Email.CreateBuilder()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .WithSubject("Batch unknown failure")
+            .WithTextBody("failure")
+            .Build();
+
+        var postmark = new RecordingPostmarkClient(new List<EmailResponse>
+        {
+            new()
+            {
+                ErrorCode = 999999,
+                Message = "Brand new Postmark error.",
+            },
+        });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendEmailBatchAsync(new[] { email }, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.False(batchResponse.IsSuccessful);
+
+        var itemResult = Assert.Single(batchResponse.Results);
+        Assert.True(itemResult.IsFailure(out var error, out EmailSubmission? _), itemResult.ToString());
+        var postmarkError = Assert.IsType<PostmarkError>(error);
+        Assert.Equal((PostmarkErrorCode)999999, postmarkError.ErrorCode);
+        Assert.Equal("Brand new Postmark error.", postmarkError.Message);
+    }
+
     private sealed class RecordingPostmarkClient(List<EmailResponse> response) : IPostmarkClient
     {
         public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
