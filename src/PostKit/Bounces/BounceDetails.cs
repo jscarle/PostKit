@@ -41,8 +41,8 @@ public sealed record BounceDetails
     /// <summary>Gets the recipient email address that bounced.</summary>
     public string Email { [UsedImplicitly] get; }
 
-    /// <summary>Gets the sender email address of the original message.</summary>
-    public string From { [UsedImplicitly] get; }
+    /// <summary>Gets the sender email address of the original message, when Postmark includes it.</summary>
+    public string? From { [UsedImplicitly] get; }
 
     /// <summary>Gets the timestamp when Postmark recorded the bounce.</summary>
     public DateTimeOffset BouncedAt { [UsedImplicitly] get; }
@@ -75,7 +75,7 @@ public sealed record BounceDetails
         string description,
         string details,
         string email,
-        string from,
+        string? from,
         DateTimeOffset bouncedAt,
         bool dumpAvailable,
         bool inactive,

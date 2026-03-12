@@ -115,6 +115,84 @@ public class PostKitClientBounceResponseTests
     }
 
     [Fact]
+    public async Task GetBouncesAsync_WhenFromIsMissing_MapsNullFrom()
+    {
+        const string responseJson = """
+                                    {
+                                      "TotalCount": 1,
+                                      "Bounces": [
+                                        {
+                                          "RecordType": "Bounce",
+                                          "ID": 1599950051,
+                                          "Type": "HardBounce",
+                                          "TypeCode": 1,
+                                          "Name": "Hard bounce",
+                                          "Tag": "",
+                                          "MessageID": "69ce4784-c202-41c6-a1a9-91757022b25e",
+                                          "ServerID": 18451835,
+                                          "MessageStream": "outbound",
+                                          "Description": "The server was unable to deliver your message.",
+                                          "Details": "smtp;550 mailbox unavailable",
+                                          "Email": "HardBounce@bounce-testing.postmarkapp.com",
+                                          "BouncedAt": "2026-03-11T17:33:38Z",
+                                          "DumpAvailable": true,
+                                          "Inactive": true,
+                                          "CanActivate": true,
+                                          "Subject": "PostKit Bounces API probe"
+                                        }
+                                      ]
+                                    }
+                                    """;
+
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/bounces?count=10&offset=0"] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBouncesAsync(new BounceQuery(10, 0), CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        var bounce = Assert.Single(response.Bounces);
+        Assert.Null(bounce.From);
+    }
+
+    [Fact]
+    public async Task GetBounceAsync_WithWhitespaceOnlySubject_PreservesSubject()
+    {
+        const string responseJson = """
+                                    {
+                                      "RecordType": "Bounce",
+                                      "ID": 1599950051,
+                                      "Type": "HardBounce",
+                                      "TypeCode": 1,
+                                      "Name": "Hard bounce",
+                                      "Tag": "",
+                                      "MessageID": "69ce4784-c202-41c6-a1a9-91757022b25e",
+                                      "ServerID": 18451835,
+                                      "MessageStream": "outbound",
+                                      "Description": "The server was unable to deliver your message.",
+                                      "Details": "smtp;550 mailbox unavailable",
+                                      "Email": "HardBounce@bounce-testing.postmarkapp.com",
+                                      "From": "from@publi-7.com",
+                                      "BouncedAt": "2026-03-11T17:33:38Z",
+                                      "DumpAvailable": true,
+                                      "Inactive": true,
+                                      "CanActivate": true,
+                                      "Subject": "   ",
+                                      "Content": "X-PM-Message-Id: 69ce4784-c202-41c6-a1a9-91757022b25e"
+                                    }
+                                    """;
+
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/bounces/1599950051"] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBounceAsync(1599950051, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal("   ", response.Subject);
+    }
+
+    [Fact]
     public async Task GetDeliveryStatsAsync_UsesDeliveryStatsEndpointAndMapsResponse()
     {
         const string responseJson = """

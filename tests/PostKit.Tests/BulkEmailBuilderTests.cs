@@ -104,4 +104,15 @@ public class BulkEmailBuilderTests
         Assert.Null(bulkEmail.HtmlBody);
         Assert.Null(bulkEmail.TextBody);
     }
+
+    [Fact]
+    public void WithSubject_WhenLongerThan2000Characters_Throws()
+    {
+        var subject = new string('S', 2001);
+
+        var exception = Assert.Throws<ArgumentException>(() => BulkEmail.CreateBuilder()
+            .WithSubject(subject));
+
+        Assert.Equal("The subject cannot be longer than 2000 characters. (Parameter 'subject')", exception.Message);
+    }
 }

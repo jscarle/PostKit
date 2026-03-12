@@ -420,9 +420,6 @@ internal sealed partial class PostKitClient
         if (string.IsNullOrWhiteSpace(response.Email))
             return Result.Failure<BounceCore>("Email was not returned from the Postmark Bounces API.");
 
-        if (string.IsNullOrWhiteSpace(response.From))
-            return Result.Failure<BounceCore>("From was not returned from the Postmark Bounces API.");
-
         if (response.BouncedAt is null)
             return Result.Failure<BounceCore>("BouncedAt was not returned from the Postmark Bounces API.");
 
@@ -435,7 +432,7 @@ internal sealed partial class PostKitClient
         if (response.CanActivate is null)
             return Result.Failure<BounceCore>("CanActivate was not returned from the Postmark Bounces API.");
 
-        if (string.IsNullOrWhiteSpace(response.Subject))
+        if (response.Subject is null)
             return Result.Failure<BounceCore>("Subject was not returned from the Postmark Bounces API.");
 
         return Result.Success(new BounceCore(
@@ -451,7 +448,7 @@ internal sealed partial class PostKitClient
             response.Description,
             response.Details,
             response.Email,
-            response.From,
+            string.IsNullOrWhiteSpace(response.From) ? null : response.From,
             response.BouncedAt.Value,
             response.DumpAvailable.Value,
             response.Inactive.Value,
@@ -563,7 +560,7 @@ internal sealed partial class PostKitClient
         string Description,
         string Details,
         string Email,
-        string From,
+        string? From,
         DateTimeOffset BouncedAt,
         bool DumpAvailable,
         bool Inactive,
