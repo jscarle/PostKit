@@ -52,7 +52,7 @@ partial class BulkEmailMessageBuilder : IBulkEmailMessageToBuilder
     {
         _to.EnsureNotSet(nameof(BulkEmailMessage.To));
 
-        _to = mailboxAddresses.ToList();
+        _to = mailboxAddresses.ToAddressList();
 
         return this;
     }
@@ -62,7 +62,7 @@ partial class BulkEmailMessageBuilder : IBulkEmailMessageToBuilder
     {
         _to.EnsureNotSet(nameof(BulkEmailMessage.To));
 
-        _to = mailboxAddresses.ToList();
+        _to = mailboxAddresses.ToAddressList();
 
         return this;
     }
@@ -125,8 +125,7 @@ partial class BulkEmailMessageBuilder : IBulkEmailMessageToBuilder
         if (_to is null)
             throw new InvalidOperationException("To() must be called before AlsoTo().");
 
-        foreach (var mailboxAddress in mailboxAddresses)
-            _to.Add(mailboxAddress);
+        _to.AddRange(mailboxAddresses);
 
         return this;
     }

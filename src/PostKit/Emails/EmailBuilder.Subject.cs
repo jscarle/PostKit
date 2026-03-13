@@ -9,6 +9,8 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithSubject(string subject)
     {
+        ArgumentNullException.ThrowIfNull(subject);
+
         _subject.EnsureNotSet(nameof(Email.Subject));
         _templateId.EnsureNotSet(nameof(Email.TemplateId));
         _templateAlias.EnsureNotSet(nameof(Email.TemplateAlias));

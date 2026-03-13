@@ -10,6 +10,8 @@ partial class BulkEmailBuilder
     /// <inheritdoc/>
     public IBulkEmailBuilder WithHtmlBody(string htmlBody)
     {
+        ArgumentNullException.ThrowIfNull(htmlBody);
+
         _htmlBody.EnsureNotSet(nameof(BulkEmail.HtmlBody));
         _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId));
         _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias));
@@ -22,6 +24,8 @@ partial class BulkEmailBuilder
     /// <inheritdoc/>
     public IBulkEmailBuilder WithTextBody(string textBody)
     {
+        ArgumentNullException.ThrowIfNull(textBody);
+
         _textBody.EnsureNotSet(nameof(BulkEmail.TextBody));
         _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId));
         _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias));

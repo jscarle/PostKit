@@ -44,6 +44,8 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithMetadata(IEnumerable<KeyValuePair<string, string>> metadata)
     {
+        ArgumentNullException.ThrowIfNull(metadata);
+
         _metadata.EnsureNotSet(nameof(Email.Metadata));
 
         var metadataList = metadata.ToList();
@@ -69,6 +71,8 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithMetadata(IDictionary<string, string> metadata)
     {
+        ArgumentNullException.ThrowIfNull(metadata);
+
         _metadata.EnsureNotSet(nameof(Email.Metadata));
 
         var uniqueKeys = metadata.Keys

@@ -36,6 +36,8 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithHeaders(IEnumerable<KeyValuePair<string, string>> headers)
     {
+        ArgumentNullException.ThrowIfNull(headers);
+
         _headers.EnsureNotSet(nameof(Email.Headers));
 
         var headerList = headers.ToList();
@@ -58,6 +60,8 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithHeaders(IDictionary<string, string> headers)
     {
+        ArgumentNullException.ThrowIfNull(headers);
+
         _headers.EnsureNotSet(nameof(Email.Headers));
 
         var uniqueKeys = headers.Keys

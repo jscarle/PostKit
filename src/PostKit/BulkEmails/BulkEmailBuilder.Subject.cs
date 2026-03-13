@@ -9,6 +9,8 @@ partial class BulkEmailBuilder
     /// <inheritdoc/>
     public IBulkEmailBuilder WithSubject(string subject)
     {
+        ArgumentNullException.ThrowIfNull(subject);
+
         _subject.EnsureNotSet(nameof(BulkEmail.Subject));
         _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId));
         _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias));

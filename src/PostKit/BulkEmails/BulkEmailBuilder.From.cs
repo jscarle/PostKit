@@ -38,6 +38,8 @@ partial class BulkEmailBuilder
     /// <inheritdoc/>
     public IBulkEmailBuilder From(MailboxAddress mailboxAddress)
     {
+        ArgumentNullException.ThrowIfNull(mailboxAddress);
+
         _from.EnsureNotSet(nameof(BulkEmail.From));
 
         ValidateFrom(mailboxAddress, nameof(mailboxAddress));

@@ -10,6 +10,8 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithHtmlBody(string html)
     {
+        ArgumentNullException.ThrowIfNull(html);
+
         _templateId.EnsureNotSet(nameof(Email.TemplateId));
         _templateAlias.EnsureNotSet(nameof(Email.TemplateAlias));
         _templateModel.EnsureNotSet(nameof(Email.TemplateModel));
@@ -24,6 +26,8 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithTextBody(string text)
     {
+        ArgumentNullException.ThrowIfNull(text);
+
         _templateId.EnsureNotSet(nameof(Email.TemplateId));
         _templateAlias.EnsureNotSet(nameof(Email.TemplateAlias));
         _templateModel.EnsureNotSet(nameof(Email.TemplateModel));

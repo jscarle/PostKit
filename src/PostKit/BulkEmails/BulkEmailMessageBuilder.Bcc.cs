@@ -52,7 +52,7 @@ partial class BulkEmailMessageBuilder : IBulkEmailMessageBccBuilder
     {
         _bcc.EnsureNotSet(nameof(BulkEmailMessage.Bcc));
 
-        _bcc = mailboxAddresses.ToList();
+        _bcc = mailboxAddresses.ToAddressList();
 
         return this;
     }
@@ -62,7 +62,7 @@ partial class BulkEmailMessageBuilder : IBulkEmailMessageBccBuilder
     {
         _bcc.EnsureNotSet(nameof(BulkEmailMessage.Bcc));
 
-        _bcc = mailboxAddresses.ToList();
+        _bcc = mailboxAddresses.ToAddressList();
 
         return this;
     }
@@ -125,8 +125,7 @@ partial class BulkEmailMessageBuilder : IBulkEmailMessageBccBuilder
         if (_bcc is null)
             throw new InvalidOperationException("Bcc() must be called before AlsoBcc().");
 
-        foreach (var mailboxAddress in mailboxAddresses)
-            _bcc.Add(mailboxAddress);
+        _bcc.AddRange(mailboxAddresses);
 
         return this;
     }

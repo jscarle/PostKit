@@ -38,6 +38,8 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder From(MailboxAddress mailboxAddress)
     {
+        ArgumentNullException.ThrowIfNull(mailboxAddress);
+
         _from.EnsureNotSet(nameof(Email.From));
 
         ValidateFrom(mailboxAddress, nameof(mailboxAddress));

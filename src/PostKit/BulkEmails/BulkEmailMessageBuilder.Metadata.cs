@@ -46,6 +46,8 @@ partial class BulkEmailMessageBuilder
     /// <inheritdoc/>
     public IBulkEmailMessageBuilder WithMetadata(IEnumerable<KeyValuePair<string, string>> metadata)
     {
+        ArgumentNullException.ThrowIfNull(metadata);
+
         _metadata.EnsureNotSet(nameof(BulkEmailMessage.Metadata));
 
         var metadataList = metadata.ToList();
@@ -71,6 +73,8 @@ partial class BulkEmailMessageBuilder
     /// <inheritdoc/>
     public IBulkEmailMessageBuilder WithMetadata(IDictionary<string, string> metadata)
     {
+        ArgumentNullException.ThrowIfNull(metadata);
+
         _metadata.EnsureNotSet(nameof(BulkEmailMessage.Metadata));
 
         var uniqueKeys = metadata.Keys

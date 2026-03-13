@@ -36,6 +36,8 @@ partial class BulkEmailBuilder
     /// <inheritdoc/>
     public IBulkEmailBuilder WithHeaders(IEnumerable<KeyValuePair<string, string>> headers)
     {
+        ArgumentNullException.ThrowIfNull(headers);
+
         _headers.EnsureNotSet(nameof(BulkEmail.Headers));
 
         var headerList = headers.ToList();
@@ -58,6 +60,8 @@ partial class BulkEmailBuilder
     /// <inheritdoc/>
     public IBulkEmailBuilder WithHeaders(IDictionary<string, string> headers)
     {
+        ArgumentNullException.ThrowIfNull(headers);
+
         _headers.EnsureNotSet(nameof(BulkEmail.Headers));
 
         var uniqueKeys = headers.Keys

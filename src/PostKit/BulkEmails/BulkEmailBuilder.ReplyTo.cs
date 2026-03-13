@@ -52,7 +52,7 @@ partial class BulkEmailBuilder : IBulkEmailReplyToBuilder
     {
         _replyTo.EnsureNotSet(nameof(BulkEmail.ReplyTo));
 
-        _replyTo = mailboxAddresses.ToList();
+        _replyTo = mailboxAddresses.ToAddressList();
 
         return this;
     }
@@ -62,7 +62,7 @@ partial class BulkEmailBuilder : IBulkEmailReplyToBuilder
     {
         _replyTo.EnsureNotSet(nameof(BulkEmail.ReplyTo));
 
-        _replyTo = mailboxAddresses.ToList();
+        _replyTo = mailboxAddresses.ToAddressList();
 
         return this;
     }
@@ -125,8 +125,7 @@ partial class BulkEmailBuilder : IBulkEmailReplyToBuilder
         if (_replyTo is null)
             throw new InvalidOperationException("ReplyTo() must be called before AlsoReplyTo().");
 
-        foreach (var mailboxAddress in mailboxAddresses)
-            _replyTo.Add(mailboxAddress);
+        _replyTo.AddRange(mailboxAddresses);
 
         return this;
     }

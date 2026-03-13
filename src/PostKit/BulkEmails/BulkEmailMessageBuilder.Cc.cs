@@ -52,7 +52,7 @@ partial class BulkEmailMessageBuilder : IBulkEmailMessageCcBuilder
     {
         _cc.EnsureNotSet(nameof(BulkEmailMessage.Cc));
 
-        _cc = mailboxAddresses.ToList();
+        _cc = mailboxAddresses.ToAddressList();
 
         return this;
     }
@@ -62,7 +62,7 @@ partial class BulkEmailMessageBuilder : IBulkEmailMessageCcBuilder
     {
         _cc.EnsureNotSet(nameof(BulkEmailMessage.Cc));
 
-        _cc = mailboxAddresses.ToList();
+        _cc = mailboxAddresses.ToAddressList();
 
         return this;
     }
@@ -125,8 +125,7 @@ partial class BulkEmailMessageBuilder : IBulkEmailMessageCcBuilder
         if (_cc is null)
             throw new InvalidOperationException("Cc() must be called before AlsoCc().");
 
-        foreach (var mailboxAddress in mailboxAddresses)
-            _cc.Add(mailboxAddress);
+        _cc.AddRange(mailboxAddresses);
 
         return this;
     }

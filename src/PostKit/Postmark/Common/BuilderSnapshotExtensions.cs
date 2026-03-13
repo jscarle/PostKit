@@ -7,11 +7,13 @@ internal static class BuilderSnapshotExtensions
 {
     public static MailboxAddress Snapshot(this MailboxAddress mailboxAddress)
     {
+        ArgumentNullException.ThrowIfNull(mailboxAddress);
         return new MailboxAddress(mailboxAddress.Name, mailboxAddress.Address);
     }
 
     public static IReadOnlyCollection<MailboxAddress> SnapshotReadOnly(this IEnumerable<MailboxAddress> mailboxAddresses)
     {
+        ArgumentNullException.ThrowIfNull(mailboxAddresses);
         return mailboxAddresses.Select(static mailboxAddress => mailboxAddress.Snapshot())
             .ToList()
             .AsReadOnly();
