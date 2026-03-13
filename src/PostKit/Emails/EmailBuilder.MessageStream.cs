@@ -28,51 +28,11 @@ partial class EmailBuilder
     {
         _messageStream.EnsureNotSet(nameof(Email.MessageStream));
 
-        if (!IsValidMessageStreamId(messageStreamId))
+        if (!messageStreamId.AsSpan().IsValidMessageStreamId())
             throw new ArgumentException("The message stream ID is invalid.", nameof(messageStreamId));
 
         _messageStream = messageStreamId;
 
         return this;
-    }
-
-    private static bool IsValidMessageStreamId(ReadOnlySpan<char> streamId)
-    {
-        // Check length constraints
-        if (streamId.Length is 0 or > 30)
-            return false;
-
-        // Check if the streamId starts with a number
-        if (char.IsDigit(streamId[0]))
-            return false;
-
-        // Check if the streamId starts or ends with a dash
-        if (streamId[0] == '-' || streamId[^1] == '-')
-            return false;
-
-        // Check character constraints and for repeating dashes
-        var previousWasDash = false;
-        foreach (var ch in streamId)
-        {
-            if (ch is '-' or >= 'a' and <= 'z' or >= '0' and <= '9')
-            {
-                if (ch == '-')
-                {
-                    if (previousWasDash)
-                        return false; // Repeating dashes
-                    previousWasDash = true;
-                }
-                else
-                {
-                    previousWasDash = false;
-                }
-            }
-            else
-            {
-                return false; // Invalid character
-            }
-        }
-
-        return true;
     }
 }

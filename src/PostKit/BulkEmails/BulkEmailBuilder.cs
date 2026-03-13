@@ -30,6 +30,9 @@ public sealed partial class BulkEmailBuilder : IBulkEmailBuilder
         if ((_htmlBody is not null || _textBody is not null || _subject is not null) && (_templateId.HasValue || _templateAlias is not null))
             throw new InvalidOperationException("Neither a text or HTML body, nor a subject may be specified when using a template.");
 
+        if (!_templateId.HasValue && _templateAlias is null && _messages.Any(static message => message.TemplateModel is not null))
+            throw new InvalidOperationException("A template ID or alias is required when using per-message template models.");
+
         var textBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_textBody);
         if (textBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
             throw new InvalidOperationException("Text body exceeds Postmark's 5 MB limit.");
@@ -38,11 +41,7 @@ public sealed partial class BulkEmailBuilder : IBulkEmailBuilder
         if (htmlBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
             throw new InvalidOperationException("HTML body exceeds Postmark's 5 MB limit.");
 
-        var projectedTotal = textBodySize + htmlBodySize + _attachmentBytes;
-        if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException("Message size exceeds Postmark's 10 MB limit.");
-
-        return new BulkEmail
+        var bulkEmail = new BulkEmail
         {
             From = _from.Snapshot(),
             ReplyTo = _replyTo?.SnapshotReadOnly(),
@@ -63,5 +62,11 @@ public sealed partial class BulkEmailBuilder : IBulkEmailBuilder
             Messages = _messages.ToList()
                 .AsReadOnly(),
         };
+
+        var estimatedTotal = PostmarkSizeEstimator.EstimateBulkEmailSizeLowerBound(bulkEmail);
+        if (estimatedTotal > PostmarkSizeEstimator.BulkPayloadSizeLimitInBytes)
+            throw new InvalidOperationException("Estimated bulk request size exceeds Postmark's 50 MB limit.");
+
+        return bulkEmail;
     }
 }

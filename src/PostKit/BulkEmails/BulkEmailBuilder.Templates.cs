@@ -20,7 +20,7 @@ partial class BulkEmailBuilder
     private bool? _inlineCss;
 
     /// <inheritdoc/>
-    public IBulkEmailBuilder WithTemplate(int templateId, bool? inlineCss = null)
+    public IBulkEmailBuilder UsingTemplate(int templateId, bool? inlineCss = null)
     {
         _subject.EnsureNotSet(nameof(BulkEmail.Subject));
         _htmlBody.EnsureNotSet(nameof(BulkEmail.HtmlBody));
@@ -39,7 +39,7 @@ partial class BulkEmailBuilder
     }
 
     /// <inheritdoc/>
-    public IBulkEmailBuilder WithTemplate(string templateAlias, bool? inlineCss = null)
+    public IBulkEmailBuilder UsingTemplate(string templateAlias, bool? inlineCss = null)
     {
         _subject.EnsureNotSet(nameof(BulkEmail.Subject));
         _htmlBody.EnsureNotSet(nameof(BulkEmail.HtmlBody));

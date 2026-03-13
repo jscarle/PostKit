@@ -18,7 +18,8 @@ public class TemplateIntegrationTests
         var email = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithTemplate(41813873, templateModel)
+            .UsingTemplate(41813873)
+            .WithTemplateModel(templateModel)
             .Build();
 
         // Act
@@ -38,7 +39,8 @@ public class TemplateIntegrationTests
         var email = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithTemplate("message-en", templateModel)
+            .UsingTemplate("message-en")
+            .WithTemplateModel(templateModel)
             .Build();
 
         // Act
@@ -58,7 +60,8 @@ public class TemplateIntegrationTests
         var email = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithTemplate(41813873, templateModel, true)
+            .UsingTemplate(41813873, true)
+            .WithTemplateModel(templateModel)
             .Build();
 
         // Act
@@ -78,7 +81,8 @@ public class TemplateIntegrationTests
         var email = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithTemplate(41813873, templateModel)
+            .UsingTemplate(41813873)
+            .WithTemplateModel(templateModel)
             .WithMetadata("template_type", "verification")
             .WithMetadata("user_id", "98765")
             .Build();
@@ -100,7 +104,8 @@ public class TemplateIntegrationTests
         var email = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithTemplate("message-en", templateModel)
+            .UsingTemplate("message-en")
+            .WithTemplateModel(templateModel)
             .WithOpenTracking()
             .WithLinkTracking()
             .Build();
@@ -122,7 +127,8 @@ public class TemplateIntegrationTests
         var email = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithTemplate(41813873, templateModel)
+            .UsingTemplate(41813873)
+            .WithTemplateModel(templateModel)
             .WithTag("newsletter")
             .Build();
 
@@ -143,7 +149,8 @@ public class TemplateIntegrationTests
         var email = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithTemplate(41813873, templateModel)
+            .UsingTemplate(41813873)
+            .WithTemplateModel(templateModel)
             .WithHeader("X-Template-Version", "1.0")
             .WithHeader("X-Campaign-Id", "campaign-123")
             .Build();
@@ -167,7 +174,8 @@ public class TemplateIntegrationTests
         var email = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithTemplate("message-en", templateModel)
+            .UsingTemplate("message-en")
+            .WithTemplateModel(templateModel)
             .WithAttachment(attachment)
             .Build();
 
@@ -186,13 +194,15 @@ public class TemplateIntegrationTests
         var email1 = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithTemplate(41813873, new { name = "User 1" })
+            .UsingTemplate(41813873)
+            .WithTemplateModel(new { name = "User 1" })
             .Build();
 
         var email2 = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To("another@postkit.com")
-            .WithTemplate(41813873, new { name = "User 2" })
+            .UsingTemplate(41813873)
+            .WithTemplateModel(new { name = "User 2" })
             .Build();
 
         var emails = new[] { email1, email2 };
@@ -229,7 +239,8 @@ public class TemplateIntegrationTests
         var email = Email.CreateBuilder()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithTemplate(41813873, templateModel)
+            .UsingTemplate(41813873)
+            .WithTemplateModel(templateModel)
             .Build();
 
         // Act
@@ -253,7 +264,8 @@ public class TemplateIntegrationTests
             .To("Template Recipient", TestConfiguration.TestToEmail)
             .Cc(TestConfiguration.TestCcEmail)
             .ReplyTo(TestConfiguration.TestReplyToEmail)
-            .WithTemplate(41813873, templateModel, true)
+            .UsingTemplate(41813873, true)
+            .WithTemplateModel(templateModel)
             .WithTag("template-comprehensive")
             .WithHeader("X-Template-Test", "comprehensive")
             .WithMetadata("test_type", "template-full")

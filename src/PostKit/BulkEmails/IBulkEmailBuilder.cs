@@ -74,17 +74,17 @@ public interface IBulkEmailBuilder
     /// <returns>The builder instance for fluent chaining.</returns>
     IBulkEmailBuilder WithTextBody(string textBody);
 
-    /// <summary>Applies a shared Postmark template by identifier.</summary>
+    /// <summary>Specifies a shared Postmark template by identifier.</summary>
     /// <param name="templateId">The template identifier.</param>
     /// <param name="inlineCss">Whether CSS should be inlined.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IBulkEmailBuilder WithTemplate(int templateId, bool? inlineCss = null);
+    IBulkEmailBuilder UsingTemplate(int templateId, bool? inlineCss = null);
 
-    /// <summary>Applies a shared Postmark template by alias.</summary>
+    /// <summary>Specifies a shared Postmark template by alias.</summary>
     /// <param name="templateAlias">The template alias.</param>
     /// <param name="inlineCss">Whether CSS should be inlined.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IBulkEmailBuilder WithTemplate(string templateAlias, bool? inlineCss = null);
+    IBulkEmailBuilder UsingTemplate(string templateAlias, bool? inlineCss = null);
 
     /// <summary>Adds a shared tag to the bulk request.</summary>
     /// <param name="tag">The tag to associate with the request.</param>

@@ -108,7 +108,7 @@ internal sealed partial class PostKitClient
         var endpoint = sendWithTemplates ? "/email/batchWithTemplates" : "/email/batch";
 
         if (estimatedBatchSize > PostmarkSizeEstimator.BatchPayloadSizeLimitInBytes)
-            return Result.Failure<EmailBatchSubmission>("Batch payload size exceeds Postmark's 50 MB limit.");
+            return Result.Failure<EmailBatchSubmission>("Estimated batch payload size exceeds Postmark's 50 MB limit.");
 
         Result<List<EmailResponse>> response;
         try

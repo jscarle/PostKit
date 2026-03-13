@@ -1,4 +1,5 @@
-﻿using MimeKit;
+using System.Text.Json.Nodes;
+using MimeKit;
 using PostKit.Common;
 
 namespace PostKit.Emails;
@@ -59,6 +60,10 @@ public sealed class Email
 
     /// <summary>Gets the model that will be merged into the email template.</summary>
     public object? TemplateModel { get; internal init; }
+
+    internal JsonNode? TemplateModelNode { get; init; }
+
+    internal int TemplateModelSizeInBytes { get; init; }
 
     /// <summary>Gets a value indicating whether CSS should be inlined when sending the email.</summary>
     public bool? InlineCss { get; internal init; }

@@ -4,7 +4,7 @@ namespace PostKit.BulkEmails;
 
 partial class BulkEmailMessageBuilder
 {
-    private IDictionary<string, string>? _headers;
+    private Dictionary<string, string>? _headers;
 
     /// <inheritdoc/>
     public IBulkEmailMessageBuilder WithHeader(string name, string value)
@@ -69,7 +69,7 @@ partial class BulkEmailMessageBuilder
         foreach (var header in headers)
             ValidateHeader(header.Key, header.Value, nameof(headers));
 
-        _headers = headers;
+        _headers = new Dictionary<string, string>(headers, StringComparer.OrdinalIgnoreCase);
 
         return this;
     }
@@ -82,61 +82,13 @@ partial class BulkEmailMessageBuilder
 
     private static void ValidateHeaderName(ReadOnlySpan<char> name, string paramName)
     {
-        if (!IsValidHeaderName(name))
+        if (!name.IsValidHeaderName())
             throw new ArgumentException("The header name is invalid.", paramName);
     }
 
     private static void ValidateHeaderValue(ReadOnlySpan<char> value, string paramName)
     {
-        if (!IsValidHeaderValue(value))
+        if (!value.IsValidHeaderValue())
             throw new ArgumentException("The header value is invalid.", paramName);
-    }
-
-    private static bool IsValidHeaderName(ReadOnlySpan<char> name)
-    {
-        if (name.IsEmpty)
-            return false;
-
-        if (name[0] == '-' || name[^1] == '-')
-            return false;
-
-        foreach (var c in name)
-        {
-            var isLetter = c is >= 'A' and <= 'Z' or >= 'a' and <= 'z';
-            var isDigit = c is >= '0' and <= '9';
-            var isHyphen = c == '-';
-
-            if (!isLetter && !isDigit && !isHyphen)
-                return false;
-        }
-
-        return true;
-    }
-
-    private static bool IsValidHeaderValue(ReadOnlySpan<char> value)
-    {
-        var length = value.Length;
-        for (var i = 0; i < length; i++)
-        {
-            var c = value[i];
-
-            if (c is '\r' or '\n')
-            {
-                if (i == length - 1)
-                    return false;
-
-                var next = value[i + 1];
-                if (next != ' ' && next != '\t')
-                    return false;
-
-                i++;
-            }
-            else if (c < 0x20 || c > 0x7E)
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 }

@@ -28,6 +28,8 @@ public sealed partial class BulkEmailMessageBuilder : IBulkEmailMessageBuilder
             Cc = _cc?.SnapshotReadOnly(),
             Bcc = _bcc?.SnapshotReadOnly(),
             TemplateModel = _templateModel,
+            TemplateModelNode = _templateModelSnapshot?.DeepClone(),
+            TemplateModelSizeInBytes = _templateModelSizeInBytes,
             Metadata = _metadata?.SnapshotReadOnly(),
             Headers = _headers?.SnapshotReadOnly(),
         };

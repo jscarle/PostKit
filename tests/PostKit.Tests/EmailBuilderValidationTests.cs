@@ -130,7 +130,7 @@ public class EmailBuilderValidationTests
                     .From("sender@postkit.com")
                     .To("recipient@postkit.com")
                     .WithSubject("Body and Template Conflict")
-                    .WithTemplate(41813873, new { name = "Alice" })
+                    .UsingTemplate(41813873)
                     .Build();
             }
         );
@@ -148,7 +148,7 @@ public class EmailBuilderValidationTests
                     .From("sender@postkit.com")
                     .To("recipient@postkit.com")
                     .WithTextBody("This should fail when combining body with template.")
-                    .WithTemplate(41813873, new { name = "Alice" })
+                    .UsingTemplate(41813873)
                     .Build();
             }
         );
@@ -166,7 +166,7 @@ public class EmailBuilderValidationTests
                     .From("sender@postkit.com")
                     .To("recipient@postkit.com")
                     .WithHtmlBody("This should fail when combining body with template.")
-                    .WithTemplate(41813873, new { name = "Alice" })
+                    .UsingTemplate(41813873)
                     .Build();
             }
         );
@@ -290,9 +290,38 @@ public class EmailBuilderValidationTests
                 Email.CreateBuilder()
                     .From("sender@postkit.com")
                     .To("recipient@postkit.com")
-                    .WithTemplate(41813873, null!)
+                    .UsingTemplate(41813873)
+                    .WithTemplateModel(null!);
+            }
+        );
+    }
+
+    [Fact]
+    public void EmailBuilder_WithTemplateModelWithoutTemplate_ThrowsException()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            {
+                Email.CreateBuilder()
+                    .From("sender@postkit.com")
+                    .To("recipient@postkit.com")
+                    .WithSubject("Missing template")
+                    .WithTextBody("Body")
+                    .WithTemplateModel(new { name = "Alice" })
                     .Build();
             }
         );
+
+        Assert.Equal("A template ID or alias is required when using a template model.", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithEmojiSubjectExceedingUtf16Limit_ThrowsException()
+    {
+        var subject = string.Concat(Enumerable.Repeat("😀", 1001));
+
+        var exception = Assert.Throws<ArgumentException>(() => Email.CreateBuilder()
+            .WithSubject(subject));
+
+        Assert.Equal("The subject cannot be longer than 2000 characters. (Parameter 'subject')", exception.Message);
     }
 }

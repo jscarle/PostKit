@@ -14,7 +14,7 @@ partial class BulkEmailBuilder
         _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias));
 
         var length = subject.AsSpan()
-            .GetCharacterCount();
+            .GetPostmarkCharacterCount();
         if (length > 2000)
             throw new ArgumentException("The subject cannot be longer than 2000 characters.", nameof(subject));
 

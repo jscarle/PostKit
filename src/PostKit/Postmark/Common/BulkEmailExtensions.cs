@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text.Json;
 using PostKit.BulkEmails;
 using PostKit.Common;
 using PostKit.Postmark.Bulk;
@@ -59,9 +58,6 @@ internal static class BulkEmailExtensions
 
     private static BulkEmailMessageRequest ToBulkEmailMessageRequest(BulkEmailMessage message)
     {
-        var templateModel = message.TemplateModel is not null
-            ? JsonSerializer.SerializeToNode(message.TemplateModel, PostmarkConfiguration.JsonSerializerOptions)
-            : null;
         var to = message.To is not null ? string.Join(",", message.To.Select(static x => x.ToString(true))) : null;
         var cc = message.Cc is not null ? string.Join(",", message.Cc.Select(static x => x.ToString(true))) : null;
         var bcc = message.Bcc is not null ? string.Join(",", message.Bcc.Select(static x => x.ToString(true))) : null;
@@ -75,7 +71,7 @@ internal static class BulkEmailExtensions
             To = to,
             Cc = cc,
             Bcc = bcc,
-            TemplateModel = templateModel,
+            TemplateModel = message.TemplateModelNode,
             Metadata = metadata,
             Headers = headers,
         };

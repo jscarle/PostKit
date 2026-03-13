@@ -37,6 +37,9 @@ public sealed partial class EmailBuilder : IEmailBuilder
         if ((_templateId.HasValue || _templateAlias is not null) && _templateModel is null)
             throw new InvalidOperationException("A template model is required when using a template.");
 
+        if (!_templateId.HasValue && _templateAlias is null && _templateModel is not null)
+            throw new InvalidOperationException("A template ID or alias is required when using a template model.");
+
         var textBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_textBody);
         if (textBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
             throw new InvalidOperationException("Text body exceeds Postmark's 5 MB limit.");
@@ -44,10 +47,6 @@ public sealed partial class EmailBuilder : IEmailBuilder
         var htmlBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_htmlBody);
         if (htmlBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
             throw new InvalidOperationException("HTML body exceeds Postmark's 5 MB limit.");
-
-        var projectedTotal = textBodySize + htmlBodySize + _attachmentBytes;
-        if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException("Message size exceeds Postmark's 10 MB limit.");
 
         var email = new Email
         {
@@ -70,8 +69,14 @@ public sealed partial class EmailBuilder : IEmailBuilder
             TemplateId = _templateId,
             TemplateAlias = _templateAlias,
             TemplateModel = _templateModel,
+            TemplateModelNode = _templateModelSnapshot?.DeepClone(),
+            TemplateModelSizeInBytes = _templateModelSizeInBytes,
             InlineCss = _inlineCss,
         };
+
+        var estimatedTotal = PostmarkSizeEstimator.EstimateMessageSizeLowerBound(email);
+        if (estimatedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
+            throw new InvalidOperationException("Estimated message size exceeds Postmark's 10 MB limit.");
 
         return email;
     }

@@ -28,7 +28,7 @@ partial class BulkEmailBuilder
     {
         _messageStream.EnsureNotSet(nameof(BulkEmail.MessageStream));
 
-        if (!IsValidMessageStreamId(messageStreamId))
+        if (!messageStreamId.AsSpan().IsValidMessageStreamId())
             throw new ArgumentException("The message stream ID is invalid.", nameof(messageStreamId));
 
         if (string.Equals(messageStreamId, "outbound", StringComparison.OrdinalIgnoreCase))
@@ -37,42 +37,5 @@ partial class BulkEmailBuilder
         _messageStream = messageStreamId;
 
         return this;
-    }
-
-    private static bool IsValidMessageStreamId(ReadOnlySpan<char> streamId)
-    {
-        if (streamId.Length is 0 or > 30)
-            return false;
-
-        if (char.IsDigit(streamId[0]))
-            return false;
-
-        if (streamId[0] == '-' || streamId[^1] == '-')
-            return false;
-
-        var previousWasDash = false;
-        foreach (var ch in streamId)
-        {
-            if (ch is '-' or >= 'a' and <= 'z' or >= '0' and <= '9')
-            {
-                if (ch == '-')
-                {
-                    if (previousWasDash)
-                        return false;
-
-                    previousWasDash = true;
-                }
-                else
-                {
-                    previousWasDash = false;
-                }
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 }

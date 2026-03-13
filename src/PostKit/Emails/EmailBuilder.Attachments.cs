@@ -52,6 +52,6 @@ partial class EmailBuilder
 
         var projectedTotal = _attachmentBytes + additionalBytes;
         if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException("Attachments exceed Postmark's 10 MB limit.");
+            throw new InvalidOperationException("Estimated attachment content exceeds Postmark's 10 MB limit.");
     }
 }

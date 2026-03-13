@@ -11,10 +11,10 @@ public class PostKitClientBatchSizeLimitTests
     [Fact]
     public async Task SendEmailBatchAsync_WithOversizedBatch_ReturnsFailure()
     {
-        var bodySize = (int)PostmarkSizeEstimator.BodySizeLimitInBytes;
+        var bodySize = 4 * 1024 * 1024;
         var textBody = new string('a', bodySize);
         var htmlBody = new string('b', bodySize);
-        var emailCount = (int)(PostmarkSizeEstimator.BatchPayloadSizeLimitInBytes / PostmarkSizeEstimator.MessageSizeLimitInBytes) + 1;
+        const int emailCount = 7;
 
         var emails = Enumerable.Range(0, emailCount)
             .Select(index => Email.CreateBuilder()
@@ -34,6 +34,55 @@ public class PostKitClientBatchSizeLimitTests
 
         Assert.False(result.IsSuccess());
         Assert.Equal(0, postmark.CallCount);
+    }
+
+    [Fact]
+    public async Task SendEmailBatchAsync_WithLargeHeadersPushingPastEstimatedBatchLimit_ReturnsFailure()
+    {
+        var textBody = new string('a', 4 * 1024 * 1024);
+        var largeHeaderValue = new string('h', 1024 * 1024);
+        var emails = Enumerable.Range(0, 11)
+            .Select(index => Email.CreateBuilder()
+                .From("sender@postkit.com")
+                .To($"recipient{index}@postkit.com")
+                .WithSubject("Batch size check")
+                .WithTextBody(textBody)
+                .WithHeader("X-Large-Header", largeHeaderValue)
+                .Build())
+            .ToList();
+
+        var postmark = new RecordingPostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendEmailBatchAsync(emails, CancellationToken.None);
+
+        Assert.False(result.IsSuccess());
+        Assert.Equal(0, postmark.CallCount);
+        Assert.Contains("Estimated batch payload size exceeds", result.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendEmailBatchAsync_WithLargeTemplateModelsPushingPastEstimatedBatchLimit_ReturnsFailure()
+    {
+        var emails = Enumerable.Range(0, 11)
+            .Select(index => Email.CreateBuilder()
+                .From("sender@postkit.com")
+                .To($"recipient{index}@postkit.com")
+                .UsingTemplate(42)
+                .WithTemplateModel(new { Data = new string('x', 5 * 1024 * 1024) })
+                .Build())
+            .ToList();
+
+        var postmark = new RecordingPostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendEmailBatchAsync(emails, CancellationToken.None);
+
+        Assert.False(result.IsSuccess());
+        Assert.Equal(0, postmark.CallCount);
+        Assert.Contains("Estimated batch payload size exceeds", result.ToString(), StringComparison.Ordinal);
     }
 
     private sealed class RecordingPostmarkClient : IPostmarkClient

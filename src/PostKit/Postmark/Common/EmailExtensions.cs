@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Text.Json;
 using PostKit.Common;
 using PostKit.Postmark.Email;
 
@@ -12,7 +11,6 @@ internal static class EmailExtensions
         if (email.From is null)
             throw new UnreachableException($"{nameof(email.From)} is unexpectedly null.");
 
-        var templateModel = email.TemplateModel is not null ? JsonSerializer.SerializeToNode(email.TemplateModel, PostmarkConfiguration.JsonSerializerOptions) : null;
         var from = email.From.ToString(true);
         var replyTo = email.ReplyTo is not null ? string.Join(",", email.ReplyTo.Select(x => x.ToString(true))) : null;
         var to = email.To is not null ? string.Join(",", email.To.Select(x => x.ToString(true))) : null;
@@ -44,7 +42,7 @@ internal static class EmailExtensions
         {
             TemplateId = email.TemplateId,
             TemplateAlias = email.TemplateAlias,
-            TemplateModel = templateModel,
+            TemplateModel = email.TemplateModelNode,
             InlineCss = email.InlineCss,
             From = from,
             ReplyTo = replyTo,

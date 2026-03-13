@@ -89,11 +89,36 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
+    public void UsingMessageStream_WithUnderscoreStreamId_Succeeds()
+    {
+        var bulkEmail = BulkEmail.CreateBuilder()
+            .UsingMessageStream("broadcast_stream")
+            .From("sender@postkit.com")
+            .WithSubject("Hello")
+            .WithTextBody("Hello world")
+            .AddMessage(BulkEmailMessage.CreateBuilder()
+                .To("recipient@postkit.com")
+                .Build())
+            .Build();
+
+        Assert.Equal("broadcast_stream", bulkEmail.MessageStream);
+    }
+
+    [Fact]
+    public void UsingMessageStream_WithReservedPrefix_Throws()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => BulkEmail.CreateBuilder()
+            .UsingMessageStream("pm-broadcast"));
+
+        Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
+    }
+
+    [Fact]
     public void Build_WithTemplateAndNoBodies_Succeeds()
     {
         var bulkEmail = BulkEmail.CreateBuilder()
             .From("sender@postkit.com")
-            .WithTemplate("welcome-email")
+            .UsingTemplate("welcome-email")
             .AddMessage(BulkEmailMessage.CreateBuilder()
                 .To("recipient@postkit.com")
                 .Build())
@@ -106,6 +131,16 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
+    public void WithTemplateModel_WithUnserializableModel_Throws()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => BulkEmailMessage.CreateBuilder()
+            .WithTemplateModel(CyclicTemplateModel.Create()));
+
+        Assert.Equal("The template model could not be serialized. (Parameter 'templateModel')", exception.Message);
+        Assert.NotNull(exception.InnerException);
+    }
+
+    [Fact]
     public void WithSubject_WhenLongerThan2000Characters_Throws()
     {
         var subject = new string('S', 2001);
@@ -114,5 +149,87 @@ public class BulkEmailBuilderTests
             .WithSubject(subject));
 
         Assert.Equal("The subject cannot be longer than 2000 characters. (Parameter 'subject')", exception.Message);
+    }
+
+    [Fact]
+    public void WithSubject_WhenEmojiExceedsUtf16Limit_Throws()
+    {
+        var subject = string.Concat(Enumerable.Repeat("😀", 1001));
+
+        var exception = Assert.Throws<ArgumentException>(() => BulkEmail.CreateBuilder()
+            .WithSubject(subject));
+
+        Assert.Equal("The subject cannot be longer than 2000 characters. (Parameter 'subject')", exception.Message);
+    }
+
+    [Fact]
+    public void Build_WithLargePerMessageHeadersPushingPastEstimatedBulkLimit_Throws()
+    {
+        var textBody = new string('a', 4 * 1024 * 1024);
+        var largeHeaderValue = new string('h', 1024 * 1024);
+        var builder = BulkEmail.CreateBuilder()
+            .From("sender@postkit.com")
+            .WithSubject("Hello")
+            .WithTextBody(textBody);
+
+        for (var index = 0; index < 47; index++)
+        {
+            builder.AddMessage(BulkEmailMessage.CreateBuilder()
+                .To($"recipient{index}@postkit.com")
+                .WithHeader("X-Large-Header", largeHeaderValue)
+                .Build());
+        }
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+        Assert.Equal("Estimated bulk request size exceeds Postmark's 50 MB limit.", exception.Message);
+    }
+
+    [Fact]
+    public void Build_WithPerMessageTemplateModelAndNoTemplate_Throws()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() => BulkEmail.CreateBuilder()
+            .From("sender@postkit.com")
+            .WithSubject("Hello")
+            .WithTextBody("Hello world")
+            .AddMessage(BulkEmailMessage.CreateBuilder()
+                .To("recipient@postkit.com")
+                .WithTemplateModel(new { Name = "Alice" })
+                .Build())
+            .Build());
+
+        Assert.Equal("A template ID or alias is required when using per-message template models.", exception.Message);
+    }
+
+    [Fact]
+    public void Build_WithLargePerMessageTemplateModelsPushingPastEstimatedBulkLimit_Throws()
+    {
+        var builder = BulkEmail.CreateBuilder()
+            .From("sender@postkit.com")
+            .UsingTemplate(42);
+
+        for (var index = 0; index < 11; index++)
+        {
+            builder.AddMessage(BulkEmailMessage.CreateBuilder()
+                .To($"recipient{index}@postkit.com")
+                .WithTemplateModel(new { Data = new string('x', 5 * 1024 * 1024) })
+                .Build());
+        }
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+        Assert.Equal("Estimated bulk request size exceeds Postmark's 50 MB limit.", exception.Message);
+    }
+
+    private sealed class CyclicTemplateModel
+    {
+        public CyclicTemplateModel? Self { get; private set; }
+
+        public static CyclicTemplateModel Create()
+        {
+            var model = new CyclicTemplateModel();
+            model.Self = model;
+            return model;
+        }
     }
 }

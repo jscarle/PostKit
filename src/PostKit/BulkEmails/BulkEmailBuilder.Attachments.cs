@@ -51,7 +51,7 @@ partial class BulkEmailBuilder
         ArgumentOutOfRangeException.ThrowIfNegative(additionalBytes);
 
         var projectedTotal = _attachmentBytes + additionalBytes;
-        if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException("Attachments exceed Postmark's 10 MB limit.");
+        if (projectedTotal > PostmarkSizeEstimator.BulkPayloadSizeLimitInBytes)
+            throw new InvalidOperationException("Estimated attachment content exceeds Postmark's 50 MB bulk payload limit.");
     }
 }

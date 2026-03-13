@@ -80,4 +80,40 @@ public class EmailBuilderSizeLimitTests
 
         Assert.Throws<InvalidOperationException>(() => builder.WithAttachment(attachment));
     }
+
+    [Fact]
+    public void Build_WithLargeHeadersPushingPastEstimatedMessageLimit_ThrowsInvalidOperationException()
+    {
+        var textBody = new string('a', 4 * 1024 * 1024);
+        var htmlBody = new string('b', 4 * 1024 * 1024);
+        var largeHeaderValue = new string('h', 3 * 1024 * 1024);
+
+        var builder = Email.CreateBuilder()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .WithSubject("Oversized by headers")
+            .WithTextBody(textBody)
+            .WithHtmlBody(htmlBody)
+            .WithHeader("X-Large-Header", largeHeaderValue);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+        Assert.Equal("Estimated message size exceeds Postmark's 10 MB limit.", exception.Message);
+    }
+
+    [Fact]
+    public void Build_WithLargeTemplateModelPushingPastEstimatedMessageLimit_ThrowsInvalidOperationException()
+    {
+        var templateModel = new { Data = new string('x', 11 * 1024 * 1024) };
+
+        var builder = Email.CreateBuilder()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .UsingTemplate(42)
+            .WithTemplateModel(templateModel);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+        Assert.Equal("Estimated message size exceeds Postmark's 10 MB limit.", exception.Message);
+    }
 }

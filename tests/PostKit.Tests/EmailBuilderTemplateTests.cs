@@ -9,14 +9,15 @@ namespace PostKit.Tests;
 public class EmailBuilderTemplateTests
 {
     [Fact]
-    public void WithTemplateId_Build_SetsTemplateProperties()
+    public void UsingTemplateId_WithTemplateModel_Build_SetsTemplateProperties()
     {
         var templateModel = new { Name = "Alice" };
 
         var email = Email.CreateBuilder()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithTemplate(42, templateModel, true)
+            .UsingTemplate(42, true)
+            .WithTemplateModel(templateModel)
             .Build();
 
         Assert.Equal(42, email.TemplateId);
@@ -26,20 +27,34 @@ public class EmailBuilderTemplateTests
     }
 
     [Fact]
-    public void WithTemplateAlias_Build_SetsTemplateProperties()
+    public void UsingTemplateAlias_WithTemplateModel_Build_SetsTemplateProperties()
     {
         var templateModel = new { Name = "Bob" };
 
         var email = Email.CreateBuilder()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithTemplate("welcome-email", templateModel, false)
+            .UsingTemplate("welcome-email", false)
+            .WithTemplateModel(templateModel)
             .Build();
 
         Assert.Null(email.TemplateId);
         Assert.Equal("welcome-email", email.TemplateAlias);
         Assert.Same(templateModel, email.TemplateModel);
         Assert.False(email.InlineCss);
+    }
+
+    [Fact]
+    public void WithTemplateModel_WithUnserializableModel_ThrowsArgumentException()
+    {
+        var templateModel = CyclicTemplateModel.Create();
+
+        var exception = Assert.Throws<ArgumentException>(() => Email.CreateBuilder()
+            .UsingTemplate(7)
+            .WithTemplateModel(templateModel));
+
+        Assert.Equal("The template model could not be serialized. (Parameter 'templateModel')", exception.Message);
+        Assert.NotNull(exception.InnerException);
     }
 
     [Fact]
@@ -50,7 +65,8 @@ public class EmailBuilderTemplateTests
         var email = Email.CreateBuilder()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithTemplate(7, templateModel)
+            .UsingTemplate(7)
+            .WithTemplateModel(templateModel)
             .Build();
 
         var postmark = new RecordingPostmarkClient();
@@ -72,7 +88,8 @@ public class EmailBuilderTemplateTests
         var email = Email.CreateBuilder()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithTemplate(7, new { Name = "Delta" })
+            .UsingTemplate(7)
+            .WithTemplateModel(new { Name = "Delta" })
             .Build();
 
         var postmark = new RecordingPostmarkClient(new EmailResponse
@@ -101,7 +118,8 @@ public class EmailBuilderTemplateTests
         var email = Email.CreateBuilder()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithTemplate(7, new { Name = "Echo" })
+            .UsingTemplate(7)
+            .WithTemplateModel(new { Name = "Echo" })
             .Build();
 
         var postmark = new RecordingPostmarkClient(new EmailResponse
@@ -159,6 +177,18 @@ public class EmailBuilderTemplateTests
         public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException("GetAsync should not be called in this test.");
+        }
+    }
+
+    private sealed class CyclicTemplateModel
+    {
+        public CyclicTemplateModel? Self { get; private set; }
+
+        public static CyclicTemplateModel Create()
+        {
+            var model = new CyclicTemplateModel();
+            model.Self = model;
+            return model;
         }
     }
 

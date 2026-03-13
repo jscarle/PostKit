@@ -231,11 +231,12 @@ if (batchResult.IsSuccess(out var batchResponse))
 var email = Email.CreateBuilder()
     .From("noreply@yourapp.com")
     .To("user@example.com")
-    .WithTemplate("welcome-email", new
+    .UsingTemplate("welcome-email", inlineCss: true)
+    .WithTemplateModel(new
     {
         Name = "Alice",
         Product = "PostKit"
-    }, inlineCss: true)
+    })
     .Build();
 
 await _postKitClient.SendEmailAsync(email);
@@ -320,8 +321,8 @@ PostKit enforces the Bulk Email API's broadcast-stream requirement. `MessageStre
 
 ### Size Limits
 
-Postmark limits `TextBody` and `HtmlBody` to 5 MB each, and total message size (including attachments) to 10 MB. When batching, Postmark accepts up to 500 emails per batch and batch payloads are limited to 50 MB. PostKit uses a conservative
-estimate to prevent grossly oversized requests. Actual size limits will be enforced by the Postmark API.
+Postmark limits `TextBody` and `HtmlBody` to 5 MB each, email message size to 10 MB, bulk email payloads to 50 MB, and email batches to 500 items / 50 MB. PostKit uses conservative lower-bound estimates based on already-materialized values to
+prevent grossly oversized requests without doing expensive serialization. Actual size limits are still enforced by the Postmark API.
 
 ### Error Handling
 

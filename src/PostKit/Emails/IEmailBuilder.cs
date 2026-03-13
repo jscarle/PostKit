@@ -244,17 +244,20 @@ public interface IEmailBuilder
     /// <returns>The builder instance for fluent chaining.</returns>
     IEmailBuilder UsingMessageStream(string messageStreamId);
 
-    /// <summary>Applies a template to the email using a numeric identifier.</summary>
+    /// <summary>Specifies a template for the email using a numeric identifier.</summary>
     /// <param name="templateId">The template identifier.</param>
-    /// <param name="templateModel">The template model data.</param>
     /// <param name="inlineCss">Whether CSS should be inlined.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IEmailBuilder WithTemplate(int templateId, object templateModel, bool? inlineCss = null);
+    IEmailBuilder UsingTemplate(int templateId, bool? inlineCss = null);
 
-    /// <summary>Applies a template to the email using an alias.</summary>
+    /// <summary>Specifies a template for the email using an alias.</summary>
     /// <param name="templateAlias">The template alias.</param>
-    /// <param name="templateModel">The template model data.</param>
     /// <param name="inlineCss">Whether CSS should be inlined.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
-    IEmailBuilder WithTemplate(string templateAlias, object templateModel, bool? inlineCss = null);
+    IEmailBuilder UsingTemplate(string templateAlias, bool? inlineCss = null);
+
+    /// <summary>Sets the model that will be merged into the selected template.</summary>
+    /// <param name="templateModel">The template model data.</param>
+    /// <returns>The builder instance for fluent chaining.</returns>
+    IEmailBuilder WithTemplateModel(object templateModel);
 }

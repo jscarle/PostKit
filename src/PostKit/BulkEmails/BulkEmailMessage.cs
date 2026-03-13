@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using MimeKit;
 
 namespace PostKit.BulkEmails;
@@ -16,6 +17,10 @@ public sealed class BulkEmailMessage
 
     /// <summary>Gets the template model for recipient-specific rendering.</summary>
     public object? TemplateModel { get; internal init; }
+
+    internal JsonNode? TemplateModelNode { get; init; }
+
+    internal int TemplateModelSizeInBytes { get; init; }
 
     /// <summary>Gets the metadata that applies only to this message.</summary>
     public IReadOnlyDictionary<string, string>? Metadata { get; internal init; }

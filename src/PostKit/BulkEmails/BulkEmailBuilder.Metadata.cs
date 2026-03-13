@@ -4,7 +4,7 @@ namespace PostKit.BulkEmails;
 
 partial class BulkEmailBuilder
 {
-    private IDictionary<string, string>? _metadata;
+    private Dictionary<string, string>? _metadata;
 
     /// <inheritdoc/>
     public IBulkEmailBuilder WithMetadata(string name, string value)
@@ -85,7 +85,7 @@ partial class BulkEmailBuilder
         foreach (var entry in metadata)
             ValidateMetadata(entry.Key, entry.Value, nameof(metadata));
 
-        _metadata = metadata;
+        _metadata = new Dictionary<string, string>(metadata, StringComparer.OrdinalIgnoreCase);
 
         return this;
     }

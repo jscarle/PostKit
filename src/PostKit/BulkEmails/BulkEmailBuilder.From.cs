@@ -51,7 +51,7 @@ partial class BulkEmailBuilder
     {
         var fromString = mailboxAddress.ToString(true);
         var length = fromString.AsSpan()
-            .GetCharacterCount();
+            .GetPostmarkCharacterCount();
         if (length > 255)
             throw new ArgumentException($"The {nameof(BulkEmail.From)} address cannot exceed 255 characters.", paramName);
     }
