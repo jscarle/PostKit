@@ -107,6 +107,7 @@ public class PostKitClientBounceResponseTests
         var result = await client.GetBounceAsync(1599950051, CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.IsAssignableFrom<Bounce>(response);
         Assert.Equal("/bounces/1599950051", postmark.LastEndpoint);
         Assert.Equal("Bounce", response.RecordType);
         Assert.Equal(BounceType.HardBounce, response.Type);

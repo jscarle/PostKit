@@ -2,8 +2,8 @@ using JetBrains.Annotations;
 
 namespace PostKit.Bounces;
 
-/// <summary>Represents a bounce returned from the Postmark bounce search endpoint.</summary>
-public sealed record Bounce
+/// <summary>Represents bounce metadata returned from Postmark bounce endpoints.</summary>
+public record Bounce
 {
     /// <summary>Gets the record type returned by Postmark.</summary>
     public string RecordType { [UsedImplicitly] get; }
