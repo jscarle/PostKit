@@ -49,6 +49,41 @@ public class PostKitClientBatchResponseTests
     }
 
     [Fact]
+    public async Task SendEmailBatchAsync_WithKeepIdAndMessageIdHeader_UsesHeaderForInternetMessageId()
+    {
+        var messageId = Guid.Parse("53ee8d49-dd20-4f1a-b65e-8ef299b7a504");
+        var email = Email.CreateBuilder()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .WithSubject("Batch keep id")
+            .WithTextBody("success")
+            .WithHeader("Message-ID", "<batch-custom@example.com>")
+            .WithHeader("X-PM-KeepID", "true")
+            .Build();
+
+        var postmark = new RecordingPostmarkClient(new List<EmailResponse>
+        {
+            new()
+            {
+                MessageId = messageId.ToString("D"),
+                SubmittedAt = DateTimeOffset.UtcNow,
+                To = "recipient@postkit.com",
+                ErrorCode = 0,
+                Message = "OK",
+            },
+        });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendEmailBatchAsync(new[] { email }, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        var itemResult = Assert.Single(batchResponse.Results);
+        Assert.True(itemResult.IsSuccess(out var response), itemResult.ToString());
+        Assert.Equal("<batch-custom@example.com>", response.InternetMessageId);
+    }
+
+    [Fact]
     public async Task SendEmailBatchAsync_MapsRejectedItemsToFailedResults()
     {
         var email = Email.CreateBuilder()

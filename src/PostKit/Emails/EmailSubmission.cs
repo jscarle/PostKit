@@ -17,16 +17,49 @@ public sealed record EmailSubmission
     /// <summary>Gets the time Postmark accepted the email.</summary>
     public DateTimeOffset SubmittedAt { [UsedImplicitly] get; }
 
-    internal EmailSubmission(Guid messageId, string? to, DateTimeOffset submittedAt)
+    internal EmailSubmission(Guid messageId, string? to, DateTimeOffset submittedAt, string? internetMessageId = null)
     {
         MessageId = messageId;
-        InternetMessageId = FormatInternetMessageId(messageId);
+        InternetMessageId = string.IsNullOrWhiteSpace(internetMessageId)
+            ? FormatInternetMessageId(messageId)
+            : internetMessageId.Trim();
         To = to;
         SubmittedAt = submittedAt;
+    }
+
+    internal static string ResolveInternetMessageId(Guid messageId, IReadOnlyDictionary<string, string>? headers, bool requireKeepId)
+    {
+        var messageIdHeader = GetHeaderValue(headers, "Message-ID");
+        if (string.IsNullOrWhiteSpace(messageIdHeader))
+            return FormatInternetMessageId(messageId);
+
+        if (requireKeepId)
+        {
+            var keepIdHeader = GetHeaderValue(headers, "X-PM-KeepID");
+            if (!bool.TryParse(keepIdHeader?.Trim(), out var keepId) || !keepId)
+                return FormatInternetMessageId(messageId);
+        }
+
+        return messageIdHeader.Trim();
     }
 
     internal static string FormatInternetMessageId(Guid messageId)
     {
         return $"<{messageId:D}@mtasv.net>";
+    }
+
+    private static string? GetHeaderValue(IReadOnlyDictionary<string, string>? headers, string headerName)
+    {
+        if (headers is null)
+            return null;
+
+        if (headers.TryGetValue(headerName, out var value))
+            return value;
+
+        foreach (var header in headers)
+            if (string.Equals(header.Key, headerName, StringComparison.OrdinalIgnoreCase))
+                return header.Value;
+
+        return null;
     }
 }

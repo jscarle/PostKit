@@ -244,7 +244,7 @@ public class EmailBuilderValidationTests
         var html = new string('B', 3 * 1024 * 1024); // 3 MB
         var attachmentData = new byte[5 * 1024 * 1024]; // 5 MB
         Array.Fill(attachmentData, (byte)'C');
-        var attachment = Attachment.Create("large.bin", "application/octet-stream", attachmentData);
+        var attachment = Attachment.Create("large.dat", "application/octet-stream", attachmentData);
 
         // Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>

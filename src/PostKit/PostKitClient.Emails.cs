@@ -66,7 +66,8 @@ internal sealed partial class PostKitClient
         if (emailResponse.SubmittedAt is null)
             return Result.Failure<EmailSubmission>("SubmittedAt was not returned from the Postmark API.");
 
-        var sendEmailResponse = new EmailSubmission(parsedMessageId, emailResponse.To, emailResponse.SubmittedAt.Value);
+        var internetMessageId = EmailSubmission.ResolveInternetMessageId(parsedMessageId, email.Headers, requireKeepId: true);
+        var sendEmailResponse = new EmailSubmission(parsedMessageId, emailResponse.To, emailResponse.SubmittedAt.Value, internetMessageId);
 
         return Result.Success(sendEmailResponse);
     }
@@ -171,7 +172,8 @@ internal sealed partial class PostKitClient
                 else if (email.Bcc is not null)
                     LogEmailSent(email.Bcc, emailResponse);
 
-                var sendEmailResponse = new EmailSubmission(parsedMessageId, emailResponse.To, emailResponse.SubmittedAt.Value);
+                var internetMessageId = EmailSubmission.ResolveInternetMessageId(parsedMessageId, email.Headers, requireKeepId: true);
+                var sendEmailResponse = new EmailSubmission(parsedMessageId, emailResponse.To, emailResponse.SubmittedAt.Value, internetMessageId);
                 batchResults.Add(Result.Success(sendEmailResponse));
             }
             else

@@ -70,7 +70,7 @@ public class EmailBuilderSizeLimitTests
     public void Build_WithAttachmentWhoseBase64EncodingExceedsLimit_ThrowsInvalidOperationException()
     {
         var rawAttachmentBytes = new byte[(int)(PostmarkSizeEstimator.MessageSizeLimitInBytes / 4 * 3) + 1];
-        var attachment = Attachment.Create("large.bin", "application/octet-stream", rawAttachmentBytes);
+        var attachment = Attachment.Create("large.dat", "application/octet-stream", rawAttachmentBytes);
 
         var builder = Email.CreateBuilder()
             .From("sender@postkit.com")

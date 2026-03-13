@@ -1,9 +1,18 @@
+using PostKit.Common;
 using PostKit.Emails;
 
 namespace PostKit.Tests;
 
 public class EmailBuilderHeaderTests
 {
+    [Fact]
+    public void AttachmentCreate_WithForbiddenFileType_ThrowsArgumentException()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Attachment.Create("payload.bin", "application/octet-stream", new byte[] { 1 }));
+
+        Assert.Equal("Attachment file type is not accepted by Postmark. (Parameter 'name')", exception.Message);
+    }
+
     [Fact]
     public void WithHeader_DuplicateDictionaryKeys_ThrowsArgumentExceptionWithHeaderMessage()
     {

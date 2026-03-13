@@ -5,6 +5,11 @@ namespace PostKit.Common;
 /// <summary>Represents an email attachment that can be sent with a <see cref="Email"/>.</summary>
 public sealed class Attachment
 {
+    private static readonly HashSet<string> ForbiddenFileTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "vbs", "exe", "bin", "bat", "chm", "com", "cpl", "crt", "hlp", "hta", "inf", "ins", "isp", "jse", "lnk", "mdb", "pcd", "pif", "reg", "scr", "sct", "shs", "vbe", "vba", "wsf", "wsh", "wsl", "msc", "msi", "msp", "mst",
+    };
+
     /// <summary>Gets the file name that will be presented to the email recipient.</summary>
     public string Name { get; }
 
@@ -39,6 +44,8 @@ public sealed class Attachment
 
         if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
             throw new ArgumentException("Attachment name contains invalid characters.", nameof(name));
+
+        ValidateFileType(name);
 
         if (string.IsNullOrWhiteSpace(contentType))
             throw new ArgumentException("Content type must be specified.", nameof(contentType));
@@ -76,5 +83,17 @@ public sealed class Attachment
         normalizedContentId = candidate;
 
         return new Attachment(name, parsedContentType.MimeType, encodedContent, normalizedContentId);
+    }
+
+    private static void ValidateFileType(string name)
+    {
+        var trimmedName = name.TrimEnd();
+        var lastDotIndex = trimmedName.LastIndexOf('.');
+        if (lastDotIndex < 0 || lastDotIndex == trimmedName.Length - 1)
+            return;
+
+        var fileType = trimmedName[(lastDotIndex + 1)..];
+        if (ForbiddenFileTypes.Contains(fileType))
+            throw new ArgumentException("Attachment file type is not accepted by Postmark.", nameof(name));
     }
 }

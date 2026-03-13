@@ -15,7 +15,7 @@ Upgrading to `10.1.0` requires a few source changes:
 - Public email types now live in `PostKit.Emails`. Add `using PostKit.Emails;` for `Email`, `EmailBuilder`, `EmailSubmission`, and `EmailBatchSubmission`.
 - Shared email primitives now live in `PostKit.Common`. Add `using PostKit.Common;` for `Attachment`, `LinkTracking`, and `MessageStream`.
 - Bulk email types are new and live in `PostKit.BulkEmails`.
-- `EmailSubmission.MessageId` is now a `Guid` containing Postmark's message identifier. Use `InternetMessageId` when you need the RFC-style `<...@mtasv.net>` value.
+- `EmailSubmission.MessageId` is now a `Guid` containing Postmark's message identifier. `InternetMessageId` falls back to the RFC-style `<...@mtasv.net>` value, but preserves your `Message-ID` header when `X-PM-KeepID: true` is set on the outbound message.
 - `EmailBatchSubmission.Results` now exposes `IReadOnlyList<Result<EmailSubmission>>`. Per-email failures are represented as failed item results, typically with a `PostmarkError`, instead of `EmailSubmission` entries.
 
 Typical upgrade imports:

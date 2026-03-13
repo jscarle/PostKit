@@ -197,6 +197,79 @@ public class EmailBuilderTemplateTests
     }
 
     [Fact]
+    public async Task SendEmailAsync_WithKeepIdAndMessageIdHeader_UsesHeaderForInternetMessageId()
+    {
+        var messageId = Guid.Parse("0b261aa1-6726-4d7f-8ead-13ba17bc8283");
+        var email = Email.CreateBuilder()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .WithSubject("Preserve Message-ID")
+            .WithTextBody("Hello")
+            .WithHeader("Message-ID", "<custom@example.com>")
+            .WithHeader("X-PM-KeepID", "true")
+            .Build();
+
+        var postmark = new RecordingPostmarkClient(new EmailResponse
+        {
+            MessageId = messageId.ToString("D"),
+            To = "recipient@postkit.com",
+            SubmittedAt = DateTimeOffset.UtcNow,
+            ErrorCode = 0,
+            Message = "OK",
+        });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendEmailAsync(email, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal("<custom@example.com>", response.InternetMessageId);
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_WithMessageIdHeaderButWithoutKeepId_FallsBackToPostmarkInternetMessageId()
+    {
+        var messageId = Guid.Parse("0b261aa1-6726-4d7f-8ead-13ba17bc8283");
+        var email = Email.CreateBuilder()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .WithSubject("Replace Message-ID")
+            .WithTextBody("Hello")
+            .WithHeader("Message-ID", "<custom@example.com>")
+            .Build();
+
+        var postmark = new RecordingPostmarkClient(new EmailResponse
+        {
+            MessageId = messageId.ToString("D"),
+            To = "recipient@postkit.com",
+            SubmittedAt = DateTimeOffset.UtcNow,
+            ErrorCode = 0,
+            Message = "OK",
+        });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendEmailAsync(email, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal("<0b261aa1-6726-4d7f-8ead-13ba17bc8283@mtasv.net>", response.InternetMessageId);
+    }
+
+    [Fact]
+    public void ResolveInternetMessageId_WithoutKeepIdRequirement_UsesMessageIdHeader()
+    {
+        var messageId = Guid.Parse("0b261aa1-6726-4d7f-8ead-13ba17bc8283");
+        IReadOnlyDictionary<string, string> headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Message-ID"] = "<custom@example.com>",
+        };
+
+        var internetMessageId = EmailSubmission.ResolveInternetMessageId(messageId, headers, requireKeepId: false);
+
+        Assert.Equal("<custom@example.com>", internetMessageId);
+    }
+
+    [Fact]
     public async Task SendEmailAsync_WithoutSubmittedAt_ReturnsFailure()
     {
         var email = Email.CreateBuilder()
