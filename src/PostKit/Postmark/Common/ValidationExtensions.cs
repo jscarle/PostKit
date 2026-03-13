@@ -130,6 +130,9 @@ internal static class ValidationExtensions
             if (snapshot is null)
                 throw new ArgumentException("The template model must serialize to a non-null JSON value.", paramName);
 
+            if (snapshot is not JsonObject)
+                throw new ArgumentException("The template model must serialize to a JSON object.", paramName);
+
             var serializedSize = JsonSizeEstimator.GetSerializedSize(snapshot, PostmarkConfiguration.JsonSerializerOptions);
             return (snapshot, serializedSize);
         }

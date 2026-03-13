@@ -380,8 +380,7 @@ internal sealed partial class PostKitClient
 
     private static Result<BounceCore> CreateBounceCore(BounceModel response)
     {
-        if (string.IsNullOrWhiteSpace(response.RecordType))
-            return Result.Failure<BounceCore>("RecordType was not returned from the Postmark Bounces API.");
+        var recordType = string.IsNullOrWhiteSpace(response.RecordType) ? "Bounce" : response.RecordType;
 
         if (response.Id is null || response.Id.Value <= 0)
             return Result.Failure<BounceCore>("ID returned from the Postmark Bounces API was invalid.");
@@ -440,7 +439,7 @@ internal sealed partial class PostKitClient
             return Result.Failure<BounceCore>("Subject was not returned from the Postmark Bounces API.");
 
         return Result.Success(new BounceCore(
-            response.RecordType,
+            recordType,
             response.Id.Value,
             type.Value,
             response.TypeCode.Value,

@@ -79,7 +79,6 @@ public class PostKitClientBounceResponseTests
     {
         const string responseJson = """
                                     {
-                                      "RecordType": "Bounce",
                                       "ID": 1599950051,
                                       "Type": "HardBounce",
                                       "TypeCode": 1,
@@ -109,6 +108,7 @@ public class PostKitClientBounceResponseTests
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal("/bounces/1599950051", postmark.LastEndpoint);
+        Assert.Equal("Bounce", response.RecordType);
         Assert.Equal(BounceType.HardBounce, response.Type);
         Assert.Equal(Guid.Parse("69ce4784-c202-41c6-a1a9-91757022b25e"), response.MessageId);
         Assert.Contains("69ce4784-c202-41c6-a1a9-91757022b25e", response.Content, StringComparison.Ordinal);
@@ -322,7 +322,6 @@ public class PostKitClientBounceResponseTests
                                     {
                                       "Message": "OK",
                                       "Bounce": {
-                                        "RecordType": "Bounce",
                                         "ID": 1599950051,
                                         "Type": "HardBounce",
                                         "TypeCode": 1,
@@ -353,6 +352,7 @@ public class PostKitClientBounceResponseTests
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal("/bounces/1599950051/activate", postmark.LastEndpoint);
         Assert.Equal("OK", response.Message);
+        Assert.Equal("Bounce", response.Bounce.RecordType);
         Assert.Equal(1599950051, response.Bounce.Id);
         Assert.Equal(BounceType.HardBounce, response.Bounce.Type);
     }

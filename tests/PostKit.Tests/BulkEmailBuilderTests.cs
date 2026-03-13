@@ -141,6 +141,15 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
+    public void WithTemplateModel_WithScalarModel_Throws()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => BulkEmailMessage.CreateBuilder()
+            .WithTemplateModel("Alice"));
+
+        Assert.Equal("The template model must serialize to a JSON object. (Parameter 'templateModel')", exception.Message);
+    }
+
+    [Fact]
     public void WithSubject_WhenLongerThan2000Characters_Throws()
     {
         var subject = new string('S', 2001);

@@ -58,6 +58,16 @@ public class EmailBuilderTemplateTests
     }
 
     [Fact]
+    public void WithTemplateModel_WithScalarModel_ThrowsArgumentException()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Email.CreateBuilder()
+            .UsingTemplate(7)
+            .WithTemplateModel("Alice"));
+
+        Assert.Equal("The template model must serialize to a JSON object. (Parameter 'templateModel')", exception.Message);
+    }
+
+    [Fact]
     public async Task SendEmailAsync_WithTemplate_RoutesThroughTemplateEndpoint()
     {
         var templateModel = new { Name = "Charlie" };
