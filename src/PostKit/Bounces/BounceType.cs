@@ -4,72 +4,72 @@ namespace PostKit.Bounces;
 public enum BounceType
 {
     /// <summary>A permanent delivery failure.</summary>
-    HardBounce,
+    HardBounce = 1,
 
     /// <summary>A transient delivery failure.</summary>
-    Transient,
+    Transient = 2,
 
     /// <summary>An unsubscribe event recorded as a bounce-type result.</summary>
-    Unsubscribe,
+    Unsubscribe = 16,
 
     /// <summary>A subscribe event recorded as a bounce-type result.</summary>
-    Subscribe,
+    Subscribe = 32,
 
     /// <summary>An autoresponder message.</summary>
-    AutoResponder,
+    AutoResponder = 64,
 
     /// <summary>An address change notification.</summary>
-    AddressChange,
+    AddressChange = 128,
 
     /// <summary>A DNS-related delivery failure.</summary>
-    DnsError,
+    DnsError = 256,
 
     /// <summary>A spam notification.</summary>
-    SpamNotification,
+    SpamNotification = 512,
 
     /// <summary>An open relay test result.</summary>
-    OpenRelayTest,
+    OpenRelayTest = 1024,
 
     /// <summary>An unknown bounce classification.</summary>
-    Unknown,
+    Unknown = 2048,
 
     /// <summary>A soft bounce.</summary>
-    SoftBounce,
+    SoftBounce = 4096,
 
     /// <summary>A virus notification.</summary>
-    VirusNotification,
-
-    /// <summary>A legacy MailFrontier Matador classification retained for backward compatibility.</summary>
-    [Obsolete("Postmark does not expose MailFrontier Matador as a standalone bounce type. Use ChallengeVerification instead.")]
-    MailFrontierMatador,
+    VirusNotification = 8192,
 
     /// <summary>A bad email address classification.</summary>
-    BadEmailAddress,
+    BadEmailAddress = 100000,
 
     /// <summary>A spam complaint.</summary>
-    SpamComplaint,
+    SpamComplaint = 100001,
 
     /// <summary>A manually deactivated recipient.</summary>
-    ManuallyDeactivated,
+    ManuallyDeactivated = 100002,
 
     /// <summary>An unconfirmed recipient.</summary>
-    Unconfirmed,
+    Unconfirmed = 100003,
 
     /// <summary>A blocked recipient.</summary>
-    Blocked,
+    Blocked = 100006,
 
     /// <summary>An SMTP API error.</summary>
-    SmtpApiError,
+    SmtpApiError = 100007,
 
     /// <summary>An inbound processing error.</summary>
-    InboundError,
+    InboundError = 100008,
 
     /// <summary>A DMARC policy rejection.</summary>
-    DmarcPolicy,
+    DmarcPolicy = 100009,
 
     /// <summary>A template rendering failure.</summary>
-    TemplateRenderingFailed,
+    TemplateRenderingFailed = 100010,
 
     /// <summary>A spam challenge verification response.</summary>
-    ChallengeVerification,
+    ChallengeVerification = 16384,
+
+    /// <summary>A legacy MailFrontier Matador classification retained as an alias of <see cref="ChallengeVerification"/>.</summary>
+    [Obsolete("Postmark now reports MailFrontier Matador challenges as ChallengeVerification. Use ChallengeVerification instead.")]
+    MailFrontierMatador = ChallengeVerification,
 }

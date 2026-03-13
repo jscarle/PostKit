@@ -223,9 +223,17 @@ public class PostKitClientBounceResponseTests
     }
 
     [Fact]
-    public async Task GetBouncesAsync_WithLegacyMailFrontierMatadorFilter_FailsBeforeCallingApi()
+    public async Task GetBouncesAsync_WithLegacyMailFrontierMatadorFilter_UsesChallengeVerificationTypeValue()
     {
-        var postmark = new RecordingPostmarkClient();
+        const string responseJson = """
+                                    {
+                                      "TotalCount": 0,
+                                      "Bounces": []
+                                    }
+                                    """;
+
+        var endpoint = "/bounces?count=10&offset=0&type=ChallengeVerification";
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
@@ -233,8 +241,9 @@ public class PostKitClientBounceResponseTests
         var result = await client.GetBouncesAsync(new BounceQuery { Count = 10, Type = BounceType.MailFrontierMatador }, CancellationToken.None);
 #pragma warning restore CS0618
 
-        Assert.True(result.IsFailure());
-        Assert.Null(postmark.LastEndpoint);
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal(endpoint, postmark.LastEndpoint);
+        Assert.Empty(response.Bounces);
     }
 
     [Fact]
