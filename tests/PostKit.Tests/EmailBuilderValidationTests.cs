@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PostKit.Common;
@@ -172,6 +173,24 @@ public class EmailBuilderValidationTests
         );
 
         Assert.Contains("already been set", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void EmailBuilder_Build_WithTemplateAndSubjectInInvalidState_ThrowsException()
+    {
+        var builder = Email.CreateBuilder()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .UsingTemplate(41813873)
+            .WithTemplateModel(new { Name = "Alice" });
+
+        var subjectField = typeof(EmailBuilder).GetField("_subject", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(subjectField);
+        subjectField.SetValue(builder, "Unexpected subject");
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+        Assert.Equal("Neither a text or HTML body, nor a subject may be specified when using a template.", exception.Message);
     }
 
     [Fact]

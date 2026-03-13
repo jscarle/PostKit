@@ -12,6 +12,8 @@ public class BounceIntegrationTests
 {
     private const string SoftBounceRecipient = "SoftBounce@bounce-testing.postmarkapp.com";
     private const string HardBounceRecipient = "HardBounce@bounce-testing.postmarkapp.com";
+    private static readonly TimeSpan BounceSearchDelay = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan BounceDetailDelay = TimeSpan.FromSeconds(2);
     private readonly IPostKitClient _client = CreateBounceClient();
 
     [Fact]
@@ -42,8 +44,12 @@ public class BounceIntegrationTests
         var searchResponse = await WaitForBounceAsync(sent.MessageId, inactive: false, TestContext.Current.CancellationToken);
         var bounce = Assert.Single(searchResponse.Bounces);
 
-        var detailResult = await _client.GetBounceAsync(bounce.Id, TestContext.Current.CancellationToken);
-        var detail = RequireBounceApi(detailResult);
+        var detail = await WaitForBounceDetailsAsync(
+            bounce.Id,
+            response => response.MessageId == sent.MessageId
+                        && response.Content.Contains($"X-PM-Message-Id: {sent.MessageId:D}", StringComparison.Ordinal),
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(bounce.Id, detail.Id);
         Assert.Equal(sent.MessageId, detail.MessageId);
@@ -60,8 +66,11 @@ public class BounceIntegrationTests
         var searchResponse = await WaitForBounceAsync(sent.MessageId, inactive: false, TestContext.Current.CancellationToken);
         var bounce = Assert.Single(searchResponse.Bounces);
 
-        var dumpResult = await _client.GetBounceDumpAsync(bounce.Id, TestContext.Current.CancellationToken);
-        var dump = RequireBounceApi(dumpResult);
+        var dump = await WaitForBounceDumpAsync(
+            bounce.Id,
+            response => response.Body.Contains($"X-PM-Message-Id: {sent.MessageId:D}", StringComparison.Ordinal),
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Contains($"X-PM-Message-Id: {sent.MessageId:D}", dump.Body, StringComparison.Ordinal);
     }
@@ -133,11 +142,31 @@ public class BounceIntegrationTests
             if (lastResponse.TotalCount > 0)
                 break;
 
-            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            await Task.Delay(BounceSearchDelay, cancellationToken);
         }
 
         Assert.NotNull(lastResponse);
         return lastResponse;
+    }
+
+    private Task<BounceDetails> WaitForBounceDetailsAsync(long id, Func<BounceDetails, bool> isReady, CancellationToken cancellationToken)
+    {
+        return WaitForBounceApiAsync(
+            ct => _client.GetBounceAsync(id, ct),
+            isReady,
+            $"Bounce '{id}' details were not ready after waiting for replication.",
+            cancellationToken
+        );
+    }
+
+    private Task<BounceDump> WaitForBounceDumpAsync(long id, Func<BounceDump, bool> isReady, CancellationToken cancellationToken)
+    {
+        return WaitForBounceApiAsync(
+            ct => _client.GetBounceDumpAsync(id, ct),
+            isReady,
+            $"Bounce '{id}' dump was not ready after waiting for replication.",
+            cancellationToken
+        );
     }
 
     private async Task<DeliveryStats> WaitForDeliveryStatsAsync(CancellationToken cancellationToken)
@@ -152,7 +181,7 @@ public class BounceIntegrationTests
             if (lastResponse.Bounces.Any(item => item.Type == BounceType.SoftBounce && item.Count >= 1))
                 break;
 
-            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            await Task.Delay(BounceSearchDelay, cancellationToken);
         }
 
         Assert.NotNull(lastResponse);
@@ -208,21 +237,7 @@ public class BounceIntegrationTests
 
     private async Task<BounceDetails> WaitForBounceStateAsync(long id, bool inactive, CancellationToken cancellationToken)
     {
-        BounceDetails? lastResponse = null;
-
-        for (var attempt = 0; attempt < 12; attempt++)
-        {
-            var result = await _client.GetBounceAsync(id, cancellationToken);
-            lastResponse = RequireBounceApi(result);
-
-            if (lastResponse.Inactive == inactive)
-                break;
-
-            await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
-        }
-
-        Assert.NotNull(lastResponse);
-        return lastResponse;
+        return await WaitForBounceDetailsAsync(id, response => response.Inactive == inactive, cancellationToken);
     }
 
     private static EmailSubmission RequireSendResult(Result<EmailSubmission> result)
@@ -272,5 +287,43 @@ public class BounceIntegrationTests
         return error.Message.Contains("requires activation", StringComparison.OrdinalIgnoreCase)
                || error.Message.Contains("bounces api", StringComparison.OrdinalIgnoreCase)
                && error.Message.Contains("activation", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ShouldRetryBounceLookup(IError error)
+    {
+        return error is PostmarkError { ErrorCode: PostmarkErrorCode.BounceNotFound };
+    }
+
+    private static async Task<T> WaitForBounceApiAsync<T>(
+        Func<CancellationToken, Task<Result<T>>> operation,
+        Func<T, bool> isReady,
+        string timeoutMessage,
+        CancellationToken cancellationToken)
+        where T : class
+    {
+        for (var attempt = 0; attempt < 30; attempt++)
+        {
+            var result = await operation(cancellationToken);
+            if (result.IsSuccess(out var response))
+            {
+                if (isReady(response))
+                    return response;
+            }
+            else
+            {
+                Assert.True(result.IsFailure(out var error, out T? _), result.ToString());
+
+                if (ShouldSkip(error))
+                    Assert.Skip($"Bounces API is not available in this environment: {error.Message}");
+
+                if (!ShouldRetryBounceLookup(error))
+                    Assert.Fail(result.ToString());
+            }
+
+            await Task.Delay(BounceDetailDelay, cancellationToken);
+        }
+
+        Assert.Fail(timeoutMessage);
+        return null!;
     }
 }

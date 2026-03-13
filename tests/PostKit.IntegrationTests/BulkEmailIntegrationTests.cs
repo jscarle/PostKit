@@ -9,6 +9,7 @@ namespace PostKit.IntegrationTests;
 /// <summary>Integration tests for Postmark Bulk API support.</summary>
 public class BulkEmailIntegrationTests
 {
+    private static readonly TimeSpan BulkStatusDelay = TimeSpan.FromSeconds(2);
     private readonly IPostKitClient _client = CreateBulkClient();
 
     [Fact]
@@ -70,7 +71,7 @@ public class BulkEmailIntegrationTests
     {
         BulkEmailJob? lastStatus = null;
 
-        for (var attempt = 0; attempt < 20; attempt++)
+        for (var attempt = 0; attempt < 30; attempt++)
         {
             var result = await _client.GetBulkEmailStatusAsync(bulkRequestId, cancellationToken);
             lastStatus = RequireBulkApi(result);
@@ -78,10 +79,14 @@ public class BulkEmailIntegrationTests
             if (lastStatus.Status is BulkEmailStatus.Completed or BulkEmailStatus.Failed)
                 break;
 
-            await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
+            await Task.Delay(BulkStatusDelay, cancellationToken);
         }
 
         Assert.NotNull(lastStatus);
+        Assert.True(
+            lastStatus.Status is BulkEmailStatus.Completed or BulkEmailStatus.Failed,
+            $"Bulk request '{bulkRequestId:D}' remained in '{lastStatus.Status}' after waiting."
+        );
         return lastStatus;
     }
 

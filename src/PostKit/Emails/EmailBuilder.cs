@@ -31,7 +31,7 @@ public sealed partial class EmailBuilder : IEmailBuilder
         if (_textBody is null && _htmlBody is null && !_templateId.HasValue && _templateAlias is null)
             throw new InvalidOperationException("Either a text or HTML body, or a template ID or alias, is required.");
 
-        if ((_htmlBody is not null || _textBody is not null) && (_templateId.HasValue || _templateAlias is not null))
+        if ((_htmlBody is not null || _textBody is not null || _subject is not null) && (_templateId.HasValue || _templateAlias is not null))
             throw new InvalidOperationException("Neither a text or HTML body, nor a subject may be specified when using a template.");
 
         if ((_templateId.HasValue || _templateAlias is not null) && _templateModel is null)
