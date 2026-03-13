@@ -2,8 +2,8 @@ using JetBrains.Annotations;
 
 namespace PostKit.Bounces;
 
-/// <summary>Represents a bounce count entry returned by Postmark delivery stats.</summary>
-public sealed record BounceTypeCount
+/// <summary>Represents a bounce summary entry returned by Postmark delivery stats.</summary>
+public sealed record BounceSummary
 {
     /// <summary>Gets the bounce type for the entry, when Postmark provides one.</summary>
     public BounceType? Type { [UsedImplicitly] get; }
@@ -14,7 +14,7 @@ public sealed record BounceTypeCount
     /// <summary>Gets the count associated with the entry.</summary>
     public int Count { [UsedImplicitly] get; }
 
-    internal BounceTypeCount(BounceType? type, string name, int count)
+    internal BounceSummary(BounceType? type, string name, int count)
     {
         Type = type;
         Name = name;

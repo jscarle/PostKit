@@ -18,7 +18,7 @@ public class PostKitClientResponseModelConstructorTests
             typeof(Bounce),
             typeof(BounceDetails),
             typeof(DeliveryStats),
-            typeof(BounceTypeCount),
+            typeof(BounceSummary),
             typeof(BounceDump),
             typeof(BounceActivation),
             typeof(BulkEmailJob),

@@ -10,15 +10,15 @@ public sealed record DeliveryStats
     public int InactiveMails { [UsedImplicitly] get; }
 
     /// <summary>Gets the bounce counts grouped by type.</summary>
-    public IReadOnlyList<BounceTypeCount> Bounces { [UsedImplicitly] get; }
+    public IReadOnlyCollection<BounceSummary> Bounces { [UsedImplicitly] get; }
 
-    internal DeliveryStats(int inactiveMails, IReadOnlyList<BounceTypeCount> bounces)
+    internal DeliveryStats(int inactiveMails, IReadOnlyCollection<BounceSummary> bounces)
     {
         InactiveMails = inactiveMails;
         Bounces = bounces switch
         {
-            ReadOnlyCollection<BounceTypeCount> collection => collection,
-            _ => new ReadOnlyCollection<BounceTypeCount>(bounces.ToList()),
+            ReadOnlyCollection<BounceSummary> collection => collection,
+            _ => new ReadOnlyCollection<BounceSummary>(bounces.ToList()),
         };
     }
 }

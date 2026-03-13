@@ -288,10 +288,11 @@ public class PostKitClientBounceResponseTests
         Assert.Equal("/deliverystats", postmark.LastEndpoint);
         Assert.Equal(1, response.InactiveMails);
         Assert.Equal(2, response.Bounces.Count);
-        Assert.Null(response.Bounces[0].Type);
-        Assert.Equal("All", response.Bounces[0].Name);
-        Assert.Equal(4, response.Bounces[0].Count);
-        Assert.Equal(BounceType.SoftBounce, response.Bounces[1].Type);
+        var bounces = response.Bounces.ToArray();
+        Assert.Null(bounces[0].Type);
+        Assert.Equal("All", bounces[0].Name);
+        Assert.Equal(4, bounces[0].Count);
+        Assert.Equal(BounceType.SoftBounce, bounces[1].Type);
     }
 
     [Fact]

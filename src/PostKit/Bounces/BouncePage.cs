@@ -10,9 +10,9 @@ public sealed record BouncePage
     public int TotalCount { [UsedImplicitly] get; }
 
     /// <summary>Gets the current page of bounces returned by the query.</summary>
-    public IReadOnlyList<Bounce> Bounces { [UsedImplicitly] get; }
+    public IReadOnlyCollection<Bounce> Bounces { [UsedImplicitly] get; }
 
-    internal BouncePage(int totalCount, IReadOnlyList<Bounce> bounces)
+    internal BouncePage(int totalCount, IReadOnlyCollection<Bounce> bounces)
     {
         TotalCount = totalCount;
         Bounces = bounces switch

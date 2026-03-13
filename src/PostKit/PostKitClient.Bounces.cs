@@ -8,7 +8,7 @@ using BounceModel = PostKit.Postmark.Bounces.BounceResponse;
 using GetBounceDumpModel = PostKit.Postmark.Bounces.GetBounceDumpResponse;
 using GetBouncesModel = PostKit.Postmark.Bounces.GetBouncesResponse;
 using GetDeliveryStatsModel = PostKit.Postmark.Bounces.GetDeliveryStatsResponse;
-using BounceTypeCountModel = PostKit.Postmark.Bounces.BounceCountElement;
+using BounceCountElementModel = PostKit.Postmark.Bounces.BounceCountElement;
 
 namespace PostKit;
 
@@ -436,38 +436,38 @@ internal sealed partial class PostKitClient
         if (response.Bounces is null)
             return Result.Failure<DeliveryStats>("Bounces were not returned from the Postmark Bounces API.");
 
-        var bounces = new List<BounceTypeCount>(response.Bounces.Count);
+        var bounces = new List<BounceSummary>(response.Bounces.Count);
         for (var index = 0; index < response.Bounces.Count; index++)
         {
-            var mappedCount = CreateBounceTypeCount(response.Bounces[index]);
-            if (mappedCount.IsFailure(out var error, out var bounceTypeCount))
+            var mappedSummary = CreateBounceSummary(response.Bounces[index]);
+            if (mappedSummary.IsFailure(out var error, out var bounceSummary))
                 return Result.Failure<DeliveryStats>($"Delivery stats bounce item {index} could not be mapped: {error.Message}");
 
-            bounces.Add(bounceTypeCount);
+            bounces.Add(bounceSummary);
         }
 
         return Result.Success(new DeliveryStats(response.InactiveMails.Value, bounces));
     }
 
-    private static Result<BounceTypeCount> CreateBounceTypeCount(BounceTypeCountModel response)
+    private static Result<BounceSummary> CreateBounceSummary(BounceCountElementModel response)
     {
         if (string.IsNullOrWhiteSpace(response.Name))
-            return Result.Failure<BounceTypeCount>("Name was not returned from the Postmark Bounces API.");
+            return Result.Failure<BounceSummary>("Name was not returned from the Postmark Bounces API.");
 
         if (response.Count is null || response.Count.Value < 0)
-            return Result.Failure<BounceTypeCount>("Count returned from the Postmark Bounces API was invalid.");
+            return Result.Failure<BounceSummary>("Count returned from the Postmark Bounces API was invalid.");
 
         BounceType? type = null;
         if (!string.IsNullOrWhiteSpace(response.Type))
         {
             var mappedType = TryMapBounceType(response.Type);
             if (mappedType is null)
-                return Result.Failure<BounceTypeCount>($"Type '{response.Type}' returned from the Postmark Bounces API is not supported.");
+                return Result.Failure<BounceSummary>($"Type '{response.Type}' returned from the Postmark Bounces API is not supported.");
 
             type = mappedType.Value;
         }
 
-        return Result.Success(new BounceTypeCount(type, response.Name, response.Count.Value));
+        return Result.Success(new BounceSummary(type, response.Name, response.Count.Value));
     }
 
     private static Result<BounceCore> CreateBounceCore(BounceModel response)
