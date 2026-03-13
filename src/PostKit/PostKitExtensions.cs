@@ -92,9 +92,9 @@ public static class PostKitExtensions
             if (string.IsNullOrWhiteSpace(configurationKey))
                 return services.AddPostKit();
 
-            services.AddHttpClient();
+            services.AddHttpClient("Postmark");
 
-            services.AddOptions<PostKitOptions>() // default (unnamed) options
+            services.AddOptions<PostKitOptions>(configurationKey)
                 .Configure<IConfiguration>((options, configuration) =>
                     {
                         configuration.GetSection("PostKit")
@@ -105,16 +105,22 @@ public static class PostKitExtensions
 
             services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
 
-            services.TryAddTransient<IPostmarkClient>(sp => sp.GetRequiredService<IPostmarkClientFactory>()
-                .Create()
-            );
+            services.Replace(ServiceDescriptor.Transient<IPostmarkClient>(sp => sp.GetRequiredService<IPostmarkClientFactory>()
+                .Create(configurationKey)
+            ));
 
-            services.TryAddTransient<IPostKitClient, PostKitClient>();
+            services.Replace(ServiceDescriptor.Transient<IPostKitClient>(sp =>
+                {
+                    var postmarkClient = sp.GetRequiredService<IPostmarkClient>();
+                    var logger = sp.GetRequiredService<ILogger<PostKitClient>>();
+                    return new PostKitClient(postmarkClient, logger);
+                }
+            ));
 
             return services;
         }
 
-        services.AddHttpClient();
+        services.AddHttpClient("Postmark");
 
         string namedOptionsKey;
         if (configurationKey is not null)

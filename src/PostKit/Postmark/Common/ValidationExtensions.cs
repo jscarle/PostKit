@@ -67,16 +67,10 @@ internal static class ValidationExtensions
         if (name.IsEmpty)
             return false;
 
-        if (name[0] == '-' || name[^1] == '-')
-            return false;
-
         foreach (var c in name)
         {
-            var isLetter = c is >= 'A' and <= 'Z' or >= 'a' and <= 'z';
-            var isDigit = c is >= '0' and <= '9';
-            var isHyphen = c == '-';
-
-            if (!isLetter && !isDigit && !isHyphen)
+            var isVisibleAscii = c is >= (char)0x21 and <= (char)0x7E;
+            if (!isVisibleAscii || c == ':')
                 return false;
         }
 
@@ -108,7 +102,7 @@ internal static class ValidationExtensions
             if (current == '\n')
                 return false;
 
-            if (current < 0x20 || current > 0x7E)
+            if ((current < 0x20 && current != '\t') || current > 0x7E)
                 return false;
         }
 

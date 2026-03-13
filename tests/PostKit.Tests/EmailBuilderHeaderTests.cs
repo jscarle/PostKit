@@ -1,4 +1,5 @@
 using PostKit.Common;
+using PostKit.BulkEmails;
 using PostKit.Emails;
 
 namespace PostKit.Tests;
@@ -50,6 +51,46 @@ public class EmailBuilderHeaderTests
         var builder = Email.CreateBuilder();
 
         var exception = Record.Exception(() => builder.WithHeader("X-Test", "good\r\n\tvalue"));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void WithHeader_NameUsingVisibleAsciiTokenCharacters_IsAccepted()
+    {
+        var builder = Email.CreateBuilder();
+
+        var exception = Record.Exception(() => builder.WithHeader("X_Custom+Trace", "value"));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void WithHeader_ValueContainingPlainTab_IsAccepted()
+    {
+        var builder = Email.CreateBuilder();
+
+        var exception = Record.Exception(() => builder.WithHeader("X-Test", "good\tvalue"));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void BulkEmailBuilder_WithHeader_NameUsingVisibleAsciiTokenCharacters_IsAccepted()
+    {
+        var builder = BulkEmail.CreateBuilder();
+
+        var exception = Record.Exception(() => builder.WithHeader("X_Custom+Trace", "value"));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void BulkEmailMessageBuilder_WithHeader_ValueContainingPlainTab_IsAccepted()
+    {
+        var builder = BulkEmailMessage.CreateBuilder();
+
+        var exception = Record.Exception(() => builder.WithHeader("X-Test", "good\tvalue"));
 
         Assert.Null(exception);
     }
