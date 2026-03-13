@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PostKit.Configuration;
 using PostKit.Postmark;
 
@@ -105,8 +106,13 @@ public static class PostKitExtensions
 
             services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
 
+            services.Replace(ServiceDescriptor.Singleton<IOptions<PostKitOptions>>(sp => Options.Create(
+                sp.GetRequiredService<IOptionsMonitor<PostKitOptions>>()
+                    .Get(configurationKey)
+            )));
+
             services.Replace(ServiceDescriptor.Transient<IPostmarkClient>(sp => sp.GetRequiredService<IPostmarkClientFactory>()
-                .Create(configurationKey)
+                .Create()
             ));
 
             services.Replace(ServiceDescriptor.Transient<IPostKitClient>(sp =>

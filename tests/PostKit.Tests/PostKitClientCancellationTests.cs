@@ -4,6 +4,8 @@ using PostKit.Bounces;
 using PostKit.BulkEmails;
 using PostKit.Common;
 using PostKit.Emails;
+using ActivateBounceModel = PostKit.Postmark.Bounces.ActivateBounceResponse;
+using BounceModel = PostKit.Postmark.Bounces.BounceResponse;
 using PostKit.Postmark;
 
 namespace PostKit.Tests;
@@ -90,6 +92,23 @@ public class PostKitClientCancellationTests
     }
 
     [Fact]
+    public async Task ActivateBounceAsync_WhenCanceledDuringConfirmation_ReturnsActivatedResponse()
+    {
+        var postmark = new BounceConfirmationCancelingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        using var cts = new CancellationTokenSource();
+        cts.CancelAfter(TimeSpan.FromMilliseconds(50));
+
+        var result = await client.ActivateBounceAsync(1, cts.Token);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal("OK", response.Message);
+        Assert.True(response.Bounce.Inactive);
+        Assert.Equal(["/bounces/1/activate", "/bounces/1"], postmark.CalledEndpoints);
+    }
+
+    [Fact]
     public async Task GetBulkEmailStatusAsync_WithCanceledToken_PropagatesCancellation()
     {
         var client = new PostKitClient(new CancelingPostmarkClient(), new TestLogger());
@@ -115,6 +134,61 @@ public class PostKitClientCancellationTests
         public Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
         {
             throw new OperationCanceledException(cancellationToken);
+        }
+    }
+
+    private sealed class BounceConfirmationCancelingPostmarkClient : IPostmarkClient
+    {
+        public List<string> CalledEndpoints { get; } = [];
+
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("PostAsync should not be called in this test.");
+        }
+
+        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        {
+            CalledEndpoints.Add(endpoint);
+
+            var bounce = CreateBounceModel(inactive: true);
+            return Task.FromResult(Result.Success((TResponse)(object)bounce));
+        }
+
+        public Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        {
+            CalledEndpoints.Add(endpoint);
+
+            var activation = new ActivateBounceModel
+            {
+                Message = "OK",
+                Bounce = CreateBounceModel(inactive: true),
+            };
+
+            return Task.FromResult(Result.Success((TResponse)(object)activation));
+        }
+
+        private static BounceModel CreateBounceModel(bool inactive)
+        {
+            return new BounceModel
+            {
+                Id = 1,
+                Type = "HardBounce",
+                TypeCode = 1,
+                Name = "Hard bounce",
+                Tag = "",
+                MessageId = "69ce4784-c202-41c6-a1a9-91757022b25e",
+                ServerId = 18451835,
+                MessageStream = "outbound",
+                Description = "The server was unable to deliver your message.",
+                Details = "smtp;550 mailbox unavailable",
+                Email = "HardBounce@bounce-testing.postmarkapp.com",
+                From = "from@postkit.com",
+                BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z"),
+                DumpAvailable = true,
+                Inactive = inactive,
+                CanActivate = true,
+                Subject = "PostKit Bounces API probe",
+            };
         }
     }
 

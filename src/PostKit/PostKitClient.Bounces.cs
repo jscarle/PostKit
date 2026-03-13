@@ -210,6 +210,7 @@ internal sealed partial class PostKitClient
         var currentBounce = fallbackBounce;
         IError? lastError = null;
         Exception? lastException = null;
+        var confirmationCanceled = false;
 
         for (var attempt = 0; attempt < BounceActivationConfirmationAttempts; attempt++)
         {
@@ -220,7 +221,8 @@ internal sealed partial class PostKitClient
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                throw;
+                confirmationCanceled = true;
+                break;
             }
             catch (Exception ex)
             {
@@ -251,10 +253,22 @@ internal sealed partial class PostKitClient
             }
 
             if (attempt < BounceActivationConfirmationAttempts - 1)
-                await Task.Delay(BounceActivationConfirmationDelay, cancellationToken);
+            {
+                try
+                {
+                    await Task.Delay(BounceActivationConfirmationDelay, cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    confirmationCanceled = true;
+                    break;
+                }
+            }
         }
 
-        if (lastError is not null)
+        if (confirmationCanceled)
+            LogActivateBounceConfirmationCanceled(id);
+        else if (lastError is not null)
             LogActivateBounceConfirmationFailure(id, lastError.Message, lastError);
         else if (lastException is not null)
             LogActivateBounceConfirmationException(id, lastException);
@@ -649,6 +663,9 @@ internal sealed partial class PostKitClient
 
     [LoggerMessage(LogLevel.Warning, "An exception occurred while confirming bounce {BounceId} state after activation.")]
     private partial void LogActivateBounceConfirmationException(long bounceId, Exception ex);
+
+    [LoggerMessage(LogLevel.Warning, "Cancellation was requested while confirming bounce {BounceId} state after activation.")]
+    private partial void LogActivateBounceConfirmationCanceled(long bounceId);
 
     [LoggerMessage(LogLevel.Warning, "Timed out while confirming bounce {BounceId} state after activation.")]
     private partial void LogActivateBounceConfirmationTimedOut(long bounceId);
