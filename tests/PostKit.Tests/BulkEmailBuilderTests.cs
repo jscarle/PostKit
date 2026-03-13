@@ -234,19 +234,23 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
-    public void Build_WithPerMessageTemplateModelAndNoTemplate_Throws()
+    public void Build_WithPerMessageTemplateModelAndNoTemplate_Succeeds()
     {
-        var exception = Assert.Throws<InvalidOperationException>(() => BulkEmail.CreateBuilder()
+        var bulkEmail = BulkEmail.CreateBuilder()
             .From("sender@postkit.com")
             .WithSubject("Hello")
-            .WithTextBody("Hello world")
+            .WithTextBody("Hello {{Name}}")
             .AddMessage(BulkEmailMessage.CreateBuilder()
                 .To("recipient@postkit.com")
                 .WithTemplateModel(new { Name = "Alice" })
                 .Build())
-            .Build());
+            .Build();
 
-        Assert.Equal("A template ID or alias is required when using per-message template models.", exception.Message);
+        var request = bulkEmail.ToBulkEmailRequest();
+        var message = Assert.Single(request.Messages);
+
+        Assert.NotNull(message.TemplateModel);
+        Assert.Equal("Alice", message.TemplateModel["Name"]!.GetValue<string>());
     }
 
     [Fact]

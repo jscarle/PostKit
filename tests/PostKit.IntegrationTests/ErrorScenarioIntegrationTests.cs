@@ -31,12 +31,11 @@ public class ErrorScenarioIntegrationTests
             .WithTextBody("This request should be cancelled.")
             .Build();
 
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         cts.Cancel(); // Cancel immediately
 
         // Act & Assert
-        var result = await _client.SendEmailAsync(email, cts.Token);
-        Assert.True(result.IsFailure());
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => _client.SendEmailAsync(email, cts.Token));
     }
 
     [Fact]
@@ -51,12 +50,11 @@ public class ErrorScenarioIntegrationTests
             .Build();
 
         var emails = new[] { email };
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         cts.Cancel(); // Cancel immediately
 
         // Act & Assert
-        var result = await _client.SendEmailBatchAsync(emails, cts.Token);
-        Assert.True(result.IsFailure());
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => _client.SendEmailBatchAsync(emails, cts.Token));
     }
 
     [Fact]
