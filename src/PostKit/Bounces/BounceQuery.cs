@@ -4,10 +4,10 @@ namespace PostKit.Bounces;
 public sealed record BounceQuery
 {
     /// <summary>Gets the number of bounces to return. Postmark currently allows between 1 and 500.</summary>
-    public int Count { get; }
+    public required int Count { get; init; }
 
     /// <summary>Gets the number of bounces to skip before returning results.</summary>
-    public int Offset { get; }
+    public int Offset { get; init; }
 
     /// <summary>Gets the optional bounce type filter.</summary>
     public BounceType? Type { get; init; }
@@ -34,13 +34,4 @@ public sealed record BounceQuery
 
     /// <summary>Gets the optional message stream ID filter.</summary>
     public string? MessageStream { get; init; }
-
-    /// <summary>Initializes a new bounce query.</summary>
-    /// <param name="count">The number of bounces to return.</param>
-    /// <param name="offset">The number of bounces to skip.</param>
-    public BounceQuery(int count, int offset)
-    {
-        Count = count;
-        Offset = offset;
-    }
 }

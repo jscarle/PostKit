@@ -77,7 +77,7 @@ public class PostKitClientCancellationTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetBouncesAsync(new BounceQuery(10, 0), cts.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetBouncesAsync(new BounceQuery { Count = 10 }, cts.Token));
     }
 
     [Fact]

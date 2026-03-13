@@ -42,8 +42,10 @@ public class PostKitClientBounceResponseTests
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&todate=2026-03-11T13%3A59%3A59&fromdate=2026-03-11T13%3A00%3A00&messagestream=outbound"] = responseJson });
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
-        var query = new BounceQuery(25, 10)
+        var query = new BounceQuery
         {
+            Count = 25,
+            Offset = 10,
             Type = BounceType.HardBounce,
             Inactive = true,
             EmailFilter = "HardBounce@bounce-testing.postmarkapp.com",
@@ -149,7 +151,7 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync(new BounceQuery(10, 0), CancellationToken.None);
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 10 }, CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         var bounce = Assert.Single(response.Bounces);
@@ -191,7 +193,7 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync(new BounceQuery(10, 0), CancellationToken.None);
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 10 }, CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(BounceType.ChallengeVerification, Assert.Single(response.Bounces).Type);
@@ -212,7 +214,7 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync(new BounceQuery(10, 0) { Type = BounceType.ChallengeVerification }, CancellationToken.None);
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 10, Type = BounceType.ChallengeVerification }, CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(endpoint, postmark.LastEndpoint);
@@ -227,7 +229,7 @@ public class PostKitClientBounceResponseTests
         var client = new PostKitClient(postmark, logger);
 
 #pragma warning disable CS0618
-        var result = await client.GetBouncesAsync(new BounceQuery(10, 0) { Type = BounceType.MailFrontierMatador }, CancellationToken.None);
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 10, Type = BounceType.MailFrontierMatador }, CancellationToken.None);
 #pragma warning restore CS0618
 
         Assert.True(result.IsFailure());
@@ -499,7 +501,7 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync(new BounceQuery(0, 0), CancellationToken.None);
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 0 }, CancellationToken.None);
 
         Assert.True(result.IsFailure());
         Assert.Null(postmark.LastEndpoint);
@@ -512,7 +514,7 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync(new BounceQuery(500, 9800), CancellationToken.None);
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 500, Offset = 9800 }, CancellationToken.None);
 
         Assert.True(result.IsFailure());
         Assert.Null(postmark.LastEndpoint);

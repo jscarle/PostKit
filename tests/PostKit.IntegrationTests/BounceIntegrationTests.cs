@@ -132,8 +132,9 @@ public class BounceIntegrationTests
 
         for (var attempt = 0; attempt < 24; attempt++)
         {
-            var result = await _client.GetBouncesAsync(new BounceQuery(10, 0)
+            var result = await _client.GetBouncesAsync(new BounceQuery
             {
+                Count = 10,
                 MessageId = messageId,
                 Inactive = inactive,
                 MessageStream = "outbound",
@@ -224,8 +225,9 @@ public class BounceIntegrationTests
 
     private async Task<Bounce?> FindHardBounceAsync(bool inactive, CancellationToken cancellationToken)
     {
-        var result = await _client.GetBouncesAsync(new BounceQuery(1, 0)
+        var result = await _client.GetBouncesAsync(new BounceQuery
         {
+            Count = 1,
             Type = BounceType.HardBounce,
             Inactive = inactive,
             EmailFilter = HardBounceRecipient,
