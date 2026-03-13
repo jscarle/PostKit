@@ -377,7 +377,6 @@ internal sealed partial class PostKitClient
             bounceCore.RecordType,
             bounceCore.Id,
             bounceCore.Type,
-            bounceCore.TypeCode,
             bounceCore.Name,
             bounceCore.Tag,
             bounceCore.MessageId,
@@ -408,7 +407,6 @@ internal sealed partial class PostKitClient
             bounceCore.RecordType,
             bounceCore.Id,
             bounceCore.Type,
-            bounceCore.TypeCode,
             bounceCore.Name,
             bounceCore.Tag,
             bounceCore.MessageId,
@@ -487,9 +485,6 @@ internal sealed partial class PostKitClient
         if (type is null)
             return Result.Failure<BounceCore>($"Type '{response.Type}' returned from the Postmark Bounces API is not supported.");
 
-        if (response.TypeCode is null)
-            return Result.Failure<BounceCore>("TypeCode was not returned from the Postmark Bounces API.");
-
         if (string.IsNullOrWhiteSpace(response.Name))
             return Result.Failure<BounceCore>("Name was not returned from the Postmark Bounces API.");
 
@@ -536,7 +531,6 @@ internal sealed partial class PostKitClient
             recordType,
             response.Id.Value,
             type.Value,
-            response.TypeCode.Value,
             response.Name,
             response.Tag,
             messageId,
@@ -660,7 +654,6 @@ internal sealed partial class PostKitClient
         string RecordType,
         long Id,
         BounceType Type,
-        int TypeCode,
         string Name,
         string Tag,
         Guid MessageId,

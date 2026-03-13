@@ -14,9 +14,6 @@ public record Bounce
     /// <summary>Gets the bounce classification.</summary>
     public BounceType Type { [UsedImplicitly] get; }
 
-    /// <summary>Gets the numeric bounce type code returned by Postmark.</summary>
-    public int TypeCode { [UsedImplicitly] get; }
-
     /// <summary>Gets the human-readable bounce type name.</summary>
     public string Name { [UsedImplicitly] get; }
 
@@ -63,7 +60,6 @@ public record Bounce
         string recordType,
         long id,
         BounceType type,
-        int typeCode,
         string name,
         string tag,
         Guid messageId,
@@ -83,7 +79,6 @@ public record Bounce
         RecordType = recordType;
         Id = id;
         Type = type;
-        TypeCode = typeCode;
         Name = name;
         Tag = tag;
         MessageId = messageId;

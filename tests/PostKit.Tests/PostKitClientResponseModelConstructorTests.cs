@@ -33,4 +33,11 @@ public class PostKitClientResponseModelConstructorTests
             );
         }
     }
+
+    [Fact]
+    public void BounceModels_DoNotExposeTypeCodeProperty()
+    {
+        Assert.Null(typeof(Bounce).GetProperty("TypeCode", BindingFlags.Instance | BindingFlags.Public));
+        Assert.Null(typeof(BounceDetails).GetProperty("TypeCode", BindingFlags.Instance | BindingFlags.Public));
+    }
 }

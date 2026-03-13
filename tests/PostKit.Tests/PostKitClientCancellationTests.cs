@@ -169,7 +169,6 @@ public class PostKitClientCancellationTests
             {
                 Id = 1,
                 Type = "HardBounce",
-                TypeCode = 1,
                 Name = "Hard bounce",
                 Tag = "",
                 MessageId = "69ce4784-c202-41c6-a1a9-91757022b25e",

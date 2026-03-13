@@ -67,7 +67,6 @@ public class PostKitClientBounceResponseTests
         Assert.Equal("Bounce", bounce.RecordType);
         Assert.Equal(1599950051, bounce.Id);
         Assert.Equal(BounceType.HardBounce, bounce.Type);
-        Assert.Equal(1, bounce.TypeCode);
         Assert.Equal(Guid.Parse("69ce4784-c202-41c6-a1a9-91757022b25e"), bounce.MessageId);
         Assert.Equal(18451835, bounce.ServerId);
         Assert.Equal("outbound", bounce.MessageStream);

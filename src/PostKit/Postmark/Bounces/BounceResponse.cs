@@ -14,9 +14,6 @@ internal sealed class BounceResponse
     [JsonPropertyName("Type")]
     public string? Type { get; [UsedImplicitly] init; }
 
-    [JsonPropertyName("TypeCode")]
-    public int? TypeCode { get; [UsedImplicitly] init; }
-
     [JsonPropertyName("Name")]
     public string? Name { get; [UsedImplicitly] init; }
 
