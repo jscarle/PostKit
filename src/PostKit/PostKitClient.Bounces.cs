@@ -600,7 +600,6 @@ internal sealed partial class PostKitClient
             "Unknown" => BounceType.Unknown,
             "SoftBounce" => BounceType.SoftBounce,
             "VirusNotification" => BounceType.VirusNotification,
-            "MailFrontier Matador." => BounceType.ChallengeVerification,
             "BadEmailAddress" => BounceType.BadEmailAddress,
             "SpamComplaint" => BounceType.SpamComplaint,
             "ManuallyDeactivated" => BounceType.ManuallyDeactivated,

@@ -39,6 +39,9 @@ public enum BounceType
     /// <summary>A virus notification.</summary>
     VirusNotification = 8192,
 
+    /// <summary>A spam challenge verification response.</summary>
+    ChallengeVerification = 16384,
+
     /// <summary>A bad email address classification.</summary>
     BadEmailAddress = 100000,
 
@@ -65,11 +68,4 @@ public enum BounceType
 
     /// <summary>A template rendering failure.</summary>
     TemplateRenderingFailed = 100010,
-
-    /// <summary>A spam challenge verification response.</summary>
-    ChallengeVerification = 16384,
-
-    /// <summary>A legacy MailFrontier Matador classification retained as an alias of <see cref="ChallengeVerification"/>.</summary>
-    [Obsolete("Postmark now reports MailFrontier Matador challenges as ChallengeVerification. Use ChallengeVerification instead.")]
-    MailFrontierMatador = ChallengeVerification,
 }

@@ -29,8 +29,5 @@ public class BounceTypeTests
         Assert.Equal(100008, (int)BounceType.InboundError);
         Assert.Equal(100009, (int)BounceType.DmarcPolicy);
         Assert.Equal(100010, (int)BounceType.TemplateRenderingFailed);
-#pragma warning disable CS0618
-        Assert.Equal(16384, (int)BounceType.MailFrontierMatador);
-#pragma warning restore CS0618
     }
 }
