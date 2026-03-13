@@ -282,6 +282,15 @@ public class EmailBuilderValidationTests
     }
 
     [Fact]
+    public void EmailBuilder_WithNullTag_ThrowsArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => Email.CreateBuilder()
+            .WithTag(null!));
+
+        Assert.Equal("tag", exception.ParamName);
+    }
+
+    [Fact]
     public void EmailBuilder_WithNullTemplateModel_ThrowsException()
     {
         // Arrange & Act & Assert

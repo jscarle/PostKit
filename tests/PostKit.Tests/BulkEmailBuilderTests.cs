@@ -117,6 +117,15 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
+    public void WithTag_WithNullTag_ThrowsArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => BulkEmail.CreateBuilder()
+            .WithTag(null!));
+
+        Assert.Equal("tag", exception.ParamName);
+    }
+
+    [Fact]
     public void Build_WithTemplateAndNoBodies_Succeeds()
     {
         var bulkEmail = BulkEmail.CreateBuilder()

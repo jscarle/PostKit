@@ -101,7 +101,7 @@ internal static class ValidationExtensions
                 if (foldingWhitespace != ' ' && foldingWhitespace != '\t')
                     return false;
 
-                i++;
+                i += 2;
                 continue;
             }
 

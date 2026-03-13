@@ -10,6 +10,7 @@ partial class EmailBuilder
     public IEmailBuilder WithTag(string tag)
     {
         _tag.EnsureNotSet(nameof(Email.Tag));
+        ArgumentNullException.ThrowIfNull(tag);
 
         if (tag.Length > 1000)
             throw new ArgumentException("The tag cannot be longer than 1000 characters.", nameof(tag));

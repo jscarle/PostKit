@@ -34,4 +34,14 @@ public class EmailBuilderHeaderTests
 
         Assert.Equal("The header value is invalid. (Parameter 'value')", exception.Message);
     }
+
+    [Fact]
+    public void WithHeader_FoldedHeaderUsingTab_IsAccepted()
+    {
+        var builder = Email.CreateBuilder();
+
+        var exception = Record.Exception(() => builder.WithHeader("X-Test", "good\r\n\tvalue"));
+
+        Assert.Null(exception);
+    }
 }

@@ -105,7 +105,7 @@ internal sealed partial class PostKitClient
         if (mappedResponse.IsFailure(out var error, out var mapped))
             return Result.Failure<BulkEmails.BulkEmailJob>(error);
 
-        var percentageCompleted = mapped.Status == BulkEmailStatus.Failed ? 100 : 0;
+        var percentageCompleted = mapped.Status is BulkEmailStatus.Completed or BulkEmailStatus.Failed ? 100 : 0;
         var subject = response.Subject ?? bulkEmail.Subject ?? string.Empty;
 
         return Result.Success(new BulkEmails.BulkEmailJob(

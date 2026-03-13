@@ -78,6 +78,37 @@ public class PostKitClientBulkResponseTests
     }
 
     [Fact]
+    public async Task SendBulkEmailAsync_WhenSubmitStatusIsCompleted_MapsCompletionPercentage()
+    {
+        const string responseJson = """
+                                    {
+                                      "Id": "c42d4a19-b645-4cdd-9859-08d8f24b649a",
+                                      "SubmittedAt": "2026-03-11T00:31:10.9843566Z",
+                                      "Status": "Completed"
+                                    }
+                                    """;
+
+        var bulkEmail = BulkEmail.CreateBuilder()
+            .From("sender@postkit.com")
+            .WithSubject("Bulk hello")
+            .WithTextBody("Hello world")
+            .AddMessage(BulkEmailMessage.CreateBuilder()
+                .To("recipient@postkit.com")
+                .Build())
+            .Build();
+
+        var postmark = new RecordingPostmarkClient(responseJson);
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendBulkEmailAsync(bulkEmail, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal(BulkEmailStatus.Completed, response.Status);
+        Assert.Equal(100, response.PercentageCompleted);
+    }
+
+    [Fact]
     public async Task GetBulkEmailStatusAsync_UsesBulkStatusEndpoint()
     {
         const string responseJson = """
