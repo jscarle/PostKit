@@ -39,7 +39,8 @@ public enum BounceType
     /// <summary>A virus notification.</summary>
     VirusNotification,
 
-    /// <summary>A MailFrontier Matador classification.</summary>
+    /// <summary>A legacy MailFrontier Matador classification retained for backward compatibility.</summary>
+    [Obsolete("Postmark does not expose MailFrontier Matador as a standalone bounce type. Use ChallengeVerification instead.")]
     MailFrontierMatador,
 
     /// <summary>A bad email address classification.</summary>

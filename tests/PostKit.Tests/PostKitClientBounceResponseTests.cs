@@ -197,6 +197,43 @@ public class PostKitClientBounceResponseTests
     }
 
     [Fact]
+    public async Task GetBouncesAsync_WithChallengeVerificationFilter_UsesSupportedTypeValue()
+    {
+        const string responseJson = """
+                                    {
+                                      "TotalCount": 0,
+                                      "Bounces": []
+                                    }
+                                    """;
+
+        var endpoint = "/bounces?count=10&offset=0&type=ChallengeVerification";
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBouncesAsync(new BounceQuery(10, 0) { Type = BounceType.ChallengeVerification }, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal(endpoint, postmark.LastEndpoint);
+        Assert.Empty(response.Bounces);
+    }
+
+    [Fact]
+    public async Task GetBouncesAsync_WithLegacyMailFrontierMatadorFilter_FailsBeforeCallingApi()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+#pragma warning disable CS0618
+        var result = await client.GetBouncesAsync(new BounceQuery(10, 0) { Type = BounceType.MailFrontierMatador }, CancellationToken.None);
+#pragma warning restore CS0618
+
+        Assert.True(result.IsFailure());
+        Assert.Null(postmark.LastEndpoint);
+    }
+
+    [Fact]
     public async Task GetBounceAsync_WithWhitespaceOnlySubject_PreservesSubject()
     {
         const string responseJson = """

@@ -204,6 +204,11 @@ internal sealed partial class PostKitClient
         if (query.FromDate.HasValue && query.ToDate.HasValue && query.FromDate.Value > query.ToDate.Value)
             return "The bounce query from-date must not be later than the to-date.";
 
+#pragma warning disable CS0618
+        if (query.Type == BounceType.MailFrontierMatador)
+            return "MailFrontier Matador is not a standalone Postmark bounce type and cannot be used as a filter. Use ChallengeVerification instead.";
+#pragma warning restore CS0618
+
         return null;
     }
 
@@ -462,6 +467,7 @@ internal sealed partial class PostKitClient
 
     private static string GetBounceTypeValue(BounceType type)
     {
+#pragma warning disable CS0618
         return type switch
         {
             BounceType.HardBounce => "HardBounce",
@@ -476,7 +482,7 @@ internal sealed partial class PostKitClient
             BounceType.Unknown => "Unknown",
             BounceType.SoftBounce => "SoftBounce",
             BounceType.VirusNotification => "VirusNotification",
-            BounceType.MailFrontierMatador => "MailFrontier Matador.",
+            BounceType.MailFrontierMatador => throw new InvalidOperationException("MailFrontier Matador is not a standalone Postmark bounce type and cannot be used as a filter."),
             BounceType.BadEmailAddress => "BadEmailAddress",
             BounceType.SpamComplaint => "SpamComplaint",
             BounceType.ManuallyDeactivated => "ManuallyDeactivated",
@@ -489,10 +495,12 @@ internal sealed partial class PostKitClient
             BounceType.ChallengeVerification => "ChallengeVerification",
             _ => throw new System.Diagnostics.UnreachableException($"Enum value of '{nameof(BounceType)}.{type}' has not been handled."),
         };
+#pragma warning restore CS0618
     }
 
     private static BounceType? TryMapBounceType(string type)
     {
+#pragma warning disable CS0618
         return type switch
         {
             "HardBounce" => BounceType.HardBounce,
@@ -520,6 +528,7 @@ internal sealed partial class PostKitClient
             "ChallengeVerification" => BounceType.ChallengeVerification,
             _ => null,
         };
+#pragma warning restore CS0618
     }
 
     [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to retrieve bounces.")]
