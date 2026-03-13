@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LightResults;
 using Microsoft.Extensions.Logging;
+using MimeKit;
 using PostKit.Bounces;
 using PostKit.Postmark;
 
@@ -48,7 +49,7 @@ public class PostKitClientBounceResponseTests
             Offset = 10,
             Type = BounceType.HardBounce,
             Inactive = true,
-            EmailFilter = "HardBounce@bounce-testing.postmarkapp.com",
+            EmailFilter = new MailboxAddress("Bounce Target", "HardBounce@bounce-testing.postmarkapp.com"),
             MessageId = Guid.Parse("69ce4784-c202-41c6-a1a9-91757022b25e"),
             Tag = "ops+alerts",
             ToDate = new DateTime(2026, 3, 11, 13, 59, 59),

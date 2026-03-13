@@ -286,7 +286,7 @@ internal sealed partial class PostKitClient
         if ((long)query.Count + query.Offset > MaxBounceSearchWindow)
             return $"The bounce query count and offset cannot exceed {MaxBounceSearchWindow} when combined.";
 
-        if (query.EmailFilter is not null && string.IsNullOrWhiteSpace(query.EmailFilter))
+        if (query.EmailFilter is not null && string.IsNullOrWhiteSpace(query.EmailFilter.Address))
             return "The bounce query email filter must not be empty.";
 
         if (query.Tag is not null && string.IsNullOrWhiteSpace(query.Tag))
@@ -321,7 +321,7 @@ internal sealed partial class PostKitClient
             parameters.Add($"inactive={query.Inactive.Value.ToString().ToLowerInvariant()}");
 
         if (query.EmailFilter is not null)
-            parameters.Add($"emailFilter={Uri.EscapeDataString(query.EmailFilter)}");
+            parameters.Add($"emailFilter={Uri.EscapeDataString(query.EmailFilter.Address)}");
 
         if (query.MessageId.HasValue)
             parameters.Add($"messageID={query.MessageId.Value:D}");

@@ -1,5 +1,6 @@
 using System.Net;
 using LightResults;
+using MimeKit;
 using PostKit.Bounces;
 using PostKit.Common;
 using PostKit.Emails;
@@ -230,7 +231,7 @@ public class BounceIntegrationTests
             Count = 1,
             Type = BounceType.HardBounce,
             Inactive = inactive,
-            EmailFilter = HardBounceRecipient,
+            EmailFilter = new MailboxAddress(string.Empty, HardBounceRecipient),
             MessageStream = "outbound",
         }, cancellationToken);
 

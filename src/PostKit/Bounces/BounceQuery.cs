@@ -1,3 +1,5 @@
+using MimeKit;
+
 namespace PostKit.Bounces;
 
 /// <summary>Represents the query parameters used to search Postmark bounces.</summary>
@@ -15,8 +17,8 @@ public sealed record BounceQuery
     /// <summary>Gets the optional inactive filter.</summary>
     public bool? Inactive { get; init; }
 
-    /// <summary>Gets the optional recipient email address filter.</summary>
-    public string? EmailFilter { get; init; }
+    /// <summary>Gets the optional recipient email address filter. Only the <see cref="MailboxAddress.Address"/> value is sent to Postmark.</summary>
+    public MailboxAddress? EmailFilter { get; init; }
 
     /// <summary>Gets the optional Postmark message ID filter.</summary>
     public Guid? MessageId { get; init; }
