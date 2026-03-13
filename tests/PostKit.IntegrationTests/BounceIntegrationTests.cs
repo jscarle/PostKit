@@ -100,6 +100,7 @@ public class BounceIntegrationTests
         Assert.Equal("OK", activation.Message);
         Assert.Equal(bounce.Id, activation.Bounce.Id);
         Assert.Equal(BounceType.HardBounce, activation.Bounce.Type);
+        Assert.False(activation.Bounce.Inactive);
 
         var reactivated = await WaitForBounceStateAsync(bounce.Id, inactive: false, TestContext.Current.CancellationToken);
         Assert.False(reactivated.Inactive);

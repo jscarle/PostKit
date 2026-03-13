@@ -15,7 +15,10 @@ public class PostKitClientBulkResponseTests
                                     {
                                       "Id": "c42d4a19-b645-4cdd-9859-08d8f24b649a",
                                       "SubmittedAt": "2026-03-11T00:31:10.9843566Z",
-                                      "Status": "Accepted"
+                                      "TotalMessages": 7,
+                                      "PercentageCompleted": 37.5,
+                                      "Status": "Accepted",
+                                      "Subject": "Server-calculated subject"
                                     }
                                     """;
 
@@ -41,9 +44,9 @@ public class PostKitClientBulkResponseTests
         Assert.Equal("/email/bulk", postmark.LastEndpoint);
         Assert.Equal(Guid.Parse("c42d4a19-b645-4cdd-9859-08d8f24b649a"), response.Id);
         Assert.Equal(BulkEmailStatus.Accepted, response.Status);
-        Assert.Equal(2, response.TotalMessages);
-        Assert.Equal(0, response.PercentageCompleted);
-        Assert.Equal("Bulk hello", response.Subject);
+        Assert.Equal(7, response.TotalMessages);
+        Assert.Equal(37.5, response.PercentageCompleted);
+        Assert.Equal("Server-calculated subject", response.Subject);
         Assert.Contains("\"Cc\":\"cc@postkit.com\"", postmark.LastRequestJson, StringComparison.Ordinal);
     }
 
@@ -54,7 +57,10 @@ public class PostKitClientBulkResponseTests
                                     {
                                       "Id": "c42d4a19-b645-4cdd-9859-08d8f24b649a",
                                       "SubmittedAt": "2026-03-11T00:31:10.9843566Z",
-                                      "Status": "Failed"
+                                      "TotalMessages": 1,
+                                      "PercentageCompleted": 100,
+                                      "Status": "Failed",
+                                      "Subject": "Bulk hello"
                                     }
                                     """;
 
@@ -84,7 +90,10 @@ public class PostKitClientBulkResponseTests
                                     {
                                       "Id": "c42d4a19-b645-4cdd-9859-08d8f24b649a",
                                       "SubmittedAt": "2026-03-11T00:31:10.9843566Z",
-                                      "Status": "Completed"
+                                      "TotalMessages": 1,
+                                      "PercentageCompleted": 100,
+                                      "Status": "Completed",
+                                      "Subject": "Bulk hello"
                                     }
                                     """;
 
@@ -106,6 +115,38 @@ public class PostKitClientBulkResponseTests
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(BulkEmailStatus.Completed, response.Status);
         Assert.Equal(100, response.PercentageCompleted);
+    }
+
+    [Fact]
+    public async Task SendBulkEmailAsync_WhenSubmitResponseOmitsTotalMessages_ReturnsFailure()
+    {
+        const string responseJson = """
+                                    {
+                                      "Id": "c42d4a19-b645-4cdd-9859-08d8f24b649a",
+                                      "SubmittedAt": "2026-03-11T00:31:10.9843566Z",
+                                      "PercentageCompleted": 0,
+                                      "Status": "Accepted",
+                                      "Subject": "Bulk hello"
+                                    }
+                                    """;
+
+        var bulkEmail = BulkEmail.CreateBuilder()
+            .From("sender@postkit.com")
+            .WithSubject("Bulk hello")
+            .WithTextBody("Hello world")
+            .AddMessage(BulkEmailMessage.CreateBuilder()
+                .To("recipient@postkit.com")
+                .Build())
+            .Build();
+
+        var postmark = new RecordingPostmarkClient(responseJson);
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendBulkEmailAsync(bulkEmail, CancellationToken.None);
+
+        Assert.True(result.IsFailure(), result.ToString());
+        Assert.Contains("TotalMessages was not returned", result.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

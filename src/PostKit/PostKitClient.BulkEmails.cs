@@ -45,7 +45,7 @@ internal sealed partial class PostKitClient
             return Result.Failure<BulkEmails.BulkEmailJob>(error);
         }
 
-        var mappedResponse = CreateBulkEmailSubmissionResponse(bulkEmailStatusModel, bulkEmail);
+        var mappedResponse = CreateBulkEmailSubmissionResponse(bulkEmailStatusModel);
         if (mappedResponse.IsFailure(out var mappingError, out var sendBulkEmailResponse))
         {
             LogBulkError(mappingError.Message, mappingError);
@@ -99,23 +99,9 @@ internal sealed partial class PostKitClient
         return Result.Success(sendBulkEmailResponse);
     }
 
-    private static Result<BulkEmails.BulkEmailJob> CreateBulkEmailSubmissionResponse(SendBulkEmailModel response, BulkEmail bulkEmail)
+    private static Result<BulkEmails.BulkEmailJob> CreateBulkEmailSubmissionResponse(SendBulkEmailModel response)
     {
-        var mappedResponse = CreateBulkEmailResponseCore(response);
-        if (mappedResponse.IsFailure(out var error, out var mapped))
-            return Result.Failure<BulkEmails.BulkEmailJob>(error);
-
-        var percentageCompleted = mapped.Status is BulkEmailStatus.Completed or BulkEmailStatus.Failed ? 100 : 0;
-        var subject = response.Subject ?? bulkEmail.Subject ?? string.Empty;
-
-        return Result.Success(new BulkEmails.BulkEmailJob(
-            mapped.Id,
-            mapped.Status,
-            mapped.SubmittedAt,
-            bulkEmail.Messages.Count,
-            percentageCompleted,
-            subject
-        ));
+        return CreateBulkEmailStatusResponse(response);
     }
 
     private static Result<BulkEmails.BulkEmailJob> CreateBulkEmailStatusResponse(SendBulkEmailModel response)

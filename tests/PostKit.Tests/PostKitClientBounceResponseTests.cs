@@ -355,43 +355,140 @@ public class PostKitClientBounceResponseTests
     [Fact]
     public async Task ActivateBounceAsync_UsesActivateEndpointAndMapsResponse()
     {
-        const string responseJson = """
-                                    {
-                                      "Message": "OK",
-                                      "Bounce": {
-                                        "ID": 1599950051,
-                                        "Type": "HardBounce",
-                                        "TypeCode": 1,
-                                        "Name": "Hard bounce",
-                                        "Tag": "",
-                                        "MessageID": "69ce4784-c202-41c6-a1a9-91757022b25e",
-                                        "ServerID": 18451835,
-                                        "MessageStream": "outbound",
-                                        "Description": "The server was unable to deliver your message.",
-                                        "Details": "smtp;550 mailbox unavailable",
-                                        "Email": "HardBounce@bounce-testing.postmarkapp.com",
-                                        "From": "from@publi-7.com",
-                                        "BouncedAt": "2026-03-11T17:33:38Z",
-                                        "DumpAvailable": true,
-                                        "Inactive": true,
-                                        "CanActivate": true,
-                                        "Subject": "PostKit Bounces API probe"
-                                      }
-                                    }
-                                    """;
+        const string activateResponseJson = """
+                                            {
+                                              "Message": "OK",
+                                              "Bounce": {
+                                                "ID": 1599950051,
+                                                "Type": "HardBounce",
+                                                "TypeCode": 1,
+                                                "Name": "Hard bounce",
+                                                "Tag": "",
+                                                "MessageID": "69ce4784-c202-41c6-a1a9-91757022b25e",
+                                                "ServerID": 18451835,
+                                                "MessageStream": "outbound",
+                                                "Description": "The server was unable to deliver your message.",
+                                                "Details": "smtp;550 mailbox unavailable",
+                                                "Email": "HardBounce@bounce-testing.postmarkapp.com",
+                                                "From": "from@publi-7.com",
+                                                "BouncedAt": "2026-03-11T17:33:38Z",
+                                                "DumpAvailable": true,
+                                                "Inactive": true,
+                                                "CanActivate": true,
+                                                "Subject": "PostKit Bounces API probe"
+                                              }
+                                            }
+                                            """;
+        const string getResponseJson = """
+                                       {
+                                         "ID": 1599950051,
+                                         "Type": "HardBounce",
+                                         "TypeCode": 1,
+                                         "Name": "Hard bounce",
+                                         "Tag": "",
+                                         "MessageID": "69ce4784-c202-41c6-a1a9-91757022b25e",
+                                         "ServerID": 18451835,
+                                         "MessageStream": "outbound",
+                                         "Description": "The server was unable to deliver your message.",
+                                         "Details": "smtp;550 mailbox unavailable",
+                                         "Email": "HardBounce@bounce-testing.postmarkapp.com",
+                                         "From": "from@publi-7.com",
+                                         "BouncedAt": "2026-03-11T17:33:38Z",
+                                         "DumpAvailable": true,
+                                         "Inactive": false,
+                                         "CanActivate": true,
+                                         "Subject": "PostKit Bounces API probe",
+                                         "Content": "X-PM-Message-Id: 69ce4784-c202-41c6-a1a9-91757022b25e"
+                                       }
+                                       """;
 
-        var postmark = new RecordingPostmarkClient(putResponses: new Dictionary<string, string> { ["/bounces/1599950051/activate"] = responseJson });
+        var postmark = new RecordingPostmarkClient(
+            getResponses: new Dictionary<string, string> { ["/bounces/1599950051"] = getResponseJson },
+            putResponses: new Dictionary<string, string> { ["/bounces/1599950051/activate"] = activateResponseJson }
+        );
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
         var result = await client.ActivateBounceAsync(1599950051, CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.Equal("/bounces/1599950051/activate", postmark.LastEndpoint);
+        Assert.Equal(
+            ["/bounces/1599950051/activate", "/bounces/1599950051"],
+            postmark.CalledEndpoints
+        );
         Assert.Equal("OK", response.Message);
         Assert.Equal("Bounce", response.Bounce.RecordType);
         Assert.Equal(1599950051, response.Bounce.Id);
         Assert.Equal(BounceType.HardBounce, response.Bounce.Type);
+        Assert.False(response.Bounce.Inactive);
+    }
+
+    [Fact]
+    public async Task ActivateBounceAsync_UsesConfirmedBounceStateFromFollowUpGet()
+    {
+        const string activateResponseJson = """
+                                            {
+                                              "Message": "OK",
+                                              "Bounce": {
+                                                "ID": 1599950051,
+                                                "Type": "HardBounce",
+                                                "TypeCode": 1,
+                                                "Name": "Hard bounce",
+                                                "Tag": "",
+                                                "MessageID": "69ce4784-c202-41c6-a1a9-91757022b25e",
+                                                "ServerID": 18451835,
+                                                "MessageStream": "outbound",
+                                                "Description": "The server was unable to deliver your message.",
+                                                "Details": "smtp;550 mailbox unavailable",
+                                                "Email": "HardBounce@bounce-testing.postmarkapp.com",
+                                                "From": "from@publi-7.com",
+                                                "BouncedAt": "2026-03-11T17:33:38Z",
+                                                "DumpAvailable": true,
+                                                "Inactive": true,
+                                                "CanActivate": true,
+                                                "Subject": "PostKit Bounces API probe"
+                                              }
+                                            }
+                                            """;
+        const string getResponseJson = """
+                                       {
+                                         "ID": 1599950051,
+                                         "Type": "HardBounce",
+                                         "TypeCode": 1,
+                                         "Name": "Hard bounce",
+                                         "Tag": "",
+                                         "MessageID": "69ce4784-c202-41c6-a1a9-91757022b25e",
+                                         "ServerID": 18451835,
+                                         "MessageStream": "outbound",
+                                         "Description": "The server was unable to deliver your message.",
+                                         "Details": "smtp;550 mailbox unavailable",
+                                         "Email": "HardBounce@bounce-testing.postmarkapp.com",
+                                         "From": "from@publi-7.com",
+                                         "BouncedAt": "2026-03-11T17:33:38Z",
+                                         "DumpAvailable": true,
+                                         "Inactive": false,
+                                         "CanActivate": true,
+                                         "Subject": "PostKit Bounces API probe",
+                                         "Content": "X-PM-Message-Id: 69ce4784-c202-41c6-a1a9-91757022b25e"
+                                       }
+                                       """;
+
+        var postmark = new RecordingPostmarkClient(
+            getResponses: new Dictionary<string, string> { ["/bounces/1599950051"] = getResponseJson },
+            putResponses: new Dictionary<string, string> { ["/bounces/1599950051/activate"] = activateResponseJson }
+        );
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.ActivateBounceAsync(1599950051, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal("OK", response.Message);
+        Assert.False(response.Bounce.Inactive);
+        Assert.Equal(
+            ["/bounces/1599950051/activate", "/bounces/1599950051"],
+            postmark.CalledEndpoints
+        );
     }
 
     [Fact]
@@ -429,6 +526,7 @@ public class PostKitClientBounceResponseTests
         private readonly Dictionary<string, string> _putResponses = putResponses ?? [];
 
         public string? LastEndpoint { get; private set; }
+        public List<string> CalledEndpoints { get; } = [];
 
         public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
@@ -438,12 +536,14 @@ public class PostKitClientBounceResponseTests
         public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
         {
             LastEndpoint = endpoint;
+            CalledEndpoints.Add(endpoint);
             return Task.FromResult(Result.Success(Deserialize<TResponse>(_getResponses, endpoint)));
         }
 
         public Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
         {
             LastEndpoint = endpoint;
+            CalledEndpoints.Add(endpoint);
             return Task.FromResult(Result.Success(Deserialize<TResponse>(_putResponses, endpoint)));
         }
 

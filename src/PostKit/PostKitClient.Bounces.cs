@@ -16,6 +16,8 @@ internal sealed partial class PostKitClient
 {
     private const int MaxBounceCount = 500;
     private const int MaxBounceSearchWindow = 10_000;
+    private const int BounceActivationConfirmationAttempts = 30;
+    private static readonly TimeSpan BounceActivationConfirmationDelay = TimeSpan.FromSeconds(2);
 
     public async Task<Result<BouncePage>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default)
     {
@@ -198,7 +200,68 @@ internal sealed partial class PostKitClient
             return Result.Failure<BounceActivation>(mappingError);
         }
 
-        return Result.Success(new BounceActivation(bounceActivationModel.Message, bounce));
+        var confirmedBounce = await ConfirmActivatedBounceAsync(id, bounce, cancellationToken);
+
+        return Result.Success(new BounceActivation(bounceActivationModel.Message, confirmedBounce));
+    }
+
+    private async Task<Bounce> ConfirmActivatedBounceAsync(long id, Bounce fallbackBounce, CancellationToken cancellationToken)
+    {
+        var currentBounce = fallbackBounce;
+        IError? lastError = null;
+        Exception? lastException = null;
+
+        for (var attempt = 0; attempt < BounceActivationConfirmationAttempts; attempt++)
+        {
+            Result<BounceModel> response;
+            try
+            {
+                response = await postmark.GetAsync<BounceModel>($"/bounces/{id}", cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                break;
+            }
+
+            if (response.IsFailure(out var error, out var bounceModel))
+            {
+                lastError = error;
+            }
+            else
+            {
+                var mappedBounce = CreateBounce(bounceModel);
+                if (mappedBounce.IsFailure(out var mappingError, out var confirmedBounce))
+                {
+                    lastError = mappingError;
+                }
+                else
+                {
+                    currentBounce = confirmedBounce;
+                    lastError = null;
+                    lastException = null;
+
+                    if (!confirmedBounce.Inactive)
+                        return confirmedBounce;
+                }
+            }
+
+            if (attempt < BounceActivationConfirmationAttempts - 1)
+                await Task.Delay(BounceActivationConfirmationDelay, cancellationToken);
+        }
+
+        if (lastError is not null)
+            LogActivateBounceConfirmationFailure(id, lastError.Message, lastError);
+        else if (lastException is not null)
+            LogActivateBounceConfirmationException(id, lastException);
+        else if (currentBounce.Inactive)
+            LogActivateBounceConfirmationTimedOut(id);
+
+        return currentBounce;
     }
 
     private static string? ValidateBounceQuery(BounceQuery query)
@@ -580,6 +643,15 @@ internal sealed partial class PostKitClient
 
     [LoggerMessage(LogLevel.Error, "Failed to activate the bounce. {Message}")]
     private partial void LogActivateBounceError(string message, [LogProperties] IError error);
+
+    [LoggerMessage(LogLevel.Warning, "Failed to confirm bounce {BounceId} state after activation. {Message}")]
+    private partial void LogActivateBounceConfirmationFailure(long bounceId, string message, [LogProperties] IError error);
+
+    [LoggerMessage(LogLevel.Warning, "An exception occurred while confirming bounce {BounceId} state after activation.")]
+    private partial void LogActivateBounceConfirmationException(long bounceId, Exception ex);
+
+    [LoggerMessage(LogLevel.Warning, "Timed out while confirming bounce {BounceId} state after activation.")]
+    private partial void LogActivateBounceConfirmationTimedOut(long bounceId);
 
     private readonly record struct BounceCore(
         string RecordType,
