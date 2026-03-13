@@ -41,16 +41,16 @@ public class BulkEmailIntegrationTests
     {
         var bulkEmail = BulkEmail.CreateBuilder()
             .From(RequireDevelopmentValue(TestConfiguration.DevelopmentFromEmail, nameof(TestConfiguration.DevelopmentFromEmail)))
-            .WithSubject("Bulk API personalized {{FirstName}}")
-            .WithTextBody("Hi, {{FirstName}}")
+            .WithSubject("Bulk API personalized {{firstName}}")
+            .WithTextBody("Hi, {{firstName}}")
             .UsingMessageStream(MessageStream.Broadcast)
             .AddMessage(BulkEmailMessage.CreateBuilder()
                 .To(RequireDevelopmentValue(TestConfiguration.DevelopmentToEmail, nameof(TestConfiguration.DevelopmentToEmail)))
-                .WithTemplateModel(new { FirstName = "Alice" })
+                .WithTemplateModel(new { firstName = "Alice" })
                 .Build())
             .AddMessage(BulkEmailMessage.CreateBuilder()
                 .To(RequireDevelopmentValue(TestConfiguration.DevelopmentCcEmail, nameof(TestConfiguration.DevelopmentCcEmail)))
-                .WithTemplateModel(new { FirstName = "Bob" })
+                .WithTemplateModel(new { firstName = "Bob" })
                 .Build())
             .Build();
 
@@ -61,7 +61,7 @@ public class BulkEmailIntegrationTests
 
         Assert.Equal(submitted.Id, status.Id);
         Assert.Equal(2, status.TotalMessages);
-        Assert.Equal("Bulk API personalized {{FirstName}}", status.Subject);
+        Assert.Equal("Bulk API personalized {{firstName}}", status.Subject);
         Assert.Equal(BulkEmailStatus.Completed, status.Status);
         Assert.InRange(status.PercentageCompleted, 100, 100);
     }

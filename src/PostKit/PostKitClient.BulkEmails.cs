@@ -29,6 +29,10 @@ internal sealed partial class PostKitClient
         {
             response = await postmark.PostAsync<BulkEmailRequest, SendBulkEmailModel>("/email/bulk", request, cancellationToken);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             LogBulkException(ex);
@@ -68,6 +72,10 @@ internal sealed partial class PostKitClient
         try
         {
             response = await postmark.GetAsync<SendBulkEmailModel>($"/email/bulk/{id:D}", cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

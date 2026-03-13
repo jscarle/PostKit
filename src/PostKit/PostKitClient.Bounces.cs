@@ -32,6 +32,10 @@ internal sealed partial class PostKitClient
         {
             response = await postmark.GetAsync<GetBouncesModel>(endpoint, cancellationToken);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             LogBouncesException(ex);
@@ -64,6 +68,10 @@ internal sealed partial class PostKitClient
         {
             response = await postmark.GetAsync<BounceModel>($"/bounces/{id}", cancellationToken);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             LogBounceException(ex);
@@ -92,6 +100,10 @@ internal sealed partial class PostKitClient
         try
         {
             response = await postmark.GetAsync<GetDeliveryStatsModel>("/deliverystats", cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -125,6 +137,10 @@ internal sealed partial class PostKitClient
         {
             response = await postmark.GetAsync<GetBounceDumpModel>($"/bounces/{id}/dump", cancellationToken);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             LogBounceDumpException(ex);
@@ -152,6 +168,10 @@ internal sealed partial class PostKitClient
         try
         {
             response = await postmark.PutAsync<ActivateBounceModel>($"/bounces/{id}/activate", cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

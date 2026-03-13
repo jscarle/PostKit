@@ -62,7 +62,7 @@ partial class EmailBuilder : IEmailReplyToBuilder
     {
         _replyTo.EnsureNotSet(nameof(Email.ReplyTo));
 
-        _replyTo = mailboxAddresses;
+        _replyTo = mailboxAddresses.ToList();
 
         return this;
     }

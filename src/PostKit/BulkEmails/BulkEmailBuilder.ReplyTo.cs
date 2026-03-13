@@ -62,7 +62,7 @@ partial class BulkEmailBuilder : IBulkEmailReplyToBuilder
     {
         _replyTo.EnsureNotSet(nameof(BulkEmail.ReplyTo));
 
-        _replyTo = mailboxAddresses;
+        _replyTo = mailboxAddresses.ToList();
 
         return this;
     }

@@ -24,6 +24,37 @@ public class BuilderSnapshotTests
     }
 
     [Fact]
+    public void EmailBuild_WithExternalRecipientListMutatedBeforeBuild_UsesAssignmentSnapshot()
+    {
+        IList<MailboxAddress> recipients = new List<MailboxAddress> { new(string.Empty, "first@postkit.com") };
+
+        var builder = Email.CreateBuilder()
+            .From("sender@postkit.com")
+            .To(recipients)
+            .WithSubject("Snapshot")
+            .WithTextBody("Body");
+
+        recipients.Add(new MailboxAddress(string.Empty, "second@postkit.com"));
+
+        var email = builder.Build();
+
+        Assert.Single(email.To!);
+    }
+
+    [Fact]
+    public void EmailBuilder_AlsoTo_DoesNotMutateCallerOwnedRecipientList()
+    {
+        IList<MailboxAddress> recipients = new List<MailboxAddress> { new(string.Empty, "first@postkit.com") };
+
+        var builder = Email.CreateBuilder()
+            .To(recipients);
+
+        builder.AlsoTo("second@postkit.com");
+
+        Assert.Single(recipients);
+    }
+
+    [Fact]
     public void EmailBuild_WithExternalMetadataDictionary_IsSnapshot()
     {
         var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Campaign"] = "One" };
@@ -98,6 +129,19 @@ public class BuilderSnapshotTests
         recipients.Add(new MailboxAddress(string.Empty, "second@postkit.com"));
 
         Assert.Single(message.To!);
+    }
+
+    [Fact]
+    public void BulkEmailBuilder_AlsoReplyTo_DoesNotMutateCallerOwnedReplyToList()
+    {
+        IList<MailboxAddress> replyTo = new List<MailboxAddress> { new(string.Empty, "reply@postkit.com") };
+
+        var builder = BulkEmail.CreateBuilder()
+            .ReplyTo(replyTo);
+
+        builder.AlsoReplyTo("other-reply@postkit.com");
+
+        Assert.Single(replyTo);
     }
 
     [Fact]

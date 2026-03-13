@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using PostKit.Postmark.Common;
@@ -73,9 +74,24 @@ partial class EmailBuilder
     /// <inheritdoc/>
     public IEmailBuilder WithTemplateModel(object templateModel)
     {
+        return SetTemplateModel(templateModel);
+    }
+
+    /// <summary>Sets the model that will be merged into the selected template using explicit serializer options for this call.</summary>
+    /// <param name="templateModel">The template model data.</param>
+    /// <param name="serializerOptions">The serializer options to use for this template model.</param>
+    /// <returns>The builder instance for fluent chaining.</returns>
+    public IEmailBuilder WithTemplateModel(object templateModel, JsonSerializerOptions serializerOptions)
+    {
+        ArgumentNullException.ThrowIfNull(serializerOptions);
+        return SetTemplateModel(templateModel, serializerOptions);
+    }
+
+    private EmailBuilder SetTemplateModel(object templateModel, JsonSerializerOptions? serializerOptions = null)
+    {
         _templateModel.EnsureNotSet(nameof(Email.TemplateModel));
 
-        var (snapshot, serializedSizeInBytes) = templateModel.SnapshotTemplateModel(nameof(templateModel));
+        var (snapshot, serializedSizeInBytes) = templateModel.SnapshotTemplateModel(nameof(templateModel), serializerOptions);
 
         _templateModel = templateModel;
         _templateModelSnapshot = snapshot;

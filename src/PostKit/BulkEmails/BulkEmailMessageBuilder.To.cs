@@ -62,7 +62,7 @@ partial class BulkEmailMessageBuilder : IBulkEmailMessageToBuilder
     {
         _to.EnsureNotSet(nameof(BulkEmailMessage.To));
 
-        _to = mailboxAddresses;
+        _to = mailboxAddresses.ToList();
 
         return this;
     }

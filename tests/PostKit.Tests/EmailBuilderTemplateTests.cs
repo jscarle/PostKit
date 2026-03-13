@@ -1,7 +1,10 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.Emails;
 using PostKit.Postmark;
+using PostKit.Postmark.Common;
 using PostKit.Postmark.Email;
 
 namespace PostKit.Tests;
@@ -65,6 +68,77 @@ public class EmailBuilderTemplateTests
             .WithTemplateModel("Alice"));
 
         Assert.Equal("The template model must serialize to a JSON object. (Parameter 'templateModel')", exception.Message);
+    }
+
+    [Fact]
+    public void WithTemplateModel_WithGlobalSerializerOptions_UsesConfiguredNamingPolicy()
+    {
+        var previousOptions = PostKitTemplateModelSerialization.DefaultSerializerOptions;
+
+        try
+        {
+            PostKitTemplateModelSerialization.DefaultSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+
+            var email = Email.CreateBuilder()
+                .From("sender@postkit.com")
+                .To("recipient@postkit.com")
+                .UsingTemplate(7)
+                .WithTemplateModel(new { FirstName = "Alice" })
+                .Build();
+
+            var request = email.ToEmailRequest();
+
+            Assert.NotNull(request.TemplateModel);
+            Assert.Equal("Alice", request.TemplateModel["FirstName"]!.GetValue<string>());
+            Assert.Null(request.TemplateModel["firstName"]);
+        }
+        finally
+        {
+            PostKitTemplateModelSerialization.DefaultSerializerOptions = previousOptions;
+        }
+    }
+
+    [Fact]
+    public void WithTemplateModel_WithPerCallSerializerOptions_OverridesGlobalDefaults()
+    {
+        var previousOptions = PostKitTemplateModelSerialization.DefaultSerializerOptions;
+
+        try
+        {
+            PostKitTemplateModelSerialization.DefaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+
+            IEmailBuilder builder = Email.CreateBuilder()
+                .From("sender@postkit.com")
+                .To("recipient@postkit.com")
+                .UsingTemplate(7);
+
+            var serializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+
+            var email = builder
+                .WithTemplateModel(new { FirstName = "Alice" }, serializerOptions)
+                .Build();
+
+            var request = email.ToEmailRequest();
+
+            Assert.NotNull(request.TemplateModel);
+            Assert.Equal("Alice", request.TemplateModel["FirstName"]!.GetValue<string>());
+            Assert.Null(request.TemplateModel["firstName"]);
+        }
+        finally
+        {
+            PostKitTemplateModelSerialization.DefaultSerializerOptions = previousOptions;
+        }
     }
 
     [Fact]

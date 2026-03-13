@@ -1,5 +1,8 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using PostKit.BulkEmails;
 using PostKit.Common;
+using PostKit.Postmark.Common;
 
 namespace PostKit.Tests;
 
@@ -147,6 +150,33 @@ public class BulkEmailBuilderTests
             .WithTemplateModel("Alice"));
 
         Assert.Equal("The template model must serialize to a JSON object. (Parameter 'templateModel')", exception.Message);
+    }
+
+    [Fact]
+    public void WithTemplateModel_WithPerCallSerializerOptions_PreservesExplicitPropertyNames()
+    {
+        IBulkEmailMessageBuilder builder = BulkEmailMessage.CreateBuilder()
+            .To("recipient@postkit.com");
+
+        var serializerOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = null,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        };
+
+        var bulkEmail = BulkEmail.CreateBuilder()
+            .From("sender@postkit.com")
+            .UsingTemplate(42)
+            .AddMessage(builder.WithTemplateModel(new { FirstName = "Alice" }, serializerOptions)
+                .Build())
+            .Build();
+
+        var request = bulkEmail.ToBulkEmailRequest();
+        var message = Assert.Single(request.Messages);
+
+        Assert.NotNull(message.TemplateModel);
+        Assert.Equal("Alice", message.TemplateModel["FirstName"]!.GetValue<string>());
+        Assert.Null(message.TemplateModel["firstName"]);
     }
 
     [Fact]

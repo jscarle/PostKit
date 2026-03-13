@@ -234,8 +234,8 @@ var email = Email.CreateBuilder()
     .UsingTemplate("welcome-email", inlineCss: true)
     .WithTemplateModel(new
     {
-        Name = "Alice",
-        Product = "PostKit"
+        name = "Alice",
+        product = "PostKit"
     })
     .Build();
 
@@ -243,6 +243,8 @@ await _postKitClient.SendEmailAsync(email);
 ```
 
 When batching template emails, every email in the batch must use a template. Mixing templated and non-templated emails in the same batch is rejected by the client.
+
+Template models use `System.Text.Json` web defaults by default, so CLR properties such as `FirstName` serialize as `firstName`. If you want different naming, set [PostKitTemplateModelSerialization.DefaultSerializerOptions](#template-model-serialization) globally or pass explicit serializer options to `WithTemplateModel(...)` for that call.
 
 #### Advanced Features
 
@@ -296,16 +298,16 @@ await _postKitClient.SendEmailAsync(email);
 ```csharp
 var bulkEmail = BulkEmail.CreateBuilder()
     .From("newsletter@company.com")
-    .WithSubject("Hello, {{FirstName}}")
-    .WithHtmlBody("<h1>Hello, {{FirstName}}</h1><p>Thanks for subscribing.</p>")
+    .WithSubject("Hello, {{firstName}}")
+    .WithHtmlBody("<h1>Hello, {{firstName}}</h1><p>Thanks for subscribing.</p>")
     .UsingMessageStream(MessageStream.Broadcast)
     .AddMessage(BulkEmailMessage.CreateBuilder()
         .To("alice@example.com")
-        .WithTemplateModel(new { FirstName = "Alice" })
+        .WithTemplateModel(new { firstName = "Alice" })
         .Build())
     .AddMessage(BulkEmailMessage.CreateBuilder()
         .To("bob@example.com")
-        .WithTemplateModel(new { FirstName = "Bob" })
+        .WithTemplateModel(new { firstName = "Bob" })
         .Build())
     .Build();
 
@@ -318,6 +320,39 @@ if (submitResult.IsSuccess(out var submitted))
 ```
 
 PostKit enforces the Bulk Email API's broadcast-stream requirement. `MessageStream.Transactional` and the `outbound` stream ID are rejected by the bulk builder.
+
+### Template Model Serialization
+
+By default, template models use `System.Text.Json` web defaults with null values omitted. That means CLR property names are camel-cased.
+
+```csharp
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using PostKit;
+using PostKit.Emails;
+
+PostKitTemplateModelSerialization.DefaultSerializerOptions = new JsonSerializerOptions
+{
+    PropertyNamingPolicy = null,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+};
+
+var serializerOptions = new JsonSerializerOptions
+{
+    PropertyNamingPolicy = null,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+};
+
+var email = Email.CreateBuilder()
+    .From("noreply@yourapp.com")
+    .To("user@example.com")
+    .UsingTemplate("welcome-email")
+    .WithTemplateModel(new
+    {
+        FirstName = "Alice"
+    }, serializerOptions)
+    .Build();
+```
 
 ### Size Limits
 

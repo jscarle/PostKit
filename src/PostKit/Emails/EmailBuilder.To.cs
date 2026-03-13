@@ -62,7 +62,7 @@ partial class EmailBuilder : IEmailToBuilder
     {
         _to.EnsureNotSet(nameof(Email.To));
 
-        _to = mailboxAddresses;
+        _to = mailboxAddresses.ToList();
 
         return this;
     }

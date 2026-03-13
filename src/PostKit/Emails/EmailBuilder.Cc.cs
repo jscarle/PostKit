@@ -62,7 +62,7 @@ partial class EmailBuilder : IEmailCcBuilder
     {
         _cc.EnsureNotSet(nameof(Email.Cc));
 
-        _cc = mailboxAddresses;
+        _cc = mailboxAddresses.ToList();
 
         return this;
     }

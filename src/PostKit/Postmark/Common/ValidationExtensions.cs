@@ -115,16 +115,17 @@ internal static class ValidationExtensions
         return true;
     }
 
-    public static (JsonNode Snapshot, int SerializedSizeInBytes) SnapshotTemplateModel(this object templateModel, string paramName)
+    public static (JsonNode Snapshot, int SerializedSizeInBytes) SnapshotTemplateModel(this object templateModel, string paramName, JsonSerializerOptions? serializerOptions = null)
     {
         ArgumentNullException.ThrowIfNull(templateModel, paramName);
 
         try
         {
+            var effectiveSerializerOptions = PostKitTemplateModelSerialization.Resolve(serializerOptions);
             var snapshot = templateModel switch
             {
                 JsonNode jsonNode => jsonNode.DeepClone(),
-                _ => JsonSerializer.SerializeToNode(templateModel, PostmarkConfiguration.JsonSerializerOptions),
+                _ => JsonSerializer.SerializeToNode(templateModel, effectiveSerializerOptions),
             };
 
             if (snapshot is null)
@@ -133,7 +134,7 @@ internal static class ValidationExtensions
             if (snapshot is not JsonObject)
                 throw new ArgumentException("The template model must serialize to a JSON object.", paramName);
 
-            var serializedSize = JsonSizeEstimator.GetSerializedSize(snapshot, PostmarkConfiguration.JsonSerializerOptions);
+            var serializedSize = JsonSizeEstimator.GetSerializedSize(snapshot, effectiveSerializerOptions);
             return (snapshot, serializedSize);
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException or InvalidOperationException)

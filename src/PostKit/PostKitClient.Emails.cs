@@ -34,6 +34,10 @@ internal sealed partial class PostKitClient
         {
             response = await postmark.PostAsync<EmailRequest, EmailResponse>(endpoint, request, cancellationToken);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             LogException(ex);
@@ -122,6 +126,10 @@ internal sealed partial class PostKitClient
             {
                 response = await postmark.PostAsync<List<EmailRequest>, List<EmailResponse>>(endpoint, requests, cancellationToken);
             }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
