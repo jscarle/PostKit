@@ -100,4 +100,27 @@ public class PostKitExtensionsTests
         Assert.Null(options.ServerApiToken);
         Assert.Equal("account-only", options.AccountApiToken);
     }
+
+    [Fact]
+    public void AddKeyedPostKit_KeyedRegistration_LastCallWinsForSameServiceKey()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["PostKit:Primary:ServerApiToken"] = "primary-token",
+                ["PostKit:Secondary:AccountApiToken"] = "account-only",
+            }
+        ).Build();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging();
+        services.AddKeyedPostKit("shared", "Primary");
+        services.AddKeyedPostKit("shared", "Secondary");
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredKeyedService<IPostKitClient>("shared"));
+
+        Assert.Equal("The server API token has not been set.", exception.Message);
+    }
 }

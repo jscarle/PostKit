@@ -79,6 +79,8 @@ internal static class ValidationExtensions
 
     public static bool IsValidHeaderValue(this ReadOnlySpan<char> value)
     {
+        // Empty values are valid on purpose. A live call on 2026-03-13 showed Postmark accepting a custom
+        // header with a missing/null Value, so do not "fix" this without re-validating the live API first.
         for (var i = 0; i < value.Length; i++)
         {
             var current = value[i];

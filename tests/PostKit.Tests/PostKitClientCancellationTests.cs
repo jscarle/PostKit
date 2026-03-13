@@ -92,7 +92,7 @@ public class PostKitClientCancellationTests
     }
 
     [Fact]
-    public async Task ActivateBounceAsync_WhenCanceledDuringConfirmation_ReturnsActivatedResponse()
+    public async Task ActivateBounceAsync_WhenCanceledDuringConfirmation_PropagatesCancellation()
     {
         var postmark = new BounceConfirmationCancelingPostmarkClient();
         var client = new PostKitClient(postmark, new TestLogger());
@@ -100,11 +100,7 @@ public class PostKitClientCancellationTests
         using var cts = new CancellationTokenSource();
         cts.CancelAfter(TimeSpan.FromMilliseconds(50));
 
-        var result = await client.ActivateBounceAsync(1, cts.Token);
-
-        Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.Equal("OK", response.Message);
-        Assert.True(response.Bounce.Inactive);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.ActivateBounceAsync(1, cts.Token));
         Assert.Equal(["/bounces/1/activate", "/bounces/1"], postmark.CalledEndpoints);
     }
 

@@ -210,7 +210,6 @@ internal sealed partial class PostKitClient
         var currentBounce = fallbackBounce;
         IError? lastError = null;
         Exception? lastException = null;
-        var confirmationCanceled = false;
 
         for (var attempt = 0; attempt < BounceActivationConfirmationAttempts; attempt++)
         {
@@ -221,8 +220,8 @@ internal sealed partial class PostKitClient
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                confirmationCanceled = true;
-                break;
+                LogActivateBounceConfirmationCanceled(id);
+                throw;
             }
             catch (Exception ex)
             {
@@ -260,15 +259,13 @@ internal sealed partial class PostKitClient
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    confirmationCanceled = true;
-                    break;
+                    LogActivateBounceConfirmationCanceled(id);
+                    throw;
                 }
             }
         }
 
-        if (confirmationCanceled)
-            LogActivateBounceConfirmationCanceled(id);
-        else if (lastError is not null)
+        if (lastError is not null)
             LogActivateBounceConfirmationFailure(id, lastError.Message, lastError);
         else if (lastException is not null)
             LogActivateBounceConfirmationException(id, lastException);

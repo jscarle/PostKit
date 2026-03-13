@@ -101,8 +101,8 @@ internal sealed partial class PostKitClient
 
     private static Result<BulkEmails.BulkEmailJob> CreateBulkEmailSubmissionResponse(SendBulkEmailModel response)
     {
-        // Live validation against Postmark on 2026-03-13 showed the submit endpoint returning the same shape
-        // as the status endpoint, including TotalMessages, PercentageCompleted, and Subject.
+        // Keep this aligned with the live API, not just the docs. Direct calls on 2026-03-13 returned
+        // the same shape as the status endpoint here, including TotalMessages, PercentageCompleted, and Subject.
         return CreateBulkEmailStatusResponse(response);
     }
 

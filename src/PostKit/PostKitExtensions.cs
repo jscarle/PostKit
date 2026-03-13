@@ -152,11 +152,15 @@ public static class PostKitExtensions
 
         services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
 
-        services.TryAddKeyedTransient<IPostmarkClient>(serviceKey, (sp, _) => sp.GetRequiredService<IPostmarkClientFactory>()
+        // Replace prior registrations for the same key so repeated AddKeyedPostKit() calls behave like the default path.
+        services.RemoveAllKeyed<IPostmarkClient>(serviceKey);
+        services.RemoveAllKeyed<IPostKitClient>(serviceKey);
+
+        services.AddKeyedTransient<IPostmarkClient>(serviceKey, (sp, _) => sp.GetRequiredService<IPostmarkClientFactory>()
             .Create(namedOptionsKey)
         );
 
-        services.TryAddKeyedTransient<IPostKitClient>(serviceKey, (sp, _) =>
+        services.AddKeyedTransient<IPostKitClient>(serviceKey, (sp, _) =>
             {
                 var postmarkClient = sp.GetRequiredKeyedService<IPostmarkClient>(serviceKey);
                 var logger = sp.GetRequiredService<ILogger<PostKitClient>>();
