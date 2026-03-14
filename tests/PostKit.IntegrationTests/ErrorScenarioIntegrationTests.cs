@@ -24,11 +24,11 @@ public class ErrorScenarioIntegrationTests
     public async Task SendEmailAsync_WithCancellationToken_CanBeCancelled()
     {
         // Arrange
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Cancellation Test")
-            .WithTextBody("This request should be cancelled.")
+            .Subject("Cancellation Test")
+            .TextBody("This request should be cancelled.")
             .Build();
 
         using var cts = new CancellationTokenSource();
@@ -42,11 +42,11 @@ public class ErrorScenarioIntegrationTests
     public async Task SendEmailBatchAsync_WithCancellationToken_CanBeCancelled()
     {
         // Arrange
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Batch Cancellation Test")
-            .WithTextBody("This batch request should be cancelled.")
+            .Subject("Batch Cancellation Test")
+            .TextBody("This batch request should be cancelled.")
             .Build();
 
         var emails = new[] { email };
@@ -61,11 +61,11 @@ public class ErrorScenarioIntegrationTests
     public async Task SendEmailAsync_WithSpecialCharactersInSubject_Succeeds()
     {
         // Arrange
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Special chars: émojis 🎉 symbols ★♥ quotes \"'")
-            .WithTextBody("Testing special characters in subject.")
+            .Subject("Special chars: émojis 🎉 symbols ★♥ quotes \"'")
+            .TextBody("Testing special characters in subject.")
             .Build();
 
         // Act
@@ -80,12 +80,12 @@ public class ErrorScenarioIntegrationTests
     public async Task SendEmailAsync_WithUnicodeContent_Succeeds()
     {
         // Arrange
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Unicode Content Test")
-            .WithTextBody("Testing Unicode: 你好世界 🌍 Здравствуй мир こんにちは世界")
-            .WithHtmlBody("<html><body><p>Unicode: 你好世界 🌍 Здравствуй мир こんにちは世界</p></body></html>")
+            .Subject("Unicode Content Test")
+            .TextBody("Testing Unicode: 你好世界 🌍 Здравствуй мир こんにちは世界")
+            .HtmlBody("<html><body><p>Unicode: 你好世界 🌍 Здравствуй мир こんにちは世界</p></body></html>")
             .Build();
 
         // Act

@@ -12,15 +12,15 @@ public class EdgeCaseIntegrationTests
     public async Task SendEmailAsync_WithExactly50Recipients_Succeeds()
     {
         // Arrange - Test the maximum allowed recipients (50)
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
-            .WithSubject("50 Recipients Test")
-            .WithTextBody("Testing exact maximum recipient limit.");
+            .Subject("50 Recipients Test")
+            .TextBody("Testing exact maximum recipient limit.");
 
         var toBuilder = builder.To("recipient@postkit.com");
         // Add exactly 50 recipients
         for (var i = 1; i < 50; i++)
-            toBuilder.AlsoTo($"recipient{i}@postkit.com");
+            toBuilder.To($"recipient{i}@postkit.com");
 
         var email = builder.Build();
 
@@ -36,22 +36,22 @@ public class EdgeCaseIntegrationTests
     public async Task SendEmailAsync_WithMixedRecipientsAtLimit_Succeeds()
     {
         // Arrange - 20 To + 15 Cc + 15 Bcc = 50 (at limit)
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
-            .WithSubject("Mixed Recipients at Limit")
-            .WithTextBody("Testing mixed recipient types at maximum limit.");
+            .Subject("Mixed Recipients at Limit")
+            .TextBody("Testing mixed recipient types at maximum limit.");
 
         var toBuilder = builder.To("to@postkit.com");
         for (var i = 1; i < 20; i++)
-            toBuilder.AlsoTo($"to{i}@postkit.com");
+            toBuilder.To($"to{i}@postkit.com");
 
         var ccBuilder = builder.Cc("cc@postkit.com");
         for (var i = 1; i < 15; i++)
-            ccBuilder.AlsoCc($"cc{i}@postkit.com");
+            ccBuilder.Cc($"cc{i}@postkit.com");
 
         var bccBuilder = builder.Bcc("bcc@postkit.com");
         for (var i = 1; i < 15; i++)
-            bccBuilder.AlsoBcc($"bcc{i}@postkit.com");
+            bccBuilder.Bcc($"bcc{i}@postkit.com");
 
         var email = builder.Build();
 
@@ -67,11 +67,11 @@ public class EdgeCaseIntegrationTests
     public async Task SendEmailAsync_WithMinimalContent_Succeeds()
     {
         // Arrange - Absolute minimum required fields
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("M")
-            .WithTextBody("X")
+            .Subject("M")
+            .TextBody("X")
             .Build();
 
         // Act
@@ -87,11 +87,11 @@ public class EdgeCaseIntegrationTests
     {
         // Arrange
         var longSubject = new string('S', 500);
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject(longSubject)
-            .WithTextBody("Testing very long subject line.")
+            .Subject(longSubject)
+            .TextBody("Testing very long subject line.")
             .Build();
 
         // Act
@@ -107,11 +107,11 @@ public class EdgeCaseIntegrationTests
     {
         // Arrange - Just under the 5 MB limit
         var largeText = new string('A', 4 * 1024 * 1024); // 4 MB
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Large Text Body")
-            .WithTextBody(largeText)
+            .Subject("Large Text Body")
+            .TextBody(largeText)
             .Build();
 
         // Act
@@ -126,14 +126,14 @@ public class EdgeCaseIntegrationTests
     public async Task SendEmailAsync_WithMultipleReplyToAddresses_Succeeds()
     {
         // Arrange
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
             .ReplyTo(TestConfiguration.TestReplyToEmail)
-            .AlsoReplyTo("another-reply@postkit.com")
-            .AlsoReplyTo("third-reply@postkit.com")
-            .WithSubject("Multiple Reply-To Test")
-            .WithTextBody("Testing multiple Reply-To addresses.")
+            .ReplyTo("another-reply@postkit.com")
+            .ReplyTo("third-reply@postkit.com")
+            .Subject("Multiple Reply-To Test")
+            .TextBody("Testing multiple Reply-To addresses.")
             .Build();
 
         // Act
@@ -148,14 +148,14 @@ public class EdgeCaseIntegrationTests
     public async Task SendEmailAsync_WithMaximumHeaderCount_Succeeds()
     {
         // Arrange - Add many custom headers
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Many Headers Test")
-            .WithTextBody("Testing many custom headers.");
+            .Subject("Many Headers Test")
+            .TextBody("Testing many custom headers.");
 
         for (var i = 1; i <= 10; i++)
-            builder.WithHeader($"X-Custom-Header-{i}", $"Value-{i}");
+            builder.AddHeader($"X-Custom-Header-{i}", $"Value-{i}");
 
         var email = builder.Build();
 
@@ -171,14 +171,14 @@ public class EdgeCaseIntegrationTests
     public async Task SendEmailAsync_WithMaximumMetadataCount_Succeeds()
     {
         // Arrange - Add many metadata key-value pairs
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Many Metadata Test")
-            .WithTextBody("Testing many metadata entries.");
+            .Subject("Many Metadata Test")
+            .TextBody("Testing many metadata entries.");
 
         for (var i = 1; i <= 10; i++)
-            builder.WithMetadata($"key_{i}", $"value_{i}");
+            builder.AddMetadata($"key_{i}", $"value_{i}");
 
         var email = builder.Build();
 
@@ -195,12 +195,12 @@ public class EdgeCaseIntegrationTests
     {
         // Arrange
         var longValue = new string('V', 80);
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Long Metadata Values Test")
-            .WithTextBody("Testing long metadata values.")
-            .WithMetadata("long_key", longValue)
+            .Subject("Long Metadata Values Test")
+            .TextBody("Testing long metadata values.")
+            .AddMetadata("long_key", longValue)
             .Build();
 
         // Act
@@ -215,12 +215,12 @@ public class EdgeCaseIntegrationTests
     public async Task SendEmailAsync_WithEmptyStringMetadata_Succeeds()
     {
         // Arrange
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Empty Metadata Test")
-            .WithTextBody("Testing empty metadata values.")
-            .WithMetadata("metadata_key", "metadata_value")
+            .Subject("Empty Metadata Test")
+            .TextBody("Testing empty metadata values.")
+            .AddMetadata("metadata_key", "metadata_value")
             .Build();
 
         // Act
@@ -235,11 +235,11 @@ public class EdgeCaseIntegrationTests
     public async Task SendEmailAsync_WithWhitespaceOnlyContent_Succeeds()
     {
         // Arrange
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("   ")
-            .WithTextBody("   \t\n   ")
+            .Subject("   ")
+            .TextBody("   \t\n   ")
             .Build();
 
         // Act
@@ -254,12 +254,12 @@ public class EdgeCaseIntegrationTests
     public async Task SendEmailAsync_WithSameAddressInToAndCc_Succeeds()
     {
         // Arrange
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
             .Cc(TestConfiguration.TestToEmail) // Same address
-            .WithSubject("Duplicate Address Test")
-            .WithTextBody("Testing same address in To and Cc.")
+            .Subject("Duplicate Address Test")
+            .TextBody("Testing same address in To and Cc.")
             .Build();
 
         // Act
@@ -275,11 +275,11 @@ public class EdgeCaseIntegrationTests
     {
         // Arrange
         var longTag = new string('T', 200);
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Long Tag Test")
-            .WithTextBody("Testing very long tag.")
+            .Subject("Long Tag Test")
+            .TextBody("Testing very long tag.")
             .WithTag(longTag)
             .Build();
 
@@ -301,12 +301,12 @@ public class EdgeCaseIntegrationTests
 
         var attachment = Attachment.Create("binary.zip", "application/octet-stream", binaryData);
 
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Binary Attachment Test")
-            .WithTextBody("Testing binary attachment.")
-            .WithAttachment(attachment)
+            .Subject("Binary Attachment Test")
+            .TextBody("Testing binary attachment.")
+            .AddAttachment(attachment)
             .Build();
 
         // Act
@@ -325,12 +325,12 @@ public class EdgeCaseIntegrationTests
         Array.Fill(largeData, (byte)'D');
         var attachment = Attachment.Create("large.dat", "application/octet-stream", largeData);
 
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Large Attachment Test")
-            .WithTextBody("Testing large attachment.")
-            .WithAttachment(attachment)
+            .Subject("Large Attachment Test")
+            .TextBody("Testing large attachment.")
+            .AddAttachment(attachment)
             .Build();
 
         // Act
@@ -348,13 +348,13 @@ public class EdgeCaseIntegrationTests
         var attachment1 = Attachment.Create("document.txt", "text/plain", "Content 1"u8.ToArray());
         var attachment2 = Attachment.Create("document.txt", "text/plain", "Content 2"u8.ToArray());
 
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Duplicate Filename Test")
-            .WithTextBody("Testing attachments with same filename.")
-            .WithAttachment(attachment1)
-            .WithAttachment(attachment2)
+            .Subject("Duplicate Filename Test")
+            .TextBody("Testing attachments with same filename.")
+            .AddAttachment(attachment1)
+            .AddAttachment(attachment2)
             .Build();
 
         // Act
@@ -371,12 +371,12 @@ public class EdgeCaseIntegrationTests
         // Arrange
         var attachment = Attachment.Create("file-name_with.special~chars (1).txt", "text/plain", "Content"u8.ToArray());
 
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Special Filename Test")
-            .WithTextBody("Testing attachment with special characters in filename.")
-            .WithAttachment(attachment)
+            .Subject("Special Filename Test")
+            .TextBody("Testing attachment with special characters in filename.")
+            .AddAttachment(attachment)
             .Build();
 
         // Act
@@ -391,11 +391,11 @@ public class EdgeCaseIntegrationTests
     public async Task SendEmailBatchAsync_WithSingleEmail_Succeeds()
     {
         // Arrange - Edge case: batch with only one email
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Single Email Batch")
-            .WithTextBody("Testing batch with single email.")
+            .Subject("Single Email Batch")
+            .TextBody("Testing batch with single email.")
             .Build();
 
         var emails = new[] { email };
@@ -416,11 +416,11 @@ public class EdgeCaseIntegrationTests
     public async Task SendEmailAsync_WithHtmlOnlyNoText_Succeeds()
     {
         // Arrange
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("HTML Only Test")
-            .WithHtmlBody("<html><body><h1>Only HTML, no text version</h1></body></html>")
+            .Subject("HTML Only Test")
+            .HtmlBody("<html><body><h1>Only HTML, no text version</h1></body></html>")
             .Build();
 
         // Act
@@ -471,11 +471,11 @@ public class EdgeCaseIntegrationTests
 </body>
 </html>";
 
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Complex HTML Test")
-            .WithHtmlBody(complexHtml)
+            .Subject("Complex HTML Test")
+            .HtmlBody(complexHtml)
             .Build();
 
         // Act

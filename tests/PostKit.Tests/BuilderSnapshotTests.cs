@@ -11,11 +11,11 @@ public class BuilderSnapshotTests
     {
         var recipients = new List<MailboxAddress> { new(string.Empty, "first@postkit.com") };
 
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To(recipients)
-            .WithSubject("Snapshot")
-            .WithTextBody("Body")
+            .Subject("Snapshot")
+            .TextBody("Body")
             .Build();
 
         recipients.Add(new MailboxAddress(string.Empty, "second@postkit.com"));
@@ -28,11 +28,11 @@ public class BuilderSnapshotTests
     {
         IList<MailboxAddress> recipients = new List<MailboxAddress> { new(string.Empty, "first@postkit.com") };
 
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From("sender@postkit.com")
             .To(recipients)
-            .WithSubject("Snapshot")
-            .WithTextBody("Body");
+            .Subject("Snapshot")
+            .TextBody("Body");
 
         recipients.Add(new MailboxAddress(string.Empty, "second@postkit.com"));
 
@@ -46,10 +46,10 @@ public class BuilderSnapshotTests
     {
         IList<MailboxAddress> recipients = new List<MailboxAddress> { new(string.Empty, "first@postkit.com") };
 
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .To(recipients);
 
-        builder.AlsoTo("second@postkit.com");
+        builder.To("second@postkit.com");
 
         Assert.Single(recipients);
     }
@@ -59,12 +59,12 @@ public class BuilderSnapshotTests
     {
         var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Campaign"] = "One" };
 
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Snapshot")
-            .WithTextBody("Body")
-            .WithMetadata(metadata)
+            .Subject("Snapshot")
+            .TextBody("Body")
+            .AddMetadata(metadata)
             .Build();
 
         metadata["Region"] = "CA";
@@ -80,12 +80,12 @@ public class BuilderSnapshotTests
     {
         var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Campaign"] = "One" };
 
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Snapshot")
-            .WithTextBody("Body")
-            .WithMetadata(metadata);
+            .Subject("Snapshot")
+            .TextBody("Body")
+            .AddMetadata(metadata);
 
         metadata["Region"] = "CA";
 
@@ -101,12 +101,12 @@ public class BuilderSnapshotTests
     {
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["X-Campaign"] = "One" };
 
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Snapshot")
-            .WithTextBody("Body")
-            .WithHeaders(headers);
+            .Subject("Snapshot")
+            .TextBody("Body")
+            .AddHeader(headers);
 
         headers["X-Region"] = "CA";
 
@@ -122,7 +122,7 @@ public class BuilderSnapshotTests
     {
         var recipients = new List<MailboxAddress> { new(string.Empty, "first@postkit.com") };
 
-        var message = BulkEmailMessage.CreateBuilder()
+        var message = BulkEmailMessage.Compose()
             .To(recipients)
             .Build();
 
@@ -136,10 +136,10 @@ public class BuilderSnapshotTests
     {
         IList<MailboxAddress> replyTo = new List<MailboxAddress> { new(string.Empty, "reply@postkit.com") };
 
-        var builder = BulkEmail.CreateBuilder()
+        var builder = BulkEmail.Compose()
             .ReplyTo(replyTo);
 
-        builder.AlsoReplyTo("other-reply@postkit.com");
+        builder.ReplyTo("other-reply@postkit.com");
 
         Assert.Single(replyTo);
     }
@@ -149,9 +149,9 @@ public class BuilderSnapshotTests
     {
         var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Campaign"] = "One" };
 
-        var builder = BulkEmailMessage.CreateBuilder()
+        var builder = BulkEmailMessage.Compose()
             .To("first@postkit.com")
-            .WithMetadata(metadata);
+            .AddMetadata(metadata);
 
         metadata["Region"] = "CA";
 

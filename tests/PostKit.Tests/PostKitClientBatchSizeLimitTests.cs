@@ -17,12 +17,12 @@ public class PostKitClientBatchSizeLimitTests
         const int emailCount = 7;
 
         var emails = Enumerable.Range(0, emailCount)
-            .Select(index => Email.CreateBuilder()
+            .Select(index => Email.Compose()
                 .From("sender@postkit.com")
                 .To($"recipient{index}@postkit.com")
-                .WithSubject("Batch size check")
-                .WithTextBody(textBody)
-                .WithHtmlBody(htmlBody)
+                .Subject("Batch size check")
+                .TextBody(textBody)
+                .HtmlBody(htmlBody)
                 .Build())
             .ToList();
 
@@ -42,12 +42,12 @@ public class PostKitClientBatchSizeLimitTests
         var textBody = new string('a', 4 * 1024 * 1024);
         var largeHeaderValue = new string('h', 1024 * 1024);
         var emails = Enumerable.Range(0, 11)
-            .Select(index => Email.CreateBuilder()
+            .Select(index => Email.Compose()
                 .From("sender@postkit.com")
                 .To($"recipient{index}@postkit.com")
-                .WithSubject("Batch size check")
-                .WithTextBody(textBody)
-                .WithHeader("X-Large-Header", largeHeaderValue)
+                .Subject("Batch size check")
+                .TextBody(textBody)
+                .AddHeader("X-Large-Header", largeHeaderValue)
                 .Build())
             .ToList();
 
@@ -66,11 +66,10 @@ public class PostKitClientBatchSizeLimitTests
     public async Task SendEmailBatchAsync_WithLargeTemplateModelsPushingPastEstimatedBatchLimit_ReturnsFailure()
     {
         var emails = Enumerable.Range(0, 11)
-            .Select(index => Email.CreateBuilder()
+            .Select(index => Email.FromTemplate(42)
                 .From("sender@postkit.com")
                 .To($"recipient{index}@postkit.com")
-                .UsingTemplate(42)
-                .WithTemplateModel(new { Data = new string('x', 5 * 1024 * 1024) })
+                .WithModel(new { Data = new string('x', 5 * 1024 * 1024) })
                 .Build())
             .ToList();
 

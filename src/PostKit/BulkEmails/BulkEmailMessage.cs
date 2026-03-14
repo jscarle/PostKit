@@ -32,9 +32,15 @@ public sealed class BulkEmailMessage
     {
     }
 
-    /// <summary>Creates a new <see cref="BulkEmailMessageBuilder"/> for composing a <see cref="BulkEmailMessage"/>.</summary>
-    public static BulkEmailMessageBuilder CreateBuilder()
+    /// <summary>Creates a new <see cref="ComposedBulkEmailMessageBuilder"/> for composing a <see cref="BulkEmailMessage"/>.</summary>
+    public static ComposedBulkEmailMessageBuilder Compose()
     {
-        return new BulkEmailMessageBuilder();
+        return new ComposedBulkEmailMessageBuilder();
+    }
+
+    /// <summary>Creates a new <see cref="TemplatedBulkEmailMessageBuilder"/> for composing a <see cref="BulkEmailMessage"/> with a template model.</summary>
+    public static TemplatedBulkEmailMessageBuilder FromTemplate()
+    {
+        return new TemplatedBulkEmailMessageBuilder();
     }
 }

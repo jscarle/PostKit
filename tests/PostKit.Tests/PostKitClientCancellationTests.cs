@@ -16,11 +16,11 @@ public class PostKitClientCancellationTests
     public async Task SendEmailAsync_WithCanceledToken_PropagatesCancellation()
     {
         var client = new PostKitClient(new CancelingPostmarkClient(), new TestLogger());
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Canceled")
-            .WithTextBody("Canceled")
+            .Subject("Canceled")
+            .TextBody("Canceled")
             .Build();
 
         using var cts = new CancellationTokenSource();
@@ -35,11 +35,11 @@ public class PostKitClientCancellationTests
         var client = new PostKitClient(new CancelingPostmarkClient(), new TestLogger());
         var emails = new[]
         {
-            Email.CreateBuilder()
+            Email.Compose()
                 .From("sender@postkit.com")
                 .To("recipient@postkit.com")
-                .WithSubject("Canceled")
-                .WithTextBody("Canceled")
+                .Subject("Canceled")
+                .TextBody("Canceled")
                 .Build(),
         };
 
@@ -53,12 +53,12 @@ public class PostKitClientCancellationTests
     public async Task SendBulkEmailAsync_WithCanceledToken_PropagatesCancellation()
     {
         var client = new PostKitClient(new CancelingPostmarkClient(), new TestLogger());
-        var bulkEmail = BulkEmail.CreateBuilder()
+        var bulkEmail = BulkEmail.Compose()
             .From("sender@postkit.com")
-            .WithSubject("Canceled")
-            .WithTextBody("Canceled")
-            .UsingMessageStream(MessageStream.Broadcast)
-            .AddMessage(BulkEmailMessage.CreateBuilder()
+            .Subject("Canceled")
+            .TextBody("Canceled")
+            .UseMessageStream(MessageStream.Broadcast)
+            .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
                 .Build())
             .Build();

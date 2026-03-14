@@ -11,11 +11,11 @@ public class EmailBuilderSizeLimitTests
     {
         var oversizedText = new string('a', (int)PostmarkSizeEstimator.BodySizeLimitInBytes + 1);
 
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Oversized text body")
-            .WithTextBody(oversizedText);
+            .Subject("Oversized text body")
+            .TextBody(oversizedText);
 
         Assert.Throws<InvalidOperationException>(() => builder.Build());
     }
@@ -25,11 +25,11 @@ public class EmailBuilderSizeLimitTests
     {
         var oversizedHtml = new string('a', (int)PostmarkSizeEstimator.BodySizeLimitInBytes + 1);
 
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Oversized HTML body")
-            .WithHtmlBody(oversizedHtml);
+            .Subject("Oversized HTML body")
+            .HtmlBody(oversizedHtml);
 
         Assert.Throws<InvalidOperationException>(() => builder.Build());
     }
@@ -39,11 +39,11 @@ public class EmailBuilderSizeLimitTests
     {
         var oversizedText = new string('é', (int)(PostmarkSizeEstimator.BodySizeLimitInBytes / 2) + 1);
 
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Oversized UTF-8 text body")
-            .WithTextBody(oversizedText);
+            .Subject("Oversized UTF-8 text body")
+            .TextBody(oversizedText);
 
         Assert.Throws<InvalidOperationException>(() => builder.Build());
     }
@@ -55,13 +55,13 @@ public class EmailBuilderSizeLimitTests
         var htmlBody = new string('b', (int)PostmarkSizeEstimator.BodySizeLimitInBytes);
         var attachment = Attachment.Create("tiny.txt", "text/plain", new byte[] { 1 });
 
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Oversized message")
-            .WithTextBody(textBody)
-            .WithHtmlBody(htmlBody)
-            .WithAttachment(attachment);
+            .Subject("Oversized message")
+            .TextBody(textBody)
+            .HtmlBody(htmlBody)
+            .AddAttachment(attachment);
 
         Assert.Throws<InvalidOperationException>(() => builder.Build());
     }
@@ -72,13 +72,13 @@ public class EmailBuilderSizeLimitTests
         var rawAttachmentBytes = new byte[(int)(PostmarkSizeEstimator.MessageSizeLimitInBytes / 4 * 3) + 1];
         var attachment = Attachment.Create("large.dat", "application/octet-stream", rawAttachmentBytes);
 
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Oversized attachment")
-            .WithTextBody("Hello world");
+            .Subject("Oversized attachment")
+            .TextBody("Hello world");
 
-        Assert.Throws<InvalidOperationException>(() => builder.WithAttachment(attachment));
+        Assert.Throws<InvalidOperationException>(() => builder.AddAttachment(attachment));
     }
 
     [Fact]
@@ -88,13 +88,13 @@ public class EmailBuilderSizeLimitTests
         var htmlBody = new string('b', 4 * 1024 * 1024);
         var largeHeaderValue = new string('h', 3 * 1024 * 1024);
 
-        var builder = Email.CreateBuilder()
+        var builder = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Oversized by headers")
-            .WithTextBody(textBody)
-            .WithHtmlBody(htmlBody)
-            .WithHeader("X-Large-Header", largeHeaderValue);
+            .Subject("Oversized by headers")
+            .TextBody(textBody)
+            .HtmlBody(htmlBody)
+            .AddHeader("X-Large-Header", largeHeaderValue);
 
         var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
 
@@ -106,11 +106,10 @@ public class EmailBuilderSizeLimitTests
     {
         var templateModel = new { Data = new string('x', 11 * 1024 * 1024) };
 
-        var builder = Email.CreateBuilder()
+        var builder = Email.FromTemplate(42)
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .UsingTemplate(42)
-            .WithTemplateModel(templateModel);
+            .WithModel(templateModel);
 
         var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
 

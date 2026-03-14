@@ -14,11 +14,11 @@ public class PostKitClientBatchResponseTests
     {
         var messageId = Guid.Parse("53ee8d49-dd20-4f1a-b65e-8ef299b7a504");
         var submittedAt = new DateTimeOffset(2026, 3, 10, 23, 45, 0, TimeSpan.Zero);
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Batch success")
-            .WithTextBody("success")
+            .Subject("Batch success")
+            .TextBody("success")
             .Build();
 
         var postmark = new RecordingPostmarkClient(new List<EmailResponse>
@@ -52,13 +52,13 @@ public class PostKitClientBatchResponseTests
     public async Task SendEmailBatchAsync_WithKeepIdAndMessageIdHeader_UsesHeaderForInternetMessageId()
     {
         var messageId = Guid.Parse("53ee8d49-dd20-4f1a-b65e-8ef299b7a504");
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Batch keep id")
-            .WithTextBody("success")
-            .WithHeader("Message-ID", "<batch-custom@example.com>")
-            .WithHeader("X-PM-KeepID", "true")
+            .Subject("Batch keep id")
+            .TextBody("success")
+            .AddHeader("Message-ID", "<batch-custom@example.com>")
+            .AddHeader("X-PM-KeepID", "true")
             .Build();
 
         var postmark = new RecordingPostmarkClient(new List<EmailResponse>
@@ -86,11 +86,11 @@ public class PostKitClientBatchResponseTests
     [Fact]
     public async Task SendEmailBatchAsync_MapsRejectedItemsToFailedResults()
     {
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Batch failure")
-            .WithTextBody("failure")
+            .Subject("Batch failure")
+            .TextBody("failure")
             .Build();
 
         var postmark = new RecordingPostmarkClient(new List<EmailResponse>
@@ -119,11 +119,11 @@ public class PostKitClientBatchResponseTests
     [Fact]
     public async Task SendEmailBatchAsync_MapsUnknownRejectedItemsToFailedResults()
     {
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Batch unknown failure")
-            .WithTextBody("failure")
+            .Subject("Batch unknown failure")
+            .TextBody("failure")
             .Build();
 
         var postmark = new RecordingPostmarkClient(new List<EmailResponse>

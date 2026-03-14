@@ -12,7 +12,7 @@ A MimeKit infused implementation of the Postmark API.
 
 Upgrading to `10.1.0` requires a few source changes:
 
-- Public email types now live in `PostKit.Emails`. Add `using PostKit.Emails;` for `Email`, `EmailBuilder`, `EmailSubmission`, and `EmailBatchSubmission`.
+- Public email types now live in `PostKit.Emails`. Add `using PostKit.Emails;` for `Email`, `ComposedEmailBuilder`, `TemplatedEmailBuilder`, `EmailSubmission`, and `EmailBatchSubmission`.
 - Shared email primitives now live in `PostKit.Common`. Add `using PostKit.Common;` for `Attachment`, `LinkTracking`, and `MessageStream`.
 - Bulk email types are new and live in `PostKit.BulkEmails`.
 - `EmailSubmission.MessageId` is now a `Guid` containing Postmark's message identifier. `InternetMessageId` falls back to the RFC-style `<...@mtasv.net>` value, but preserves your `Message-ID` header when `X-PM-KeepID: true` is set on the outbound message.
@@ -125,7 +125,7 @@ Add `using PostKit.BulkEmails;` when working with the Bulk Email API, and `using
 PostKit uses a fluent builder pattern with the following capabilities:
 
 - **Email Addresses**: Support for simple strings, name/address pairs, or MimeKit `MailboxAddress` objects
-- **Multiple Recipients**: Chain `AlsoTo()`, `AlsoCc()`, `AlsoBcc()`, or `AlsoReplyTo()` to add additional recipients
+- **Multiple Recipients**: Repeat `To()`, `Cc()`, `Bcc()`, or `ReplyTo()` to add additional recipients
 - **Templates**: Send templated emails by template ID or alias, including batch template sends
 - **Bulk Email API**: Submit broadcast bulk email jobs and poll their processing status
 - **Validation**: Builder validation covers required fields, recipient counts, headers, metadata, message streams, template/body exclusivity, and size limits. Postmark still performs final sender and recipient validation
@@ -148,11 +148,11 @@ public class EmailService
 
     public async Task SendWelcomeEmailAsync()
     {
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("noreply@yourapp.com")
             .To("user@example.com")
-            .WithSubject("Welcome to Our Service!")
-            .WithTextBody("Thank you for signing up!")
+            .Subject("Welcome to Our Service!")
+            .TextBody("Thank you for signing up!")
             .Build();
 
         await _postKitClient.SendEmailAsync(email);
@@ -163,16 +163,16 @@ public class EmailService
 #### Rich HTML Email
 
 ```csharp
-var email = Email.CreateBuilder()
+var email = Email.Compose()
     .From("Sarah Johnson", "sarah@company.com")
     .To("customer@example.com")
-    .WithSubject("Your Order Confirmation")
-    .WithHtmlBody(@"
+    .Subject("Your Order Confirmation")
+    .HtmlBody(@"
         <h1>Order Confirmed!</h1>
         <p>Thank you for your purchase. Your order #12345 has been confirmed.</p>
         <a href='https://yourapp.com/orders/12345'>View Order Details</a>
     ")
-    .WithTextBody("Order Confirmed! Thank you for your purchase. Your order #12345 has been confirmed. View details at: https://yourapp.com/orders/12345")
+    .TextBody("Order Confirmed! Thank you for your purchase. Your order #12345 has been confirmed. View details at: https://yourapp.com/orders/12345")
     .Build();
 
 await _postKitClient.SendEmailAsync(email);
@@ -181,13 +181,13 @@ await _postKitClient.SendEmailAsync(email);
 #### Multiple Recipients
 
 ```csharp
-var email = Email.CreateBuilder()
+var email = Email.Compose()
     .From("notifications@company.com")
     .To(new[] { "user1@example.com", "user2@example.com" })
     .Cc("manager@company.com")
     .Bcc("admin@company.com")
-    .WithSubject("Team Update")
-    .WithTextBody("Important team announcement...")
+    .Subject("Team Update")
+    .TextBody("Important team announcement...")
     .Build();
 
 await _postKitClient.SendEmailAsync(email);
@@ -196,18 +196,18 @@ await _postKitClient.SendEmailAsync(email);
 #### Batch Sending
 
 ```csharp
-var welcomeEmail = Email.CreateBuilder()
+var welcomeEmail = Email.Compose()
     .From("noreply@yourapp.com")
     .To("user1@example.com")
-    .WithSubject("Welcome!")
-    .WithTextBody("Thanks for signing up")
+    .Subject("Welcome!")
+    .TextBody("Thanks for signing up")
     .Build();
 
-var reminderEmail = Email.CreateBuilder()
+var reminderEmail = Email.Compose()
     .From("noreply@yourapp.com")
     .To("user2@example.com")
-    .WithSubject("Complete Your Profile")
-    .WithTextBody("Finish setting up your account")
+    .Subject("Complete Your Profile")
+    .TextBody("Finish setting up your account")
     .Build();
 
 var batchResult = await _postKitClient.SendEmailBatchAsync(new[] { welcomeEmail, reminderEmail });
@@ -228,11 +228,10 @@ if (batchResult.IsSuccess(out var batchResponse))
 #### Templates
 
 ```csharp
-var email = Email.CreateBuilder()
+var email = Email.FromTemplate("welcome-email", inlineCss: true)
     .From("noreply@yourapp.com")
     .To("user@example.com")
-    .UsingTemplate("welcome-email", inlineCss: true)
-    .WithTemplateModel(new
+    .WithModel(new
     {
         name = "Alice",
         product = "PostKit"
@@ -244,24 +243,24 @@ await _postKitClient.SendEmailAsync(email);
 
 When batching template emails, every email in the batch must use a template. Mixing templated and non-templated emails in the same batch is rejected by the client.
 
-Template models use `System.Text.Json` web defaults by default, so CLR properties such as `FirstName` serialize as `firstName`. If you want different naming, set [PostKitTemplateModelSerialization.DefaultSerializerOptions](#template-model-serialization) globally or pass explicit serializer options to `WithTemplateModel(...)` for that call.
+Template models use `System.Text.Json` web defaults by default, so CLR properties such as `FirstName` serialize as `firstName`. If you want different naming, set [PostKitTemplateModelSerialization.DefaultSerializerOptions](#template-model-serialization) globally or pass explicit serializer options to `WithModel(...)` for that call.
 
 #### Advanced Features
 
 ```csharp
-var email = Email.CreateBuilder()
+var email = Email.Compose()
     .From("newsletter@company.com")
     .To("subscriber@example.com")
     .ReplyTo("support@company.com")
-    .WithSubject("Monthly Newsletter")
-    .WithHtmlBody("<h1>Newsletter</h1><p>Check out our latest updates!</p>")
+    .Subject("Monthly Newsletter")
+    .HtmlBody("<h1>Newsletter</h1><p>Check out our latest updates!</p>")
     .WithTag("newsletter")
-    .WithMetadata("campaign", "monthly-2024")
-    .WithMetadata("segment", "premium-users")
-    .WithOpenTracking(true)
-    .WithLinkTracking(LinkTracking.HtmlAndText)
-    .UsingMessageStream(MessageStream.Broadcast)
-    .WithHeader("X-Campaign-ID", "CAMP-001")
+    .AddMetadata("campaign", "monthly-2024")
+    .AddMetadata("segment", "premium-users")
+    .EnableOpenTracking()
+    .UseLinkTracking(LinkTracking.HtmlAndText)
+    .UseMessageStream(MessageStream.Broadcast)
+    .AddHeader("X-Campaign-ID", "CAMP-001")
     .Build();
 
 await _postKitClient.SendEmailAsync(email);
@@ -281,13 +280,13 @@ var logo = Attachment.Create(
     content: await File.ReadAllBytesAsync("logo.png"),
     contentId: "logo@yourapp.com");
 
-var email = Email.CreateBuilder()
+var email = Email.Compose()
     .From("billing@company.com")
     .To("customer@example.com")
-    .WithSubject("Your Monthly Invoice")
-    .WithHtmlBody($"<p>Please find your invoice attached.</p><img src=\"{logo.ContentId}\" alt=\"Company Logo\" />")
-    .WithAttachment(invoice)
-    .WithAttachment(logo)
+    .Subject("Your Monthly Invoice")
+    .HtmlBody($"<p>Please find your invoice attached.</p><img src=\"{logo.ContentId}\" alt=\"Company Logo\" />")
+    .AddAttachment(invoice)
+    .AddAttachment(logo)
     .Build();
 
 await _postKitClient.SendEmailAsync(email);
@@ -296,18 +295,16 @@ await _postKitClient.SendEmailAsync(email);
 #### Bulk Emails
 
 ```csharp
-var bulkEmail = BulkEmail.CreateBuilder()
+var bulkEmail = BulkEmail.FromTemplate("subscriber-welcome")
     .From("newsletter@company.com")
-    .WithSubject("Hello, {{firstName}}")
-    .WithHtmlBody("<h1>Hello, {{firstName}}</h1><p>Thanks for subscribing.</p>")
-    .UsingMessageStream(MessageStream.Broadcast)
-    .AddMessage(BulkEmailMessage.CreateBuilder()
+    .UseMessageStream(MessageStream.Broadcast)
+    .AddMessage(BulkEmailMessage.FromTemplate()
         .To("alice@example.com")
-        .WithTemplateModel(new { firstName = "Alice" })
+        .WithModel(new { firstName = "Alice" })
         .Build())
-    .AddMessage(BulkEmailMessage.CreateBuilder()
+    .AddMessage(BulkEmailMessage.FromTemplate()
         .To("bob@example.com")
-        .WithTemplateModel(new { firstName = "Bob" })
+        .WithModel(new { firstName = "Bob" })
         .Build())
     .Build();
 
@@ -343,11 +340,10 @@ var serializerOptions = new JsonSerializerOptions
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
 };
 
-var email = Email.CreateBuilder()
+var email = Email.FromTemplate("welcome-email")
     .From("noreply@yourapp.com")
     .To("user@example.com")
-    .UsingTemplate("welcome-email")
-    .WithTemplateModel(new
+    .WithModel(new
     {
         FirstName = "Alice"
     }, serializerOptions)
@@ -425,13 +421,13 @@ Postmark supports different message streams for different types of emails. PostK
 
 ```csharp
 // For transactional emails (default)
-.UsingMessageStream(MessageStream.Transactional)
+.UseMessageStream(MessageStream.Transactional)
 
 // For broadcast/marketing emails
-.UsingMessageStream(MessageStream.Broadcast)
+.UseMessageStream(MessageStream.Broadcast)
 
 // Or use a custom stream ID
-.UsingMessageStream("custom-stream-id")
+.UseMessageStream("custom-stream-id")
 ```
 
 ### Complete Console Application Example
@@ -460,12 +456,12 @@ using var serviceProvider = services.BuildServiceProvider();
 var postKitClient = serviceProvider.GetRequiredService<IPostKitClient>();
 
 // Create and send an email
-var email = Email.CreateBuilder()
+var email = Email.Compose()
     .From("test@yourapp.com")
     .To("recipient@example.com")
-    .WithSubject("Test Email from PostKit")
-    .WithTextBody("Hello from PostKit! This email was sent using the PostKit library.")
-    .WithHtmlBody("<h1>Hello from PostKit!</h1><p>This email was sent using the <strong>PostKit</strong> library.</p>")
+    .Subject("Test Email from PostKit")
+    .TextBody("Hello from PostKit! This email was sent using the PostKit library.")
+    .HtmlBody("<h1>Hello from PostKit!</h1><p>This email was sent using the <strong>PostKit</strong> library.</p>")
     .Build();
 
 await postKitClient.SendEmailAsync(email);

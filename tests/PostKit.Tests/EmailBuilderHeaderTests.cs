@@ -17,10 +17,10 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void WithHeader_DuplicateDictionaryKeys_ThrowsArgumentExceptionWithHeaderMessage()
     {
-        var builder = Email.CreateBuilder();
+        var builder = Email.Compose();
         var headers = new Dictionary<string, string> { ["X-Test"] = "A", ["x-test"] = "B" };
 
-        var exception = Assert.Throws<ArgumentException>(() => builder.WithHeaders(headers));
+        var exception = Assert.Throws<ArgumentException>(() => builder.AddHeader(headers));
 
         Assert.Equal("There are duplicate header entries. (Parameter 'headers')", exception.Message);
     }
@@ -28,9 +28,9 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void WithHeader_BareCarriageReturnFold_ThrowsArgumentException()
     {
-        var builder = Email.CreateBuilder();
+        var builder = Email.Compose();
 
-        var exception = Assert.Throws<ArgumentException>(() => builder.WithHeader("X-Test", "bad\r value"));
+        var exception = Assert.Throws<ArgumentException>(() => builder.AddHeader("X-Test", "bad\r value"));
 
         Assert.Equal("The header value is invalid. (Parameter 'value')", exception.Message);
     }
@@ -38,9 +38,9 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void WithHeader_BareLineFeedFold_ThrowsArgumentException()
     {
-        var builder = Email.CreateBuilder();
+        var builder = Email.Compose();
 
-        var exception = Assert.Throws<ArgumentException>(() => builder.WithHeader("X-Test", "bad\n value"));
+        var exception = Assert.Throws<ArgumentException>(() => builder.AddHeader("X-Test", "bad\n value"));
 
         Assert.Equal("The header value is invalid. (Parameter 'value')", exception.Message);
     }
@@ -48,9 +48,9 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void WithHeader_FoldedHeaderUsingTab_IsAccepted()
     {
-        var builder = Email.CreateBuilder();
+        var builder = Email.Compose();
 
-        var exception = Record.Exception(() => builder.WithHeader("X-Test", "good\r\n\tvalue"));
+        var exception = Record.Exception(() => builder.AddHeader("X-Test", "good\r\n\tvalue"));
 
         Assert.Null(exception);
     }
@@ -58,9 +58,9 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void WithHeader_NameUsingVisibleAsciiTokenCharacters_IsAccepted()
     {
-        var builder = Email.CreateBuilder();
+        var builder = Email.Compose();
 
-        var exception = Record.Exception(() => builder.WithHeader("X_Custom+Trace", "value"));
+        var exception = Record.Exception(() => builder.AddHeader("X_Custom+Trace", "value"));
 
         Assert.Null(exception);
     }
@@ -68,9 +68,9 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void WithHeader_ValueContainingPlainTab_IsAccepted()
     {
-        var builder = Email.CreateBuilder();
+        var builder = Email.Compose();
 
-        var exception = Record.Exception(() => builder.WithHeader("X-Test", "good\tvalue"));
+        var exception = Record.Exception(() => builder.AddHeader("X-Test", "good\tvalue"));
 
         Assert.Null(exception);
     }
@@ -78,9 +78,9 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void BulkEmailBuilder_WithHeader_NameUsingVisibleAsciiTokenCharacters_IsAccepted()
     {
-        var builder = BulkEmail.CreateBuilder();
+        var builder = BulkEmail.Compose();
 
-        var exception = Record.Exception(() => builder.WithHeader("X_Custom+Trace", "value"));
+        var exception = Record.Exception(() => builder.AddHeader("X_Custom+Trace", "value"));
 
         Assert.Null(exception);
     }
@@ -88,9 +88,9 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void BulkEmailMessageBuilder_WithHeader_ValueContainingPlainTab_IsAccepted()
     {
-        var builder = BulkEmailMessage.CreateBuilder();
+        var builder = BulkEmailMessage.Compose();
 
-        var exception = Record.Exception(() => builder.WithHeader("X-Test", "good\tvalue"));
+        var exception = Record.Exception(() => builder.AddHeader("X-Test", "good\tvalue"));
 
         Assert.Null(exception);
     }

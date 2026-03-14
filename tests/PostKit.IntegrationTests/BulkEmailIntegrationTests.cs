@@ -15,14 +15,14 @@ public class BulkEmailIntegrationTests
     [Fact]
     public async Task SendBulkEmailAsync_WithDefaultBroadcastStreamAndCcOnlyMessage_Succeeds()
     {
-        var bulkEmail = BulkEmail.CreateBuilder()
+        var bulkEmail = BulkEmail.Compose()
             .From(RequireDevelopmentValue(TestConfiguration.DevelopmentFromEmail, nameof(TestConfiguration.DevelopmentFromEmail)))
-            .WithSubject("Bulk API default stream check")
-            .WithTextBody("Hello from PostKit bulk.")
-            .AddMessage(BulkEmailMessage.CreateBuilder()
+            .Subject("Bulk API default stream check")
+            .TextBody("Hello from PostKit bulk.")
+            .AddMessage(BulkEmailMessage.Compose()
                 .To(RequireDevelopmentValue(TestConfiguration.DevelopmentToEmail, nameof(TestConfiguration.DevelopmentToEmail)))
                 .Build())
-            .AddMessage(BulkEmailMessage.CreateBuilder()
+            .AddMessage(BulkEmailMessage.Compose()
                 .Cc(RequireDevelopmentValue(TestConfiguration.DevelopmentCcEmail, nameof(TestConfiguration.DevelopmentCcEmail)))
                 .Build())
             .Build();
@@ -40,18 +40,16 @@ public class BulkEmailIntegrationTests
     [Fact]
     public async Task GetBulkEmailStatusAsync_AfterSubmission_Completes()
     {
-        var bulkEmail = BulkEmail.CreateBuilder()
+        var bulkEmail = BulkEmail.Compose()
             .From(RequireDevelopmentValue(TestConfiguration.DevelopmentFromEmail, nameof(TestConfiguration.DevelopmentFromEmail)))
-            .WithSubject("Bulk API personalized {{firstName}}")
-            .WithTextBody("Hi, {{firstName}}")
-            .UsingMessageStream(MessageStream.Broadcast)
-            .AddMessage(BulkEmailMessage.CreateBuilder()
+            .Subject("Bulk API status tracking")
+            .TextBody("Hi from PostKit bulk.")
+            .UseMessageStream(MessageStream.Broadcast)
+            .AddMessage(BulkEmailMessage.Compose()
                 .To(RequireDevelopmentValue(TestConfiguration.DevelopmentToEmail, nameof(TestConfiguration.DevelopmentToEmail)))
-                .WithTemplateModel(new { firstName = "Alice" })
                 .Build())
-            .AddMessage(BulkEmailMessage.CreateBuilder()
+            .AddMessage(BulkEmailMessage.Compose()
                 .To(RequireDevelopmentValue(TestConfiguration.DevelopmentCcEmail, nameof(TestConfiguration.DevelopmentCcEmail)))
-                .WithTemplateModel(new { firstName = "Bob" })
                 .Build())
             .Build();
 
@@ -62,7 +60,7 @@ public class BulkEmailIntegrationTests
 
         Assert.Equal(submitted.Id, status.Id);
         Assert.Equal(2, status.TotalMessages);
-        Assert.Equal("Bulk API personalized {{firstName}}", status.Subject);
+        Assert.Equal("Bulk API status tracking", status.Subject);
         Assert.Equal(BulkEmailStatus.Completed, status.Status);
         Assert.InRange(status.PercentageCompleted, 100, 100);
     }

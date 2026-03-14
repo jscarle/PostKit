@@ -58,9 +58,25 @@ public sealed class BulkEmail
     {
     }
 
-    /// <summary>Creates a new <see cref="BulkEmailBuilder"/> for composing a <see cref="BulkEmail"/>.</summary>
-    public static BulkEmailBuilder CreateBuilder()
+    /// <summary>Creates a new <see cref="ComposedBulkEmailBuilder"/> for composing a <see cref="BulkEmail"/>.</summary>
+    public static ComposedBulkEmailBuilder Compose()
     {
-        return new BulkEmailBuilder();
+        return new ComposedBulkEmailBuilder();
+    }
+
+    /// <summary>Creates a new <see cref="TemplatedBulkEmailBuilder"/> for composing a <see cref="BulkEmail"/> from a Postmark template.</summary>
+    /// <param name="templateId">The Postmark template identifier.</param>
+    /// <param name="inlineCss">Whether CSS should be inlined when rendering the template.</param>
+    public static TemplatedBulkEmailBuilder FromTemplate(int templateId, bool? inlineCss = null)
+    {
+        return new TemplatedBulkEmailBuilder(templateId, inlineCss);
+    }
+
+    /// <summary>Creates a new <see cref="TemplatedBulkEmailBuilder"/> for composing a <see cref="BulkEmail"/> from a Postmark template.</summary>
+    /// <param name="templateAlias">The Postmark template alias.</param>
+    /// <param name="inlineCss">Whether CSS should be inlined when rendering the template.</param>
+    public static TemplatedBulkEmailBuilder FromTemplate(string templateAlias, bool? inlineCss = null)
+    {
+        return new TemplatedBulkEmailBuilder(templateAlias, inlineCss);
     }
 }

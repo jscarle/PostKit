@@ -72,10 +72,28 @@ public sealed class Email
     {
     }
 
-    /// <summary>Creates a new <see cref="EmailBuilder"/> for composing an <see cref="Email"/>.</summary>
+    /// <summary>Creates a new <see cref="ComposedEmailBuilder"/> for composing an <see cref="Email"/>.</summary>
     /// <returns>A builder that can be used to configure an email.</returns>
-    public static EmailBuilder CreateBuilder()
+    public static ComposedEmailBuilder Compose()
     {
-        return new EmailBuilder();
+        return new ComposedEmailBuilder();
+    }
+
+    /// <summary>Creates a new <see cref="TemplatedEmailBuilder"/> for composing an <see cref="Email"/> from a Postmark template.</summary>
+    /// <param name="templateId">The Postmark template identifier.</param>
+    /// <param name="inlineCss">Whether CSS should be inlined when rendering the template.</param>
+    /// <returns>A builder that can be used to configure a templated email.</returns>
+    public static TemplatedEmailBuilder FromTemplate(int templateId, bool? inlineCss = null)
+    {
+        return new TemplatedEmailBuilder(templateId, inlineCss);
+    }
+
+    /// <summary>Creates a new <see cref="TemplatedEmailBuilder"/> for composing an <see cref="Email"/> from a Postmark template.</summary>
+    /// <param name="templateAlias">The Postmark template alias.</param>
+    /// <param name="inlineCss">Whether CSS should be inlined when rendering the template.</param>
+    /// <returns>A builder that can be used to configure a templated email.</returns>
+    public static TemplatedEmailBuilder FromTemplate(string templateAlias, bool? inlineCss = null)
+    {
+        return new TemplatedEmailBuilder(templateAlias, inlineCss);
     }
 }

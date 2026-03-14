@@ -16,11 +16,10 @@ public class EmailBuilderTemplateTests
     {
         var templateModel = new { Name = "Alice" };
 
-        var email = Email.CreateBuilder()
+        var email = Email.FromTemplate(42, true)
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .UsingTemplate(42, true)
-            .WithTemplateModel(templateModel)
+            .WithModel(templateModel)
             .Build();
 
         Assert.Equal(42, email.TemplateId);
@@ -34,11 +33,10 @@ public class EmailBuilderTemplateTests
     {
         var templateModel = new { Name = "Bob" };
 
-        var email = Email.CreateBuilder()
+        var email = Email.FromTemplate("welcome-email", false)
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .UsingTemplate("welcome-email", false)
-            .WithTemplateModel(templateModel)
+            .WithModel(templateModel)
             .Build();
 
         Assert.Null(email.TemplateId);
@@ -52,9 +50,8 @@ public class EmailBuilderTemplateTests
     {
         var templateModel = CyclicTemplateModel.Create();
 
-        var exception = Assert.Throws<ArgumentException>(() => Email.CreateBuilder()
-            .UsingTemplate(7)
-            .WithTemplateModel(templateModel));
+        var exception = Assert.Throws<ArgumentException>(() => Email.FromTemplate(7)
+            .WithModel(templateModel));
 
         Assert.Equal("The template model could not be serialized. (Parameter 'templateModel')", exception.Message);
         Assert.NotNull(exception.InnerException);
@@ -63,9 +60,8 @@ public class EmailBuilderTemplateTests
     [Fact]
     public void WithTemplateModel_WithScalarModel_ThrowsArgumentException()
     {
-        var exception = Assert.Throws<ArgumentException>(() => Email.CreateBuilder()
-            .UsingTemplate(7)
-            .WithTemplateModel("Alice"));
+        var exception = Assert.Throws<ArgumentException>(() => Email.FromTemplate(7)
+            .WithModel("Alice"));
 
         Assert.Equal("The template model must serialize to a JSON object. (Parameter 'templateModel')", exception.Message);
     }
@@ -83,11 +79,10 @@ public class EmailBuilderTemplateTests
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             };
 
-            var email = Email.CreateBuilder()
+            var email = Email.FromTemplate(7)
                 .From("sender@postkit.com")
                 .To("recipient@postkit.com")
-                .UsingTemplate(7)
-                .WithTemplateModel(new { FirstName = "Alice" })
+                .WithModel(new { FirstName = "Alice" })
                 .Build();
 
             var request = email.ToEmailRequest();
@@ -114,10 +109,9 @@ public class EmailBuilderTemplateTests
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             };
 
-            IEmailBuilder builder = Email.CreateBuilder()
+            var builder = Email.FromTemplate(7)
                 .From("sender@postkit.com")
-                .To("recipient@postkit.com")
-                .UsingTemplate(7);
+                .To("recipient@postkit.com");
 
             var serializerOptions = new JsonSerializerOptions
             {
@@ -126,7 +120,7 @@ public class EmailBuilderTemplateTests
             };
 
             var email = builder
-                .WithTemplateModel(new { FirstName = "Alice" }, serializerOptions)
+                .WithModel(new { FirstName = "Alice" }, serializerOptions)
                 .Build();
 
             var request = email.ToEmailRequest();
@@ -146,11 +140,10 @@ public class EmailBuilderTemplateTests
     {
         var templateModel = new { Name = "Charlie" };
 
-        var email = Email.CreateBuilder()
+        var email = Email.FromTemplate(7)
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .UsingTemplate(7)
-            .WithTemplateModel(templateModel)
+            .WithModel(templateModel)
             .Build();
 
         var postmark = new RecordingPostmarkClient();
@@ -169,11 +162,10 @@ public class EmailBuilderTemplateTests
     {
         var messageId = Guid.Parse("0b261aa1-6726-4d7f-8ead-13ba17bc8283");
         var submittedAt = new DateTimeOffset(2026, 3, 10, 22, 33, 1, TimeSpan.Zero);
-        var email = Email.CreateBuilder()
+        var email = Email.FromTemplate(7)
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .UsingTemplate(7)
-            .WithTemplateModel(new { Name = "Delta" })
+            .WithModel(new { Name = "Delta" })
             .Build();
 
         var postmark = new RecordingPostmarkClient(new EmailResponse
@@ -200,13 +192,13 @@ public class EmailBuilderTemplateTests
     public async Task SendEmailAsync_WithKeepIdAndMessageIdHeader_UsesHeaderForInternetMessageId()
     {
         var messageId = Guid.Parse("0b261aa1-6726-4d7f-8ead-13ba17bc8283");
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Preserve Message-ID")
-            .WithTextBody("Hello")
-            .WithHeader("Message-ID", "<custom@example.com>")
-            .WithHeader("X-PM-KeepID", "true")
+            .Subject("Preserve Message-ID")
+            .TextBody("Hello")
+            .AddHeader("Message-ID", "<custom@example.com>")
+            .AddHeader("X-PM-KeepID", "true")
             .Build();
 
         var postmark = new RecordingPostmarkClient(new EmailResponse
@@ -230,12 +222,12 @@ public class EmailBuilderTemplateTests
     public async Task SendEmailAsync_WithMessageIdHeaderButWithoutKeepId_FallsBackToPostmarkInternetMessageId()
     {
         var messageId = Guid.Parse("0b261aa1-6726-4d7f-8ead-13ba17bc8283");
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Replace Message-ID")
-            .WithTextBody("Hello")
-            .WithHeader("Message-ID", "<custom@example.com>")
+            .Subject("Replace Message-ID")
+            .TextBody("Hello")
+            .AddHeader("Message-ID", "<custom@example.com>")
             .Build();
 
         var postmark = new RecordingPostmarkClient(new EmailResponse
@@ -272,11 +264,10 @@ public class EmailBuilderTemplateTests
     [Fact]
     public async Task SendEmailAsync_WithoutSubmittedAt_ReturnsFailure()
     {
-        var email = Email.CreateBuilder()
+        var email = Email.FromTemplate(7)
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .UsingTemplate(7)
-            .WithTemplateModel(new { Name = "Echo" })
+            .WithModel(new { Name = "Echo" })
             .Build();
 
         var postmark = new RecordingPostmarkClient(new EmailResponse

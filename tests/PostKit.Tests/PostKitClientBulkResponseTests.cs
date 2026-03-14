@@ -22,14 +22,14 @@ public class PostKitClientBulkResponseTests
                                     }
                                     """;
 
-        var bulkEmail = BulkEmail.CreateBuilder()
+        var bulkEmail = BulkEmail.Compose()
             .From("sender@postkit.com")
-            .WithSubject("Bulk hello")
-            .WithTextBody("Hello world")
-            .AddMessage(BulkEmailMessage.CreateBuilder()
+            .Subject("Bulk hello")
+            .TextBody("Hello world")
+            .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
                 .Build())
-            .AddMessage(BulkEmailMessage.CreateBuilder()
+            .AddMessage(BulkEmailMessage.Compose()
                 .Cc("cc@postkit.com")
                 .Build())
             .Build();
@@ -64,11 +64,11 @@ public class PostKitClientBulkResponseTests
                                     }
                                     """;
 
-        var bulkEmail = BulkEmail.CreateBuilder()
+        var bulkEmail = BulkEmail.Compose()
             .From("sender@postkit.com")
-            .WithSubject("Bulk hello")
-            .WithTextBody("Hello world")
-            .AddMessage(BulkEmailMessage.CreateBuilder()
+            .Subject("Bulk hello")
+            .TextBody("Hello world")
+            .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
                 .Build())
             .Build();
@@ -97,11 +97,11 @@ public class PostKitClientBulkResponseTests
                                     }
                                     """;
 
-        var bulkEmail = BulkEmail.CreateBuilder()
+        var bulkEmail = BulkEmail.Compose()
             .From("sender@postkit.com")
-            .WithSubject("Bulk hello")
-            .WithTextBody("Hello world")
-            .AddMessage(BulkEmailMessage.CreateBuilder()
+            .Subject("Bulk hello")
+            .TextBody("Hello world")
+            .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
                 .Build())
             .Build();
@@ -130,11 +130,11 @@ public class PostKitClientBulkResponseTests
                                     }
                                     """;
 
-        var bulkEmail = BulkEmail.CreateBuilder()
+        var bulkEmail = BulkEmail.Compose()
             .From("sender@postkit.com")
-            .WithSubject("Bulk hello")
-            .WithTextBody("Hello world")
-            .AddMessage(BulkEmailMessage.CreateBuilder()
+            .Subject("Bulk hello")
+            .TextBody("Hello world")
+            .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
                 .Build())
             .Build();

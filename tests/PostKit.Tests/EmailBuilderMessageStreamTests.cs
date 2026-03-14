@@ -10,12 +10,12 @@ public class EmailBuilderMessageStreamTests
     {
         const string messageStreamId = "custom-stream-id";
 
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Test Email")
-            .WithHtmlBody("<p>Hello</p>")
-            .UsingMessageStream(messageStreamId)
+            .Subject("Test Email")
+            .HtmlBody("<p>Hello</p>")
+            .UseMessageStream(messageStreamId)
             .Build();
 
         var request = email.ToEmailRequest();
@@ -28,12 +28,12 @@ public class EmailBuilderMessageStreamTests
     {
         const string messageStreamId = "custom_stream-id";
 
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
-            .WithSubject("Test Email")
-            .WithHtmlBody("<p>Hello</p>")
-            .UsingMessageStream(messageStreamId)
+            .Subject("Test Email")
+            .HtmlBody("<p>Hello</p>")
+            .UseMessageStream(messageStreamId)
             .Build();
 
         var request = email.ToEmailRequest();
@@ -44,8 +44,8 @@ public class EmailBuilderMessageStreamTests
     [Fact]
     public void UsingMessageStream_WithReservedPrefix_ThrowsArgumentException()
     {
-        var exception = Assert.Throws<ArgumentException>(() => Email.CreateBuilder()
-            .UsingMessageStream("pm-marketing"));
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .UseMessageStream("pm-marketing"));
 
         Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
     }

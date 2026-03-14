@@ -115,12 +115,12 @@ public class BounceIntegrationTests
     private async Task<EmailSubmission> SendBounceAsync(string recipient, string textBody, CancellationToken cancellationToken)
     {
         var subject = $"PostKit bounce integration {Guid.NewGuid():N}";
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From(RequireDevelopmentValue(TestConfiguration.DevelopmentFromEmail, nameof(TestConfiguration.DevelopmentFromEmail)))
             .To(recipient)
-            .WithSubject(subject)
-            .WithTextBody(textBody)
-            .UsingMessageStream(MessageStream.Transactional)
+            .Subject(subject)
+            .TextBody(textBody)
+            .UseMessageStream(MessageStream.Transactional)
             .Build();
 
         var result = await _client.SendEmailAsync(email, cancellationToken);
@@ -197,12 +197,12 @@ public class BounceIntegrationTests
         if (existing is not null)
             return existing;
 
-        var sendResult = await _client.SendEmailAsync(Email.CreateBuilder()
+        var sendResult = await _client.SendEmailAsync(Email.Compose()
             .From(RequireDevelopmentValue(TestConfiguration.DevelopmentFromEmail, nameof(TestConfiguration.DevelopmentFromEmail)))
             .To(HardBounceRecipient)
-            .WithSubject($"PostKit hard bounce activation {Guid.NewGuid():N}")
-            .WithTextBody("Generate a hard bounce that can be reactivated.")
-            .UsingMessageStream(MessageStream.Transactional)
+            .Subject($"PostKit hard bounce activation {Guid.NewGuid():N}")
+            .TextBody("Generate a hard bounce that can be reactivated.")
+            .UseMessageStream(MessageStream.Transactional)
             .Build(), cancellationToken);
 
         if (sendResult.IsSuccess(out var sent))
