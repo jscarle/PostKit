@@ -20,6 +20,18 @@ public interface IPostKitClient
     /// <returns>A result containing the batch send response or error information.</returns>
     Task<Result<EmailBatchSubmission>> SendEmailBatchAsync(IReadOnlyCollection<Email> emails, CancellationToken cancellationToken = default);
 
+    /// <summary>Sends a bulk email request asynchronously.</summary>
+    /// <param name="bulkEmail">The bulk email request to submit.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the current bulk email request status or error information.</returns>
+    Task<Result<BulkEmailJob>> SendBulkEmailAsync(BulkEmail bulkEmail, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets the current status of a bulk email request asynchronously.</summary>
+    /// <param name="id">The identifier of the bulk email request.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the current bulk email request status or error information.</returns>
+    Task<Result<BulkEmailJob>> GetBulkEmailStatusAsync(Guid id, CancellationToken cancellationToken = default);
+
     /// <summary>Gets a page of bounces asynchronously.</summary>
     /// <param name="query">The bounce query to execute.</param>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
@@ -48,16 +60,4 @@ public interface IPostKitClient
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the activation response or error information.</returns>
     Task<Result<BounceActivation>> ActivateBounceAsync(long id, CancellationToken cancellationToken = default);
-
-    /// <summary>Sends a bulk email request asynchronously.</summary>
-    /// <param name="bulkEmail">The bulk email request to submit.</param>
-    /// <param name="cancellationToken">A token used to cancel the operation.</param>
-    /// <returns>A result containing the current bulk email request status or error information.</returns>
-    Task<Result<BulkEmailJob>> SendBulkEmailAsync(BulkEmail bulkEmail, CancellationToken cancellationToken = default);
-
-    /// <summary>Gets the current status of a bulk email request asynchronously.</summary>
-    /// <param name="id">The identifier of the bulk email request.</param>
-    /// <param name="cancellationToken">A token used to cancel the operation.</param>
-    /// <returns>A result containing the current bulk email request status or error information.</returns>
-    Task<Result<BulkEmailJob>> GetBulkEmailStatusAsync(Guid id, CancellationToken cancellationToken = default);
 }
