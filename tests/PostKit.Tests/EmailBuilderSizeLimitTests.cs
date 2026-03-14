@@ -49,27 +49,26 @@ public class EmailBuilderSizeLimitTests
     }
 
     [Fact]
-    public void Build_WithAttachmentsPushingPastMessageLimit_ThrowsInvalidOperationException()
+    public void AddAttachment_WithExistingBodyPushingPastMessageLimit_ThrowsInvalidOperationException()
     {
         var textBody = new string('a', (int)PostmarkSizeEstimator.BodySizeLimitInBytes);
-        var htmlBody = new string('b', (int)PostmarkSizeEstimator.BodySizeLimitInBytes);
-        var attachment = Attachment.Create("tiny.txt", "text/plain", new byte[] { 1 });
+        var attachment = Attachment.Create("large.dat", "application/octet-stream", new byte[6 * 1024 * 1024]);
 
         var builder = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
             .Subject("Oversized message")
-            .TextBody(textBody)
-            .HtmlBody(htmlBody)
-            .AddAttachment(attachment);
+            .TextBody(textBody);
 
-        Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.AddAttachment(attachment));
+
+        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
     }
 
     [Fact]
-    public void Build_WithAttachmentWhoseBase64EncodingExceedsLimit_ThrowsInvalidOperationException()
+    public void Build_WithAttachmentPayloadExceedingLimit_ThrowsInvalidOperationException()
     {
-        var rawAttachmentBytes = new byte[(int)(PostmarkSizeEstimator.MessageSizeLimitInBytes / 4 * 3) + 1];
+        var rawAttachmentBytes = new byte[(int)PostmarkSizeEstimator.MessageSizeLimitInBytes + 1];
         var attachment = Attachment.Create("large.dat", "application/octet-stream", rawAttachmentBytes);
 
         var builder = Email.Compose()
@@ -78,31 +77,33 @@ public class EmailBuilderSizeLimitTests
             .Subject("Oversized attachment")
             .TextBody("Hello world");
 
-        Assert.Throws<InvalidOperationException>(() => builder.AddAttachment(attachment));
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.AddAttachment(attachment));
+
+        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
     }
 
     [Fact]
-    public void Build_WithLargeHeadersPushingPastEstimatedMessageLimit_ThrowsInvalidOperationException()
+    public void Build_WithLargeHeadersButBodiesAndAttachmentsWithinLimit_Succeeds()
     {
         var textBody = new string('a', 4 * 1024 * 1024);
         var htmlBody = new string('b', 4 * 1024 * 1024);
         var largeHeaderValue = new string('h', 3 * 1024 * 1024);
 
-        var builder = Email.Compose()
+        var email = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
             .Subject("Oversized by headers")
             .TextBody(textBody)
             .HtmlBody(htmlBody)
-            .AddHeader("X-Large-Header", largeHeaderValue);
+            .AddHeader("X-Large-Header", largeHeaderValue)
+            .Build();
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
-
-        Assert.Equal("Estimated message size exceeds Postmark's 10 MB limit.", exception.Message);
+        Assert.NotNull(email.Headers);
+        Assert.Equal(largeHeaderValue, email.Headers["X-Large-Header"]);
     }
 
     [Fact]
-    public void Build_WithLargeTemplateModelPushingPastEstimatedMessageLimit_ThrowsInvalidOperationException()
+    public void Build_WithLargeTemplateModelPushingPastMessageLimit_ThrowsInvalidOperationException()
     {
         var templateModel = new { Data = new string('x', 11 * 1024 * 1024) };
 
@@ -113,6 +114,6 @@ public class EmailBuilderSizeLimitTests
 
         var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
 
-        Assert.Equal("Estimated message size exceeds Postmark's 10 MB limit.", exception.Message);
+        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
     }
 }

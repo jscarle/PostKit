@@ -94,7 +94,7 @@ internal sealed partial class PostKitClient
             if (email.TemplateId.HasValue || email.TemplateAlias is not null)
                 templateCount++;
 
-            estimatedBatchSize += PostmarkSizeEstimator.EstimateMessageSizeLowerBound(email);
+            estimatedBatchSize += PostmarkSizeEstimator.EstimateMessagePayloadSizeLowerBound(email);
             try
             {
                 requests.Add(email.ToEmailRequest());

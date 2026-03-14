@@ -560,6 +560,8 @@ internal sealed partial class DraftEmail
         if (htmlBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
             throw new InvalidOperationException("HTML body exceeds Postmark's 5 MB limit.");
 
+        EnsureMessageContentWithinLimit();
+
         var email = new Email
         {
             From = _from.Snapshot(),
@@ -585,10 +587,6 @@ internal sealed partial class DraftEmail
             TemplateModelSizeInBytes = _templateModelSizeInBytes,
             InlineCss = _inlineCss,
         };
-
-        var estimatedTotal = PostmarkSizeEstimator.EstimateMessageSizeLowerBound(email);
-        if (estimatedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException("Estimated message size exceeds Postmark's 10 MB limit.");
 
         return email;
     }
@@ -689,9 +687,17 @@ internal sealed partial class DraftEmail
     {
         ArgumentOutOfRangeException.ThrowIfNegative(additionalBytes);
 
-        var projectedTotal = _attachmentBytes + additionalBytes;
+        var projectedTotal = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, _templateModelSizeInBytes, _attachments)
+            + additionalBytes;
         if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException("Estimated attachment content exceeds Postmark's 10 MB limit.");
+            throw new InvalidOperationException("Estimated message content exceeds Postmark's 10 MB limit.");
+    }
+
+    private void EnsureMessageContentWithinLimit()
+    {
+        var projectedTotal = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, _templateModelSizeInBytes, _attachments);
+        if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
+            throw new InvalidOperationException("Estimated message content exceeds Postmark's 10 MB limit.");
     }
 
     private DraftEmail SetTemplateModel(object templateModel, JsonSerializerOptions? serializerOptions = null)

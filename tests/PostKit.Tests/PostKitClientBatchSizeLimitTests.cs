@@ -37,7 +37,7 @@ public class PostKitClientBatchSizeLimitTests
     }
 
     [Fact]
-    public async Task SendEmailBatchAsync_WithLargeHeadersPushingPastEstimatedBatchLimit_ReturnsFailure()
+    public async Task SendEmailBatchAsync_WithLargeHeadersButPayloadWithinLimit_Succeeds()
     {
         var textBody = new string('a', 4 * 1024 * 1024);
         var largeHeaderValue = new string('h', 1024 * 1024);
@@ -51,15 +51,22 @@ public class PostKitClientBatchSizeLimitTests
                 .Build())
             .ToList();
 
-        var postmark = new RecordingPostmarkClient();
+        var postmark = new RecordingPostmarkClient(new List<PostKit.Postmark.Email.EmailResponse>(Enumerable.Range(0, emails.Count)
+            .Select(index => new PostKit.Postmark.Email.EmailResponse
+            {
+                ErrorCode = 0,
+                Message = "OK",
+                MessageId = Guid.NewGuid().ToString(),
+                SubmittedAt = DateTimeOffset.UtcNow,
+                To = $"recipient{index}@postkit.com",
+            })));
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
         var result = await client.SendEmailBatchAsync(emails, CancellationToken.None);
 
-        Assert.False(result.IsSuccess());
-        Assert.Equal(0, postmark.CallCount);
-        Assert.Contains("Estimated batch payload size exceeds", result.ToString(), StringComparison.Ordinal);
+        Assert.True(result.IsSuccess(), result.ToString());
+        Assert.Equal(1, postmark.CallCount);
     }
 
     [Fact]
@@ -84,13 +91,17 @@ public class PostKitClientBatchSizeLimitTests
         Assert.Contains("Estimated batch payload size exceeds", result.ToString(), StringComparison.Ordinal);
     }
 
-    private sealed class RecordingPostmarkClient : IPostmarkClient
+    private sealed class RecordingPostmarkClient(List<PostKit.Postmark.Email.EmailResponse>? responses = null) : IPostmarkClient
     {
         public int CallCount { get; private set; }
 
         public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             CallCount++;
+
+            if (typeof(TResponse) == typeof(List<PostKit.Postmark.Email.EmailResponse>) && responses is not null)
+                return Task.FromResult(Result.Success((TResponse)(object)responses));
+
             throw new InvalidOperationException("Postmark should not be called for oversized batches.");
         }
 

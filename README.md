@@ -353,7 +353,7 @@ var email = Email.FromTemplate("welcome-email")
 ### Size Limits
 
 Postmark limits `TextBody` and `HtmlBody` to 5 MB each, email message size to 10 MB, bulk email payloads to 50 MB, and email batches to 500 items / 50 MB. PostKit uses conservative lower-bound estimates based on already-materialized values to
-prevent grossly oversized requests without doing expensive serialization. Actual size limits are still enforced by the Postmark API.
+prevent grossly oversized requests without doing expensive serialization. The local 10 MB and 50 MB pre-checks only consider template-model bytes, body bytes, and attachment payload bytes; Postmark remains the authoritative source of truth for the final server-side size checks.
 
 ### Error Handling
 

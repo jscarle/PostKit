@@ -240,12 +240,11 @@ public class EmailBuilderValidationTests
     }
 
     [Fact]
-    public void EmailBuilder_WithTotalSizeExceedingLimit_ThrowsException()
+    public void EmailBuilder_WithLargeBodyAndAttachmentCombination_ThrowsException()
     {
-        // Arrange - Create bodies and attachments that together exceed 10 MB
-        var text = new string('A', 3 * 1024 * 1024); // 3 MB
-        var html = new string('B', 3 * 1024 * 1024); // 3 MB
-        var attachmentData = new byte[5 * 1024 * 1024]; // 5 MB
+        // Arrange - Build still enforces the limit when attachments are added before the bodies.
+        var text = new string('A', 5 * 1024 * 1024); // 5 MB
+        var attachmentData = new byte[6 * 1024 * 1024]; // 6 MB
         Array.Fill(attachmentData, (byte)'C');
         var attachment = Attachment.Create("large.dat", "application/octet-stream", attachmentData);
 
@@ -255,10 +254,9 @@ public class EmailBuilderValidationTests
                 Email.Compose()
                     .From("sender@postkit.com")
                     .To("recipient@postkit.com")
-                    .Subject("Total Size Too Large")
-                    .TextBody(text)
-                    .HtmlBody(html)
+                    .Subject("Large Body And Attachment")
                     .AddAttachment(attachment)
+                    .TextBody(text)
                     .Build();
             }
         );

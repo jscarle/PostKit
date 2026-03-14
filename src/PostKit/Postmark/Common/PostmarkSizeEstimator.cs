@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using MimeKit;
 using PostKit.BulkEmails;
@@ -26,73 +25,71 @@ internal static class PostmarkSizeEstimator
         return base64Content.Length;
     }
 
-    internal static long EstimateAttachmentsSizeLowerBound(IReadOnlyCollection<Attachment>? attachments)
+    internal static long EstimateAttachmentSizeLowerBound(string? base64Content)
+    {
+        if (string.IsNullOrEmpty(base64Content))
+            return 0;
+
+        var padding = 0;
+        if (base64Content[^1] == '=')
+        {
+            padding = 1;
+            if (base64Content.Length > 1 && base64Content[^2] == '=')
+                padding = 2;
+        }
+
+        return (base64Content.Length / 4L * 3L) - padding;
+    }
+
+    internal static long EstimateAttachmentPayloadSizeLowerBound(IReadOnlyCollection<Attachment>? attachments)
     {
         if (attachments is null || attachments.Count == 0)
             return 0;
 
         long total = 0;
         foreach (var attachment in attachments)
+            total += EstimateAttachmentSizeLowerBound(attachment.Content);
+
+        return total;
+    }
+
+    internal static long EstimateMessageContentSizeLowerBound(string? textBody, string? htmlBody, int templateModelSizeInBytes, IReadOnlyCollection<Attachment>? attachments)
+    {
+        return EstimateBodySizeLowerBound(textBody)
+            + EstimateBodySizeLowerBound(htmlBody)
+            + templateModelSizeInBytes
+            + EstimateAttachmentPayloadSizeLowerBound(attachments);
+    }
+
+    internal static long EstimateMessagePayloadSizeLowerBound(Emails.Email email)
+    {
+        ArgumentNullException.ThrowIfNull(email);
+
+        return EstimateMessageContentSizeLowerBound(email.TextBody, email.HtmlBody, email.TemplateModelSizeInBytes, email.Attachments);
+    }
+
+    internal static long EstimateBatchPayloadSizeLowerBound(IReadOnlyCollection<Emails.Email> emails)
+    {
+        ArgumentNullException.ThrowIfNull(emails);
+
+        long total = 0;
+        foreach (var email in emails)
         {
-            total += EstimateBase64SizeLowerBound(attachment.Content);
-            total += EstimateStringSizeLowerBound(attachment.Name);
-            total += EstimateStringSizeLowerBound(attachment.ContentType);
-            total += EstimateStringSizeLowerBound(attachment.ContentId);
+            ArgumentNullException.ThrowIfNull(email);
+            total += EstimateMessagePayloadSizeLowerBound(email);
         }
 
         return total;
     }
 
-    internal static long EstimateMessageSizeLowerBound(Emails.Email email)
+    internal static long EstimateBulkEmailPayloadSizeLowerBound(BulkEmail bulkEmail)
     {
-        return EstimateMailboxAddressSizeLowerBound(email.From)
-            + EstimateMailboxAddressesSizeLowerBound(email.ReplyTo)
-            + EstimateMailboxAddressesSizeLowerBound(email.To)
-            + EstimateMailboxAddressesSizeLowerBound(email.Cc)
-            + EstimateMailboxAddressesSizeLowerBound(email.Bcc)
-            + EstimateStringSizeLowerBound(email.Subject)
-            + EstimateBodySizeLowerBound(email.TextBody)
-            + EstimateBodySizeLowerBound(email.HtmlBody)
-            + EstimateStringSizeLowerBound(email.Tag)
-            + EstimateKeyValuePairsSizeLowerBound(email.Headers)
-            + EstimateKeyValuePairsSizeLowerBound(email.Metadata)
-            + EstimateBooleanSizeLowerBound(email.OpenTracking)
-            + EstimateLinkTrackingSizeLowerBound(email.LinkTracking)
-            + EstimateStringSizeLowerBound(email.MessageStream)
-            + EstimateAttachmentsSizeLowerBound(email.Attachments)
-            + EstimateIntegerSizeLowerBound(email.TemplateId)
-            + EstimateStringSizeLowerBound(email.TemplateAlias)
-            + email.TemplateModelSizeInBytes
-            + EstimateBooleanSizeLowerBound(email.InlineCss);
-    }
+        ArgumentNullException.ThrowIfNull(bulkEmail);
 
-    internal static long EstimateBulkEmailSizeLowerBound(BulkEmail bulkEmail)
-    {
-        long total = EstimateMailboxAddressSizeLowerBound(bulkEmail.From)
-            + EstimateMailboxAddressesSizeLowerBound(bulkEmail.ReplyTo)
-            + EstimateStringSizeLowerBound(bulkEmail.Subject)
-            + EstimateBodySizeLowerBound(bulkEmail.TextBody)
-            + EstimateBodySizeLowerBound(bulkEmail.HtmlBody)
-            + EstimateStringSizeLowerBound(bulkEmail.Tag)
-            + EstimateKeyValuePairsSizeLowerBound(bulkEmail.Headers)
-            + EstimateKeyValuePairsSizeLowerBound(bulkEmail.Metadata)
-            + EstimateBooleanSizeLowerBound(bulkEmail.OpenTracking)
-            + EstimateLinkTrackingSizeLowerBound(bulkEmail.LinkTracking)
-            + EstimateStringSizeLowerBound(bulkEmail.MessageStream)
-            + EstimateAttachmentsSizeLowerBound(bulkEmail.Attachments)
-            + EstimateIntegerSizeLowerBound(bulkEmail.TemplateId)
-            + EstimateStringSizeLowerBound(bulkEmail.TemplateAlias)
-            + EstimateBooleanSizeLowerBound(bulkEmail.InlineCss);
+        long total = EstimateMessageContentSizeLowerBound(bulkEmail.TextBody, bulkEmail.HtmlBody, templateModelSizeInBytes: 0, bulkEmail.Attachments);
 
         foreach (var message in bulkEmail.Messages)
-        {
-            total += EstimateMailboxAddressesSizeLowerBound(message.To);
-            total += EstimateMailboxAddressesSizeLowerBound(message.Cc);
-            total += EstimateMailboxAddressesSizeLowerBound(message.Bcc);
             total += message.TemplateModelSizeInBytes;
-            total += EstimateKeyValuePairsSizeLowerBound(message.Metadata);
-            total += EstimateKeyValuePairsSizeLowerBound(message.Headers);
-        }
 
         return total;
     }
@@ -102,66 +99,4 @@ internal static class PostmarkSizeEstimator
         return value is null ? 0 : Encoding.UTF8.GetByteCount(value);
     }
 
-    private static long EstimateMailboxAddressSizeLowerBound(MailboxAddress? mailboxAddress)
-    {
-        return mailboxAddress is null ? 0 : EstimateStringSizeLowerBound(mailboxAddress.ToString(true));
-    }
-
-    private static long EstimateMailboxAddressesSizeLowerBound(IReadOnlyCollection<MailboxAddress>? mailboxAddresses)
-    {
-        if (mailboxAddresses is null || mailboxAddresses.Count == 0)
-            return 0;
-
-        long total = mailboxAddresses.Count - 1;
-        foreach (var mailboxAddress in mailboxAddresses)
-            total += EstimateMailboxAddressSizeLowerBound(mailboxAddress);
-
-        return total;
-    }
-
-    private static long EstimateKeyValuePairsSizeLowerBound(IReadOnlyDictionary<string, string>? values)
-    {
-        if (values is null || values.Count == 0)
-            return 0;
-
-        long total = 0;
-        foreach (var (key, value) in values)
-        {
-            total += EstimateStringSizeLowerBound(key);
-            total += EstimateStringSizeLowerBound(value);
-        }
-
-        return total;
-    }
-
-    private static long EstimateBooleanSizeLowerBound(bool? value)
-    {
-        return value switch
-        {
-            true => 4,
-            false => 5,
-            null => 0,
-        };
-    }
-
-    private static long EstimateIntegerSizeLowerBound(int? value)
-    {
-        if (!value.HasValue)
-            return 0;
-
-        return value.Value.ToString(CultureInfo.InvariantCulture).Length;
-    }
-
-    private static long EstimateLinkTrackingSizeLowerBound(LinkTracking? linkTracking)
-    {
-        return linkTracking switch
-        {
-            null => 0,
-            LinkTracking.None => nameof(LinkTracking.None).Length,
-            LinkTracking.HtmlAndText => nameof(LinkTracking.HtmlAndText).Length,
-            LinkTracking.HtmlOnly => nameof(LinkTracking.HtmlOnly).Length,
-            LinkTracking.TextOnly => nameof(LinkTracking.TextOnly).Length,
-            _ => 0,
-        };
-    }
 }

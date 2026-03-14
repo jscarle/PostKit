@@ -209,7 +209,7 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
-    public void Build_WithLargePerMessageHeadersPushingPastEstimatedBulkLimit_Throws()
+    public void Build_WithLargePerMessageHeadersButContentWithinLimit_Succeeds()
     {
         var textBody = new string('a', 4 * 1024 * 1024);
         var largeHeaderValue = new string('h', 1024 * 1024);
@@ -226,9 +226,9 @@ public class BulkEmailBuilderTests
                 .Build());
         }
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var bulkEmail = builder.Build();
 
-        Assert.Equal("Estimated bulk request size exceeds Postmark's 50 MB limit.", exception.Message);
+        Assert.Equal(47, bulkEmail.Messages.Count);
     }
 
     [Fact]
@@ -266,6 +266,41 @@ public class BulkEmailBuilderTests
         var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
 
         Assert.Equal("Estimated bulk request size exceeds Postmark's 50 MB limit.", exception.Message);
+    }
+
+    [Fact]
+    public void Build_WithLargeBodyAndAttachmentCombination_Throws()
+    {
+        var textBody = new string('a', (int)PostmarkSizeEstimator.BodySizeLimitInBytes);
+        var attachment = Attachment.Create("large.dat", "application/octet-stream", new byte[6 * 1024 * 1024]);
+
+        var builder = BulkEmail.Compose()
+            .From("sender@postkit.com")
+            .Subject("Oversized bulk message")
+            .AddAttachment(attachment)
+            .TextBody(textBody)
+            .AddMessage(BulkEmailMessage.Compose()
+                .To("recipient@postkit.com")
+                .Build());
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
+    }
+
+    [Fact]
+    public void Build_WithPerMessageTemplateModelPushingPastMessageLimit_Throws()
+    {
+        var builder = BulkEmail.FromTemplate(42)
+            .From("sender@postkit.com")
+            .AddMessage(BulkEmailMessage.FromTemplate()
+                .To("recipient@postkit.com")
+                .WithModel(new { Data = new string('x', 11 * 1024 * 1024) })
+                .Build());
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
     }
 
     private sealed class CyclicTemplateModel

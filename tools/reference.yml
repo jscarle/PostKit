@@ -2,10 +2,11 @@
 openapi: "3.0.3"
 info:
   title: "Postmark API"
-  version: "2026-03-11-bounces-live-validated"
+  version: "2026-03-14-bulk-and-bounces-live-validated"
   description: "Merged from the live Postmark API Explorer Swagger plus developer
     docs and llms.txt patches, with Bounces API payloads validated against a live
-    server on 2026-03-11."
+    server on 2026-03-11 and Bulk API submit, status, and validation-error
+    payloads validated against a live server on 2026-03-14."
 servers:
   - url: "https://api.postmarkapp.com"
     description: "Postmark API"
@@ -3143,6 +3144,8 @@ components:
             $ref: "#/components/schemas/BulkEmailRecipient"
     SendBulkEmailResponse:
       type: "object"
+      description: "Live-validated on 2026-03-14 for both POST /email/bulk and GET
+        /email/bulk/{bulkRequestId}."
       required:
         - "Id"
         - "Status"
