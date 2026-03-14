@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using MimeKit;
 
 namespace PostKit.BulkEmails;
@@ -108,6 +109,12 @@ public interface IBulkEmailMessageBuilder
     /// <param name="templateModel">The template model data.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
     IBulkEmailMessageBuilder WithTemplateModel(object templateModel);
+
+    /// <summary>Sets the recipient-specific template model using explicit serializer options for this call.</summary>
+    /// <param name="templateModel">The template model data.</param>
+    /// <param name="serializerOptions">The serializer options to use for this template model.</param>
+    /// <returns>The builder instance for fluent chaining.</returns>
+    IBulkEmailMessageBuilder WithTemplateModel(object templateModel, JsonSerializerOptions serializerOptions);
 
     /// <summary>Adds recipient-specific metadata.</summary>
     /// <param name="name">The metadata key.</param>
