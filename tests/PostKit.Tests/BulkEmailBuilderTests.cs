@@ -117,6 +117,15 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
+    public void UsingMessageStream_WithReservedAllId_Throws()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
+            .UseMessageStream("all"));
+
+        Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
+    }
+
+    [Fact]
     public void WithTag_WithNullTag_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => BulkEmail.Compose()

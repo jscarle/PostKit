@@ -67,20 +67,21 @@ public sealed class Attachment
         if (trimmedContentId.Length == 0)
             throw new ArgumentException("Content ID cannot be empty or whitespace.", nameof(contentId));
 
-        if (trimmedContentId.StartsWith("cid:", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Content ID should not include the 'cid:' prefix.", nameof(contentId));
+        var contentIdValue = trimmedContentId.StartsWith("cid:", StringComparison.OrdinalIgnoreCase)
+            ? trimmedContentId["cid:".Length..]
+            : trimmedContentId;
 
-        if (trimmedContentId.Contains('<', StringComparison.Ordinal) || trimmedContentId.Contains('>', StringComparison.Ordinal))
+        if (contentIdValue.Length == 0)
+            throw new ArgumentException("Content ID cannot be empty or whitespace.", nameof(contentId));
+
+        if (contentIdValue.Contains('<', StringComparison.Ordinal) || contentIdValue.Contains('>', StringComparison.Ordinal))
             throw new ArgumentException("Content ID should not contain angle brackets.", nameof(contentId));
 
-        if (!trimmedContentId.Contains('@', StringComparison.Ordinal))
-            throw new ArgumentException("Content ID must contain an '@' character.", nameof(contentId));
+        foreach (var ch in contentIdValue)
+            if (ch is < (char)0x21 or > (char)0x7E)
+                throw new ArgumentException("Content ID must contain only visible ASCII characters and no spaces.", nameof(contentId));
 
-        var candidate = $"cid:{trimmedContentId}";
-        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var uri) || !uri.IsAbsoluteUri)
-            throw new ArgumentException("Content ID is not a valid CID URI.", nameof(contentId));
-
-        normalizedContentId = candidate;
+        normalizedContentId = $"cid:{contentIdValue}";
 
         return new Attachment(name, parsedContentType.MimeType, encodedContent, normalizedContentId);
     }

@@ -35,6 +35,9 @@ internal static class ValidationExtensions
         if (streamId.StartsWith("pm-", StringComparison.OrdinalIgnoreCase))
             return false;
 
+        if (streamId.Equals("all".AsSpan(), StringComparison.OrdinalIgnoreCase))
+            return false;
+
         var previousWasDash = false;
         foreach (var ch in streamId)
         {
