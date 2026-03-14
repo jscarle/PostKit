@@ -37,7 +37,7 @@ public class PostKitClientBatchSizeLimitTests
     }
 
     [Fact]
-    public async Task SendEmailBatchAsync_WithLargeHeadersButPayloadWithinLimit_Succeeds()
+    public async Task SendEmailBatchAsync_WithLargeHeadersPushingPastBatchLimit_ReturnsFailure()
     {
         var textBody = new string('a', 4 * 1024 * 1024);
         var largeHeaderValue = new string('h', 1024 * 1024);
@@ -51,22 +51,15 @@ public class PostKitClientBatchSizeLimitTests
                 .Build())
             .ToList();
 
-        var postmark = new RecordingPostmarkClient(new List<PostKit.Postmark.Email.EmailResponse>(Enumerable.Range(0, emails.Count)
-            .Select(index => new PostKit.Postmark.Email.EmailResponse
-            {
-                ErrorCode = 0,
-                Message = "OK",
-                MessageId = Guid.NewGuid().ToString(),
-                SubmittedAt = DateTimeOffset.UtcNow,
-                To = $"recipient{index}@postkit.com",
-            })));
+        var postmark = new RecordingPostmarkClient();
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
         var result = await client.SendEmailBatchAsync(emails, CancellationToken.None);
 
-        Assert.True(result.IsSuccess(), result.ToString());
-        Assert.Equal(1, postmark.CallCount);
+        Assert.False(result.IsSuccess());
+        Assert.Equal(0, postmark.CallCount);
+        Assert.Contains("Estimated batch payload size exceeds", result.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

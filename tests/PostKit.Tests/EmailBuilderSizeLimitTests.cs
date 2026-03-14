@@ -83,23 +83,41 @@ public class EmailBuilderSizeLimitTests
     }
 
     [Fact]
-    public void Build_WithLargeHeadersButBodiesAndAttachmentsWithinLimit_Succeeds()
+    public void Build_WithBase64AttachmentAddedBeforeBodyStillExceedingLimit_ThrowsInvalidOperationException()
+    {
+        var textBody = new string('a', 4_500_000);
+        var attachment = Attachment.Create("large.dat", "application/octet-stream", new byte[5 * 1024 * 1024]);
+
+        var builder = Email.Compose()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .Subject("Oversized by encoded attachment")
+            .AddAttachment(attachment)
+            .TextBody(textBody);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
+    }
+
+    [Fact]
+    public void Build_WithLargeHeadersPushingPastMessageLimit_ThrowsInvalidOperationException()
     {
         var textBody = new string('a', 4 * 1024 * 1024);
         var htmlBody = new string('b', 4 * 1024 * 1024);
         var largeHeaderValue = new string('h', 3 * 1024 * 1024);
 
-        var email = Email.Compose()
+        var builder = Email.Compose()
             .From("sender@postkit.com")
             .To("recipient@postkit.com")
             .Subject("Oversized by headers")
             .TextBody(textBody)
             .HtmlBody(htmlBody)
-            .AddHeader("X-Large-Header", largeHeaderValue)
-            .Build();
+            .AddHeader("X-Large-Header", largeHeaderValue);
 
-        Assert.NotNull(email.Headers);
-        Assert.Equal(largeHeaderValue, email.Headers["X-Large-Header"]);
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
     }
 
     [Fact]

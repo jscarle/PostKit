@@ -213,10 +213,12 @@ internal sealed partial class PostKitClient
 
         for (var attempt = 0; attempt < BounceActivationConfirmationAttempts; attempt++)
         {
-            Result<BounceModel> response;
+            Result<BounceModel> response = default;
+            var hasResponse = false;
             try
             {
                 response = await postmark.GetAsync<BounceModel>($"/bounces/{id}", cancellationToken);
+                hasResponse = true;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -226,28 +228,33 @@ internal sealed partial class PostKitClient
             catch (Exception ex)
             {
                 lastException = ex;
-                break;
+                lastError = null;
             }
 
-            if (response.IsFailure(out var error, out var bounceModel))
+            if (hasResponse)
             {
-                lastError = error;
-            }
-            else
-            {
-                var mappedBounce = CreateBounce(bounceModel);
-                if (mappedBounce.IsFailure(out var mappingError, out var confirmedBounce))
+                if (response.IsFailure(out var error, out var bounceModel))
                 {
-                    lastError = mappingError;
+                    lastError = error;
+                    lastException = null;
                 }
                 else
                 {
-                    currentBounce = confirmedBounce;
-                    lastError = null;
-                    lastException = null;
+                    var mappedBounce = CreateBounce(bounceModel);
+                    if (mappedBounce.IsFailure(out var mappingError, out var confirmedBounce))
+                    {
+                        lastError = mappingError;
+                        lastException = null;
+                    }
+                    else
+                    {
+                        currentBounce = confirmedBounce;
+                        lastError = null;
+                        lastException = null;
 
-                    if (!confirmedBounce.Inactive)
-                        return confirmedBounce;
+                        if (!confirmedBounce.Inactive)
+                            return confirmedBounce;
+                    }
                 }
             }
 

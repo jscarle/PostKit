@@ -591,7 +591,7 @@ internal sealed partial class DraftBulkEmail
     {
         ArgumentOutOfRangeException.ThrowIfNegative(additionalBytes);
 
-        var projectedTotal = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, templateModelSizeInBytes: 0, _attachments)
+        var projectedTotal = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, templateModelSizeInBytes: 0, _attachments, _headers)
             + additionalBytes;
         if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
             throw new InvalidOperationException("Estimated message content exceeds Postmark's 10 MB limit.");
@@ -599,13 +599,15 @@ internal sealed partial class DraftBulkEmail
 
     private void EnsureMessageContentWithinLimit()
     {
-        var sharedContentSize = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, templateModelSizeInBytes: 0, _attachments);
+        var sharedContentSize = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, templateModelSizeInBytes: 0, _attachments, _headers);
         if (sharedContentSize > PostmarkSizeEstimator.MessageSizeLimitInBytes)
             throw new InvalidOperationException("Estimated message content exceeds Postmark's 10 MB limit.");
 
         foreach (var message in _messages)
         {
-            var projectedTotal = sharedContentSize + message.TemplateModelSizeInBytes;
+            var projectedTotal = sharedContentSize
+                                 + message.TemplateModelSizeInBytes
+                                 + PostmarkSizeEstimator.EstimateHeaderSizeLowerBound(message.Headers);
             if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
                 throw new InvalidOperationException("Estimated message content exceeds Postmark's 10 MB limit.");
         }

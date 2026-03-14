@@ -209,7 +209,7 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
-    public void Build_WithLargePerMessageHeadersButContentWithinLimit_Succeeds()
+    public void Build_WithLargePerMessageHeadersPushingPastEstimatedBulkLimit_Throws()
     {
         var textBody = new string('a', 4 * 1024 * 1024);
         var largeHeaderValue = new string('h', 1024 * 1024);
@@ -226,9 +226,9 @@ public class BulkEmailBuilderTests
                 .Build());
         }
 
-        var bulkEmail = builder.Build();
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
 
-        Assert.Equal(47, bulkEmail.Messages.Count);
+        Assert.Equal("Estimated bulk request size exceeds Postmark's 50 MB limit.", exception.Message);
     }
 
     [Fact]
@@ -273,6 +273,26 @@ public class BulkEmailBuilderTests
     {
         var textBody = new string('a', (int)PostmarkSizeEstimator.BodySizeLimitInBytes);
         var attachment = Attachment.Create("large.dat", "application/octet-stream", new byte[6 * 1024 * 1024]);
+
+        var builder = BulkEmail.Compose()
+            .From("sender@postkit.com")
+            .Subject("Oversized bulk message")
+            .AddAttachment(attachment)
+            .TextBody(textBody)
+            .AddMessage(BulkEmailMessage.Compose()
+                .To("recipient@postkit.com")
+                .Build());
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
+    }
+
+    [Fact]
+    public void Build_WithBase64AttachmentAddedBeforeBodyStillExceedingLimit_Throws()
+    {
+        var textBody = new string('a', 4_500_000);
+        var attachment = Attachment.Create("large.dat", "application/octet-stream", new byte[5 * 1024 * 1024]);
 
         var builder = BulkEmail.Compose()
             .From("sender@postkit.com")

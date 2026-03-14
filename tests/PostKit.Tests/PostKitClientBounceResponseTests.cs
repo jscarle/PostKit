@@ -481,6 +481,24 @@ public class PostKitClientBounceResponseTests
     }
 
     [Fact]
+    public async Task ActivateBounceAsync_WhenConfirmationPollingHitsTransientException_RetriesAndReturnsConfirmedBounce()
+    {
+        var postmark = new TransientConfirmationFailurePostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.ActivateBounceAsync(1599950051, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal("OK", response.Message);
+        Assert.False(response.Bounce.Inactive);
+        Assert.Equal(
+            ["/bounces/1599950051/activate", "/bounces/1599950051", "/bounces/1599950051"],
+            postmark.CalledEndpoints
+        );
+    }
+
+    [Fact]
     public async Task GetBouncesAsync_WithInvalidCount_Fails()
     {
         var postmark = new RecordingPostmarkClient();
@@ -543,6 +561,81 @@ public class PostKitClientBounceResponseTests
 
             var value = JsonSerializer.Deserialize<TResponse>(responseJson);
             return value ?? throw new InvalidOperationException("Response JSON could not be deserialized.");
+        }
+    }
+
+    private sealed class TransientConfirmationFailurePostmarkClient : IPostmarkClient
+    {
+        private int _getAttempts;
+
+        public List<string> CalledEndpoints { get; } = [];
+
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("PostAsync should not be called in this test.");
+        }
+
+        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        {
+            CalledEndpoints.Add(endpoint);
+
+            _getAttempts++;
+            if (_getAttempts == 1)
+                throw new InvalidOperationException("Transient confirmation failure.");
+
+            var bounce = new PostKit.Postmark.Bounces.BounceResponse
+            {
+                Id = 1599950051,
+                Type = "HardBounce",
+                Name = "Hard bounce",
+                Tag = "",
+                MessageId = "69ce4784-c202-41c6-a1a9-91757022b25e",
+                ServerId = 18451835,
+                MessageStream = "outbound",
+                Description = "The server was unable to deliver your message.",
+                Details = "smtp;550 mailbox unavailable",
+                Email = "HardBounce@bounce-testing.postmarkapp.com",
+                From = "from@publi-7.com",
+                BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z"),
+                DumpAvailable = true,
+                Inactive = false,
+                CanActivate = true,
+                Subject = "PostKit Bounces API probe",
+                Content = "X-PM-Message-Id: 69ce4784-c202-41c6-a1a9-91757022b25e",
+            };
+
+            return Task.FromResult(Result.Success((TResponse)(object)bounce));
+        }
+
+        public Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        {
+            CalledEndpoints.Add(endpoint);
+
+            var activation = new PostKit.Postmark.Bounces.ActivateBounceResponse
+            {
+                Message = "OK",
+                Bounce = new PostKit.Postmark.Bounces.BounceResponse
+                {
+                    Id = 1599950051,
+                    Type = "HardBounce",
+                    Name = "Hard bounce",
+                    Tag = "",
+                    MessageId = "69ce4784-c202-41c6-a1a9-91757022b25e",
+                    ServerId = 18451835,
+                    MessageStream = "outbound",
+                    Description = "The server was unable to deliver your message.",
+                    Details = "smtp;550 mailbox unavailable",
+                    Email = "HardBounce@bounce-testing.postmarkapp.com",
+                    From = "from@publi-7.com",
+                    BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z"),
+                    DumpAvailable = true,
+                    Inactive = true,
+                    CanActivate = true,
+                    Subject = "PostKit Bounces API probe",
+                },
+            };
+
+            return Task.FromResult(Result.Success((TResponse)(object)activation));
         }
     }
 
