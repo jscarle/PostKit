@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using MimeKit;
 using PostKit.Common;
 
@@ -260,4 +261,10 @@ public interface IEmailBuilder
     /// <param name="templateModel">The template model data.</param>
     /// <returns>The builder instance for fluent chaining.</returns>
     IEmailBuilder WithTemplateModel(object templateModel);
+
+    /// <summary>Sets the model that will be merged into the selected template using explicit serializer options for this call.</summary>
+    /// <param name="templateModel">The template model data.</param>
+    /// <param name="serializerOptions">The serializer options to use for this template model.</param>
+    /// <returns>The builder instance for fluent chaining.</returns>
+    IEmailBuilder WithTemplateModel(object templateModel, JsonSerializerOptions serializerOptions);
 }
