@@ -30,11 +30,11 @@ internal sealed partial class PostKitClient
         if (validationError is not null)
             return Result.Failure<BouncePage>(validationError);
 
-        var endpoint = BuildBounceSearchEndpoint(query);
-
+        string endpoint;
         Result<GetBouncesModel> response;
         try
         {
+            endpoint = BuildBounceSearchEndpoint(query);
             response = await postmark.GetAsync<GetBouncesModel>(endpoint, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -327,6 +327,12 @@ internal sealed partial class PostKitClient
         if (query.FromDate.HasValue && query.ToDate.HasValue && query.FromDate.Value > query.ToDate.Value)
             return "The bounce query from-date must not be later than the to-date.";
 
+        if (query.FromDate.HasValue && IsInvalidLocalBounceQueryDate(query.FromDate.Value))
+            return "The bounce query from-date is an invalid local time.";
+
+        if (query.ToDate.HasValue && IsInvalidLocalBounceQueryDate(query.ToDate.Value))
+            return "The bounce query to-date is an invalid local time.";
+
         return null;
     }
 
@@ -367,8 +373,7 @@ internal sealed partial class PostKitClient
 
     private static string FormatBounceQueryDate(DateTime value)
     {
-        if (value.TimeOfDay == TimeSpan.Zero)
-            return value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var useDateOnlyFormat = value.TimeOfDay == TimeSpan.Zero;
 
         var normalizedValue = value.Kind switch
         {
@@ -377,7 +382,15 @@ internal sealed partial class PostKitClient
             _ => value,
         };
 
-        return normalizedValue.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
+        return normalizedValue.ToString(
+            useDateOnlyFormat ? "yyyy-MM-dd" : "yyyy-MM-ddTHH:mm:ss",
+            CultureInfo.InvariantCulture
+        );
+    }
+
+    private static bool IsInvalidLocalBounceQueryDate(DateTime value)
+    {
+        return value.Kind == DateTimeKind.Local && TimeZoneInfo.Local.IsInvalidTime(value);
     }
 
     private static TimeZoneInfo ResolveEasternTimeZone()

@@ -3,6 +3,7 @@ using System.Text.Json;
 using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.BulkEmails;
+using PostKit.Errors;
 using PostKit.Postmark.Bulk;
 using PostKit.Postmark.Common;
 using SendBulkEmailModel = PostKit.Postmark.Bulk.SendBulkEmailResponse;
@@ -59,6 +60,12 @@ internal sealed partial class PostKitClient
             const string message = "The Postmark Bulk API rejected the bulk email request.";
             LogBulkRejectedStatus();
             return Result.Failure<BulkEmails.BulkEmailJob>(message);
+        }
+
+        if (TryGetUnprocessableContent(sendBulkEmailResponse, out var unprocessableContent))
+        {
+            LogBulkUnprocessableContent(sendBulkEmailResponse.Id);
+            return Result.Failure<BulkEmails.BulkEmailJob>(new BulkEmailValidationError(sendBulkEmailResponse, unprocessableContent));
         }
 
         LogBulkEmailSubmitted(sendBulkEmailResponse.Id, sendBulkEmailResponse.Status, sendBulkEmailResponse.TotalMessages);
@@ -183,6 +190,30 @@ internal sealed partial class PostKitClient
         );
     }
 
+    private static bool TryGetUnprocessableContent(BulkEmails.BulkEmailJob response, out JsonElement unprocessableContent)
+    {
+        if (response.AdditionalProperties is not null)
+        {
+            if (response.AdditionalProperties.TryGetValue("UnprocessableContent", out unprocessableContent))
+            {
+                unprocessableContent = unprocessableContent.Clone();
+                return true;
+            }
+
+            foreach (var entry in response.AdditionalProperties)
+            {
+                if (!string.Equals(entry.Key, "UnprocessableContent", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                unprocessableContent = entry.Value.Clone();
+                return true;
+            }
+        }
+
+        unprocessableContent = default;
+        return false;
+    }
+
     [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to submit the bulk email request.")]
     private partial void LogBulkException(Exception ex);
 
@@ -197,6 +228,9 @@ internal sealed partial class PostKitClient
 
     [LoggerMessage(LogLevel.Warning, "The Postmark Bulk API returned a failed submission status.")]
     private partial void LogBulkRejectedStatus();
+
+    [LoggerMessage(LogLevel.Warning, "The Postmark Bulk API accepted the request {BulkRequestId} but reported unprocessable messages.")]
+    private partial void LogBulkUnprocessableContent(Guid bulkRequestId);
 
     [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to retrieve the bulk email request status.")]
     private partial void LogBulkStatusException(Exception ex);

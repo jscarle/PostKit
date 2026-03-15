@@ -106,6 +106,52 @@ public class PostKitClientBounceResponseTests
     }
 
     [Fact]
+    public async Task GetBouncesAsync_WithUtcDateOnlyFilters_ConvertsCalendarDateToEasternTime()
+    {
+        const string responseJson = """
+                                    {
+                                      "TotalCount": 0,
+                                      "Bounces": []
+                                    }
+                                    """;
+
+        const string endpoint = "/bounces?count=10&offset=0&todate=2026-01-14&fromdate=2026-01-14";
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+        var query = new BounceQuery
+        {
+            Count = 10,
+            FromDate = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc),
+            ToDate = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc),
+        };
+
+        var result = await client.GetBouncesAsync(query, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal(endpoint, postmark.LastEndpoint);
+        Assert.Empty(response.Bounces);
+    }
+
+    [Fact]
+    public async Task GetBouncesAsync_WithInvalidLocalDstTime_ReturnsFailureWithoutCallingApi()
+    {
+        var invalidLocalTime = DateTime.SpecifyKind(new DateTime(2026, 3, 8, 2, 30, 0), DateTimeKind.Local);
+        if (!TimeZoneInfo.Local.IsInvalidTime(invalidLocalTime))
+            Assert.Skip($"Local time zone '{TimeZoneInfo.Local.Id}' does not treat 2026-03-08 02:30:00 as invalid.");
+
+        var postmark = new RecordingPostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 10, FromDate = invalidLocalTime }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out BouncePage? _), result.ToString());
+        Assert.Equal("The bounce query from-date is an invalid local time.", error.Message);
+        Assert.Null(postmark.LastEndpoint);
+    }
+
+    [Fact]
     public async Task GetBounceAsync_UsesBounceEndpointAndMapsResponse()
     {
         const string responseJson = """
