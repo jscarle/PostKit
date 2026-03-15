@@ -45,7 +45,8 @@ public sealed class Attachment
         if (ContainsInvalidNameCharacter(name))
             throw new ArgumentException("Attachment name contains invalid characters.", nameof(name));
 
-        ValidateFileType(name);
+        var trimmedName = name.TrimEnd();
+        ValidateFileType(trimmedName);
 
         if (string.IsNullOrWhiteSpace(contentType))
             throw new ArgumentException("Content type must be specified.", nameof(contentType));
@@ -58,12 +59,10 @@ public sealed class Attachment
 
         var encodedContent = Convert.ToBase64String(content);
 
-        string? normalizedContentId = null;
         if (contentId is null)
-            return new Attachment(name, parsedContentType.MimeType, encodedContent, normalizedContentId);
+            return new Attachment(name, parsedContentType.MimeType, encodedContent, contentId);
 
         var trimmedContentId = contentId.Trim();
-
         if (trimmedContentId.Length == 0)
             throw new ArgumentException("Content ID cannot be empty or whitespace.", nameof(contentId));
 
@@ -81,7 +80,7 @@ public sealed class Attachment
             if (ch is < (char)0x21 or > (char)0x7E)
                 throw new ArgumentException("Content ID must contain only visible ASCII characters and no spaces.", nameof(contentId));
 
-        normalizedContentId = $"cid:{contentIdValue}";
+        var normalizedContentId = $"cid:{contentIdValue}";
 
         return new Attachment(name, parsedContentType.MimeType, encodedContent, normalizedContentId);
     }
@@ -97,12 +96,11 @@ public sealed class Attachment
 
     private static void ValidateFileType(string name)
     {
-        var trimmedName = name.TrimEnd();
-        var lastDotIndex = trimmedName.LastIndexOf('.');
-        if (lastDotIndex < 0 || lastDotIndex == trimmedName.Length - 1)
+        var lastDotIndex = name.LastIndexOf('.');
+        if (lastDotIndex < 0 || lastDotIndex == name.Length - 1)
             return;
 
-        var fileType = trimmedName[(lastDotIndex + 1)..];
+        var fileType = name[(lastDotIndex + 1)..];
         if (ForbiddenFileTypes.Contains(fileType))
             throw new ArgumentException("Attachment file type is not accepted by Postmark.", nameof(name));
     }
