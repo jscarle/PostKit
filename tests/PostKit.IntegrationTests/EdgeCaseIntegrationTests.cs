@@ -220,7 +220,7 @@ public class EdgeCaseIntegrationTests
             .To(TestConfiguration.TestToEmail)
             .Subject("Empty Metadata Test")
             .TextBody("Testing empty metadata values.")
-            .AddMetadata("metadata_key", "metadata_value")
+            .AddMetadata("metadata_key", string.Empty)
             .Build();
 
         // Act

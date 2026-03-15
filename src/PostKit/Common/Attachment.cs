@@ -42,7 +42,7 @@ public sealed class Attachment
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Attachment name must be specified.", nameof(name));
 
-        if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        if (ContainsInvalidNameCharacter(name))
             throw new ArgumentException("Attachment name contains invalid characters.", nameof(name));
 
         ValidateFileType(name);
@@ -84,6 +84,15 @@ public sealed class Attachment
         normalizedContentId = $"cid:{contentIdValue}";
 
         return new Attachment(name, parsedContentType.MimeType, encodedContent, normalizedContentId);
+    }
+
+    private static bool ContainsInvalidNameCharacter(string name)
+    {
+        foreach (var ch in name)
+            if (char.IsControl(ch) || ch is '/' or '\\')
+                return true;
+
+        return false;
     }
 
     private static void ValidateFileType(string name)

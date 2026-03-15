@@ -65,6 +65,27 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
+    public void Build_WithEmptyMetadataValues_Succeeds()
+    {
+        var bulkEmail = BulkEmail.Compose()
+            .From("sender@postkit.com")
+            .Subject("Hello")
+            .TextBody("Hello world")
+            .AddMetadata("campaign", string.Empty)
+            .AddMessage(BulkEmailMessage.Compose()
+                .To("recipient@postkit.com")
+                .AddMetadata("recipient", string.Empty)
+                .Build())
+            .Build();
+
+        Assert.NotNull(bulkEmail.Metadata);
+        Assert.Equal(string.Empty, bulkEmail.Metadata["campaign"]);
+        var messageMetadata = bulkEmail.Messages[0].Metadata;
+        Assert.NotNull(messageMetadata);
+        Assert.Equal(string.Empty, messageMetadata["recipient"]);
+    }
+
+    [Fact]
     public void Build_WithoutAnyMessageRecipients_Throws()
     {
         var exception = Assert.Throws<InvalidOperationException>(() => BulkEmailMessage.Compose()

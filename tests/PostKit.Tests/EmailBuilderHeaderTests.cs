@@ -31,6 +31,22 @@ public class EmailBuilderHeaderTests
     }
 
     [Fact]
+    public void AttachmentCreate_WithPlatformSpecificPunctuationInName_Succeeds()
+    {
+        var attachment = Attachment.Create("report:2026?.txt", "text/plain", "content"u8.ToArray());
+
+        Assert.Equal("report:2026?.txt", attachment.Name);
+    }
+
+    [Fact]
+    public void AttachmentCreate_WithPathSeparatorInName_ThrowsArgumentException()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Attachment.Create("reports/2026.txt", "text/plain", "content"u8.ToArray()));
+
+        Assert.Equal("Attachment name contains invalid characters. (Parameter 'name')", exception.Message);
+    }
+
+    [Fact]
     public void AttachmentCreate_WithWhitespaceInContentId_ThrowsArgumentException()
     {
         var exception = Assert.Throws<ArgumentException>(() => Attachment.Create("image.png", "image/png", new byte[] { 1 }, "part 1@example.com"));

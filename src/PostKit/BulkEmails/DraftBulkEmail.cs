@@ -584,7 +584,7 @@ internal sealed partial class DraftBulkEmail
 
     private static bool IsValidMetadataValue(ReadOnlySpan<char> value)
     {
-        return value.Length is > 0 and <= 80;
+        return value.Length <= 80;
     }
 
     private void EnsureAttachmentsWithinLimit(long additionalBytes)

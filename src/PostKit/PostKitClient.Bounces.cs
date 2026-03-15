@@ -18,6 +18,7 @@ internal sealed partial class PostKitClient
     private const int MaxBounceSearchWindow = 10_000;
     private const int BounceActivationConfirmationAttempts = 30;
     private static readonly TimeSpan BounceActivationConfirmationDelay = TimeSpan.FromSeconds(2);
+    internal static Func<TimeSpan, CancellationToken, Task> BounceActivationDelayAsync { get; set; } = Task.Delay;
 
     public async Task<Result<BouncePage>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default)
     {
@@ -201,15 +202,20 @@ internal sealed partial class PostKitClient
         }
 
         var confirmedBounce = await ConfirmActivatedBounceAsync(id, bounce, cancellationToken);
+        if (confirmedBounce.IsFailure(out var confirmationError, out var activatedBounce))
+            return Result.Failure<BounceActivation>(confirmationError);
 
-        return Result.Success(new BounceActivation(bounceActivationModel.Message, confirmedBounce));
+        return Result.Success(new BounceActivation(bounceActivationModel.Message, activatedBounce));
     }
 
-    private async Task<Bounce> ConfirmActivatedBounceAsync(long id, Bounce fallbackBounce, CancellationToken cancellationToken)
+    private async Task<Result<Bounce>> ConfirmActivatedBounceAsync(long id, Bounce fallbackBounce, CancellationToken cancellationToken)
     {
         var currentBounce = fallbackBounce;
         IError? lastError = null;
         Exception? lastException = null;
+
+        if (!currentBounce.Inactive)
+            return Result.Success(currentBounce);
 
         for (var attempt = 0; attempt < BounceActivationConfirmationAttempts; attempt++)
         {
@@ -253,7 +259,7 @@ internal sealed partial class PostKitClient
                         lastException = null;
 
                         if (!confirmedBounce.Inactive)
-                            return confirmedBounce;
+                            return Result.Success(confirmedBounce);
                     }
                 }
             }
@@ -262,7 +268,7 @@ internal sealed partial class PostKitClient
             {
                 try
                 {
-                    await Task.Delay(BounceActivationConfirmationDelay, cancellationToken);
+                    await BounceActivationDelayAsync(BounceActivationConfirmationDelay, cancellationToken);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -273,13 +279,24 @@ internal sealed partial class PostKitClient
         }
 
         if (lastError is not null)
+        {
             LogActivateBounceConfirmationFailure(id, lastError.Message, lastError);
-        else if (lastException is not null)
-            LogActivateBounceConfirmationException(id, lastException);
-        else if (currentBounce.Inactive)
-            LogActivateBounceConfirmationTimedOut(id);
+            return Result.Failure<Bounce>(lastError);
+        }
 
-        return currentBounce;
+        if (lastException is not null)
+        {
+            LogActivateBounceConfirmationException(id, lastException);
+            return Result.Failure<Bounce>(lastException);
+        }
+
+        if (currentBounce.Inactive)
+        {
+            LogActivateBounceConfirmationTimedOut(id);
+            return Result.Failure<Bounce>($"Bounce {id} could not be confirmed as active after the activation request.");
+        }
+
+        return Result.Success(currentBounce);
     }
 
     private static string? ValidateBounceQuery(BounceQuery query)

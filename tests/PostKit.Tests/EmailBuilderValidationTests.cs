@@ -302,6 +302,21 @@ public class EmailBuilderValidationTests
     }
 
     [Fact]
+    public void EmailBuilder_WithEmptyMetadataValue_Succeeds()
+    {
+        var email = Email.Compose()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .Subject("Empty Metadata Value")
+            .TextBody("Testing empty metadata values.")
+            .AddMetadata("empty_value", string.Empty)
+            .Build();
+
+        Assert.NotNull(email.Metadata);
+        Assert.Equal(string.Empty, email.Metadata["empty_value"]);
+    }
+
+    [Fact]
     public void EmailBuilder_WithNullTag_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => Email.Compose()
