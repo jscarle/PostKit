@@ -53,7 +53,10 @@ internal sealed partial class PostmarkClient : IPostmarkClient
 
     public async Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
     {
-        using var responseMessage = await _httpClient.PutAsync(endpoint, content: null, cancellationToken);
+        const string emptyJsonObject = "{}";
+        LogApiRequest(endpoint, Encoding.UTF8.GetByteCount(emptyJsonObject));
+        using var contentToSend = new StringContent(emptyJsonObject, Encoding.UTF8, MediaTypeNames.Application.Json);
+        using var responseMessage = await _httpClient.PutAsync(endpoint, contentToSend, cancellationToken);
         return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
     }
 

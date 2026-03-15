@@ -129,6 +129,15 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
+    public void UsingMessageStream_WithLeadingUnderscore_Throws()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
+            .UseMessageStream("_broadcast"));
+
+        Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
+    }
+
+    [Fact]
     public void UsingMessageStream_WithReservedPrefix_Throws()
     {
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
@@ -286,6 +295,48 @@ public class BulkEmailBuilderTests
 
         Assert.NotNull(message.TemplateModel);
         Assert.Equal("Alice", message.TemplateModel["Name"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Build_WithRequestAndMessageMetadataExceedingTenCombinedValues_Throws()
+    {
+        var builder = BulkEmail.Compose()
+            .From("sender@postkit.com")
+            .Subject("Hello")
+            .TextBody("Hello world");
+
+        for (var index = 0; index < 10; index++)
+            builder.AddMetadata($"root{index}", "value");
+
+        builder.AddMessage(BulkEmailMessage.Compose()
+            .To("recipient@postkit.com")
+            .AddMetadata("message-extra", "value")
+            .Build());
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+
+        Assert.Equal("Cannot set more than 10 metadata values per message after combining request-level and message-level metadata.", exception.Message);
+    }
+
+    [Fact]
+    public void Build_WithMessageMetadataOverridingRequestMetadata_Succeeds()
+    {
+        var builder = BulkEmail.Compose()
+            .From("sender@postkit.com")
+            .Subject("Hello")
+            .TextBody("Hello world");
+
+        for (var index = 0; index < 10; index++)
+            builder.AddMetadata($"root{index}", "value");
+
+        var bulkEmail = builder.AddMessage(BulkEmailMessage.Compose()
+                .To("recipient@postkit.com")
+                .AddMetadata("ROOT0", "override")
+                .Build())
+            .Build();
+
+        Assert.Equal(10, bulkEmail.Metadata?.Count);
+        Assert.Equal("override", bulkEmail.Messages[0].Metadata?["ROOT0"]);
     }
 
     [Fact]

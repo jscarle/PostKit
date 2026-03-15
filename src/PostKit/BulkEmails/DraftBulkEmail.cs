@@ -448,6 +448,8 @@ internal sealed partial class DraftBulkEmail
         if (_messages.Count == 0)
             throw new InvalidOperationException("At least one message is required.");
 
+        EnsureMergedMetadataWithinLimit();
+
         if (_subject is null && !_templateId.HasValue && _templateAlias is null)
             throw new InvalidOperationException("Either a subject, or a template ID or alias, is required.");
 
@@ -611,6 +613,33 @@ internal sealed partial class DraftBulkEmail
                                  + PostmarkSizeEstimator.EstimateHeaderSizeLowerBound(message.Headers);
             if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
                 throw new InvalidOperationException("Estimated message content exceeds Postmark's 10 MB limit.");
+        }
+    }
+
+    private void EnsureMergedMetadataWithinLimit()
+    {
+        if (_metadata is null || _metadata.Count == 0)
+            return;
+
+        foreach (var message in _messages)
+        {
+            var mergedMetadataCount = _metadata.Count;
+            if (message.Metadata is not null)
+            {
+                foreach (var entry in message.Metadata)
+                {
+                    if (_metadata.ContainsKey(entry.Key))
+                        continue;
+
+                    mergedMetadataCount++;
+                    if (mergedMetadataCount > 10)
+                    {
+                        throw new InvalidOperationException(
+                            "Cannot set more than 10 metadata values per message after combining request-level and message-level metadata."
+                        );
+                    }
+                }
+            }
         }
     }
 }

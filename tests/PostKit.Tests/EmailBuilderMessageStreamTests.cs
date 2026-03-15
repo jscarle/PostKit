@@ -42,6 +42,15 @@ public class EmailBuilderMessageStreamTests
     }
 
     [Fact]
+    public void UsingMessageStream_WithLeadingUnderscore_ThrowsArgumentException()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .UseMessageStream("_marketing"));
+
+        Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
+    }
+
+    [Fact]
     public void UsingMessageStream_WithReservedPrefix_ThrowsArgumentException()
     {
         var exception = Assert.Throws<ArgumentException>(() => Email.Compose()

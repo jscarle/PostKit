@@ -3,6 +3,7 @@ using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.Bounces;
 using PostKit.Errors;
+using PostKit.Postmark.Common;
 using ActivateBounceModel = PostKit.Postmark.Bounces.ActivateBounceResponse;
 using BounceModel = PostKit.Postmark.Bounces.BounceResponse;
 using GetBounceDumpModel = PostKit.Postmark.Bounces.GetBounceDumpResponse;
@@ -319,6 +320,9 @@ internal sealed partial class PostKitClient
 
         if (query.MessageStream is not null && string.IsNullOrWhiteSpace(query.MessageStream))
             return "The bounce query message stream filter must not be empty.";
+
+        if (query.MessageStream is not null && !query.MessageStream.AsSpan().IsValidMessageStreamId())
+            return "The bounce query message stream filter is invalid.";
 
         if (query.FromDate.HasValue && query.ToDate.HasValue && query.FromDate.Value > query.ToDate.Value)
             return "The bounce query from-date must not be later than the to-date.";

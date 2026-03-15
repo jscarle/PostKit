@@ -577,6 +577,19 @@ public class PostKitClientBounceResponseTests
         Assert.Null(postmark.LastEndpoint);
     }
 
+    [Fact]
+    public async Task GetBouncesAsync_WithInvalidMessageStreamFilter_FailsBeforeCallingApi()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 10, MessageStream = "_invalid" }, CancellationToken.None);
+
+        Assert.True(result.IsFailure());
+        Assert.Null(postmark.LastEndpoint);
+    }
+
     private sealed class RecordingPostmarkClient(
         Dictionary<string, string>? getResponses = null,
         Dictionary<string, string>? putResponses = null

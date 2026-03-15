@@ -26,7 +26,7 @@ internal static class ValidationExtensions
         if (streamId.Length is 0 or > 30)
             return false;
 
-        if (char.IsDigit(streamId[0]))
+        if (streamId[0] is < 'a' or > 'z')
             return false;
 
         if (streamId[0] == '-' || streamId[^1] == '-')
