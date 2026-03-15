@@ -58,4 +58,13 @@ public class EmailBuilderMessageStreamTests
 
         Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
     }
+
+    [Fact]
+    public void UsingMessageStream_WithNullString_ThrowsArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => Email.Compose()
+            .UseMessageStream((string)null!));
+
+        Assert.Equal("messageStreamId", exception.ParamName);
+    }
 }

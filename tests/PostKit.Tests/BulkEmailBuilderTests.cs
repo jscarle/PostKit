@@ -147,6 +147,15 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
+    public void UsingMessageStream_WithNullString_ThrowsArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => BulkEmail.Compose()
+            .UseMessageStream((string)null!));
+
+        Assert.Equal("messageStreamId", exception.ParamName);
+    }
+
+    [Fact]
     public void WithTag_WithNullTag_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => BulkEmail.Compose()

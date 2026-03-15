@@ -78,6 +78,34 @@ public class PostKitClientBounceResponseTests
     }
 
     [Fact]
+    public async Task GetBouncesAsync_WithUtcDates_ConvertsQueryWindowToEasternTime()
+    {
+        const string responseJson = """
+                                    {
+                                      "TotalCount": 0,
+                                      "Bounces": []
+                                    }
+                                    """;
+
+        const string endpoint = "/bounces?count=10&offset=0&todate=2026-01-15T13%3A59%3A59&fromdate=2026-01-15T13%3A00%3A00";
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+        var query = new BounceQuery
+        {
+            Count = 10,
+            FromDate = new DateTime(2026, 1, 15, 18, 0, 0, DateTimeKind.Utc),
+            ToDate = new DateTime(2026, 1, 15, 18, 59, 59, DateTimeKind.Utc),
+        };
+
+        var result = await client.GetBouncesAsync(query, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal(endpoint, postmark.LastEndpoint);
+        Assert.Empty(response.Bounces);
+    }
+
+    [Fact]
     public async Task GetBounceAsync_UsesBounceEndpointAndMapsResponse()
     {
         const string responseJson = """

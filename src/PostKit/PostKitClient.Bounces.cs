@@ -18,6 +18,7 @@ internal sealed partial class PostKitClient
     private const int MaxBounceSearchWindow = 10_000;
     private const int BounceActivationConfirmationAttempts = 30;
     private static readonly TimeSpan BounceActivationConfirmationDelay = TimeSpan.FromSeconds(2);
+    private static readonly TimeZoneInfo EasternTimeZone = ResolveEasternTimeZone();
     internal static Func<TimeSpan, CancellationToken, Task> BounceActivationDelayAsync { get; set; } = Task.Delay;
 
     public async Task<Result<BouncePage>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default)
@@ -362,9 +363,36 @@ internal sealed partial class PostKitClient
 
     private static string FormatBounceQueryDate(DateTime value)
     {
-        return value.TimeOfDay == TimeSpan.Zero
-            ? value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
-            : value.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
+        if (value.TimeOfDay == TimeSpan.Zero)
+            return value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        var normalizedValue = value.Kind switch
+        {
+            DateTimeKind.Utc => TimeZoneInfo.ConvertTimeFromUtc(value, EasternTimeZone),
+            DateTimeKind.Local => TimeZoneInfo.ConvertTime(value, EasternTimeZone),
+            _ => value,
+        };
+
+        return normalizedValue.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
+    }
+
+    private static TimeZoneInfo ResolveEasternTimeZone()
+    {
+        foreach (var timeZoneId in new[] { "Eastern Standard Time", "America/New_York" })
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+            }
+            catch (InvalidTimeZoneException)
+            {
+            }
+        }
+
+        throw new TimeZoneNotFoundException("Could not resolve the US Eastern time zone on this platform.");
     }
 
     private static Result<BouncePage> CreateGetBouncesResponse(GetBouncesModel response)

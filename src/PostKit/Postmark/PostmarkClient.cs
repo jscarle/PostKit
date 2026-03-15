@@ -39,7 +39,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
     public async Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
     {
         var jsonToSend = JsonSerializer.Serialize(body, PostmarkConfiguration.JsonSerializerOptions);
-        LogApiRequest(jsonToSend);
+        LogApiRequest(endpoint, Encoding.UTF8.GetByteCount(jsonToSend));
         using var contentToSend = new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json);
         using var responseMessage = await _httpClient.PostAsync(endpoint, contentToSend, cancellationToken);
         return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
@@ -62,7 +62,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         if (responseMessage.IsSuccessStatusCode)
         {
             var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
-            LogApiResponse(receivedContent);
+            LogApiResponse(endpoint, Encoding.UTF8.GetByteCount(receivedContent));
             var response = JsonSerializer.Deserialize<TResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
             if (response == null)
                 return Result.Failure<TResponse>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
@@ -127,7 +127,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         if (string.IsNullOrWhiteSpace(receivedContent))
             return Result.Success<PostmarkResponse?>(null);
 
-        LogApiResponse(receivedContent);
+        LogApiResponse(endpoint, Encoding.UTF8.GetByteCount(receivedContent));
 
         try
         {
@@ -147,9 +147,9 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         }
     }
 
-    [LoggerMessage(LogLevel.Trace, "Postmark API request: {Content}")]
-    private partial void LogApiRequest(string content);
+    [LoggerMessage(LogLevel.Trace, "Postmark API request to {Endpoint} with {SizeInBytes} UTF-8 bytes.")]
+    private partial void LogApiRequest(string endpoint, int sizeInBytes);
 
-    [LoggerMessage(LogLevel.Trace, "Postmark API response: {Content}")]
-    private partial void LogApiResponse(string content);
+    [LoggerMessage(LogLevel.Trace, "Postmark API response from {Endpoint} with {SizeInBytes} UTF-8 bytes.")]
+    private partial void LogApiResponse(string endpoint, int sizeInBytes);
 }

@@ -324,6 +324,7 @@ internal sealed partial class DraftBulkEmail
     public DraftBulkEmail UseMessageStream(string messageStreamId)
     {
         _messageStream.EnsureNotSet(nameof(BulkEmail.MessageStream));
+        ArgumentNullException.ThrowIfNull(messageStreamId);
 
         if (!messageStreamId.AsSpan().IsValidMessageStreamId())
             throw new ArgumentException("The message stream ID is invalid.", nameof(messageStreamId));

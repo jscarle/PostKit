@@ -460,6 +460,7 @@ internal sealed partial class DraftEmail
     public DraftEmail UseMessageStream(string messageStreamId)
     {
         _messageStream.EnsureNotSet(nameof(Email.MessageStream));
+        ArgumentNullException.ThrowIfNull(messageStreamId);
 
         if (!messageStreamId.AsSpan().IsValidMessageStreamId())
             throw new ArgumentException("The message stream ID is invalid.", nameof(messageStreamId));
