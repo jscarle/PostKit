@@ -106,10 +106,25 @@ public static class PostKitExtensions
 
             services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
 
-            services.Replace(ServiceDescriptor.Singleton<IOptions<PostKitOptions>>(sp => Options.Create(
-                sp.GetRequiredService<IOptionsMonitor<PostKitOptions>>()
-                    .Get(configurationKey)
-            )));
+            services.Replace(ServiceDescriptor.Singleton<IOptionsMonitor<PostKitOptions>>(sp =>
+                new RebasedOptionsMonitor<PostKitOptions>(
+                    sp.GetRequiredService<IOptionsFactory<PostKitOptions>>(),
+                    sp.GetServices<IOptionsChangeTokenSource<PostKitOptions>>(),
+                    sp.GetRequiredService<IOptionsMonitorCache<PostKitOptions>>(),
+                    configurationKey
+                )
+            ));
+
+            services.Replace(ServiceDescriptor.Singleton<IOptions<PostKitOptions>>(sp =>
+                new RebasedOptions<PostKitOptions>(sp.GetRequiredService<IOptionsMonitor<PostKitOptions>>())
+            ));
+
+            services.Replace(ServiceDescriptor.Scoped<IOptionsSnapshot<PostKitOptions>>(sp =>
+                new RebasedOptionsSnapshot<PostKitOptions>(
+                    sp.GetRequiredService<IOptionsFactory<PostKitOptions>>(),
+                    configurationKey
+                )
+            ));
 
             services.Replace(ServiceDescriptor.Transient<IPostmarkClient>(sp => sp.GetRequiredService<IPostmarkClientFactory>()
                 .Create()

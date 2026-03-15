@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using JetBrains.Annotations;
 
@@ -22,4 +23,7 @@ internal sealed class SendBulkEmailResponse
 
     [JsonPropertyName("Subject")]
     public string? Subject { get; [UsedImplicitly] init; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; [UsedImplicitly] init; }
 }

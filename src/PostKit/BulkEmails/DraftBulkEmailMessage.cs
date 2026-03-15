@@ -255,7 +255,7 @@ internal sealed class DraftBulkEmailMessage
             To = _to?.SnapshotReadOnly(),
             Cc = _cc?.SnapshotReadOnly(),
             Bcc = _bcc?.SnapshotReadOnly(),
-            TemplateModel = _templateModel,
+            TemplateModel = _templateModelSnapshot?.DeepClone(),
             TemplateModelNode = _templateModelSnapshot?.DeepClone(),
             TemplateModelSizeInBytes = _templateModelSizeInBytes,
             Metadata = _metadata?.SnapshotReadOnly(),

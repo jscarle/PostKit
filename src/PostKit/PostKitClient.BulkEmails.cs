@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using System.Text.Json;
 using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.BulkEmails;
@@ -133,7 +135,8 @@ internal sealed partial class PostKitClient
             mapped.SubmittedAt,
             response.TotalMessages.Value,
             response.PercentageCompleted.Value,
-            response.Subject
+            response.Subject,
+            CloneAdditionalProperties(response.AdditionalProperties)
         ));
     }
 
@@ -164,6 +167,20 @@ internal sealed partial class PostKitClient
             return Result.Failure<BulkEmailResponseCore>($"Status '{response.Status}' returned from the Postmark Bulk API is not supported.");
 
         return Result.Success(new BulkEmailResponseCore(bulkRequestId, status.Value, response.SubmittedAt.Value));
+    }
+
+    private static ReadOnlyDictionary<string, JsonElement>? CloneAdditionalProperties(Dictionary<string, JsonElement>? additionalProperties)
+    {
+        if (additionalProperties is null || additionalProperties.Count == 0)
+            return null;
+
+        return new ReadOnlyDictionary<string, JsonElement>(
+            additionalProperties.ToDictionary(
+                static entry => entry.Key,
+                static entry => entry.Value.Clone(),
+                StringComparer.Ordinal
+            )
+        );
     }
 
     [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to submit the bulk email request.")]

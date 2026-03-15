@@ -176,6 +176,50 @@ public class PostKitClientBulkResponseTests
         Assert.Equal(100, response.PercentageCompleted);
     }
 
+    [Fact]
+    public async Task SendBulkEmailAsync_PreservesAdditionalResponseProperties()
+    {
+        const string responseJson = """
+                                    {
+                                      "Id": "c42d4a19-b645-4cdd-9859-08d8f24b649a",
+                                      "SubmittedAt": "2026-03-11T00:31:10.9843566Z",
+                                      "TotalMessages": 1,
+                                      "PercentageCompleted": 0,
+                                      "Status": "Accepted",
+                                      "Subject": "Bulk hello",
+                                      "UnprocessableContent": {
+                                        "Messages": [
+                                          {
+                                            "To": "bad@postkit.com",
+                                            "Error": "Invalid recipient"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                    """;
+
+        var bulkEmail = BulkEmail.Compose()
+            .From("sender@postkit.com")
+            .Subject("Bulk hello")
+            .TextBody("Hello world")
+            .AddMessage(BulkEmailMessage.Compose()
+                .To("recipient@postkit.com")
+                .Build())
+            .Build();
+
+        var postmark = new RecordingPostmarkClient(responseJson);
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendBulkEmailAsync(bulkEmail, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        var additionalProperties = Assert.IsAssignableFrom<IReadOnlyDictionary<string, JsonElement>>(response.AdditionalProperties);
+        Assert.True(additionalProperties.TryGetValue("UnprocessableContent", out var unprocessableContent));
+        Assert.Equal("bad@postkit.com", unprocessableContent.GetProperty("Messages")[0].GetProperty("To").GetString());
+        Assert.Equal("Invalid recipient", unprocessableContent.GetProperty("Messages")[0].GetProperty("Error").GetString());
+    }
+
     private sealed class RecordingPostmarkClient(string responseJson) : IPostmarkClient
     {
         public string? LastEndpoint { get; private set; }

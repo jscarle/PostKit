@@ -58,7 +58,7 @@ public sealed class Email
     /// <summary>Gets the Postmark template alias to use when sending the email.</summary>
     public string? TemplateAlias { get; internal init; }
 
-    /// <summary>Gets the model that will be merged into the email template.</summary>
+    /// <summary>Gets a snapshot of the model that will be merged into the email template.</summary>
     public object? TemplateModel { get; internal init; }
 
     internal JsonNode? TemplateModelNode { get; init; }

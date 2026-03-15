@@ -15,7 +15,7 @@ public sealed class BulkEmailMessage
     /// <summary>Gets the blind-carbon-copy recipients for the message.</summary>
     public IReadOnlyCollection<MailboxAddress>? Bcc { get; internal init; }
 
-    /// <summary>Gets the template model for recipient-specific rendering.</summary>
+    /// <summary>Gets a snapshot of the template model for recipient-specific rendering.</summary>
     public object? TemplateModel { get; internal init; }
 
     internal JsonNode? TemplateModelNode { get; init; }

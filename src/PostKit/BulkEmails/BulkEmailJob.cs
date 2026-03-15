@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using System.Text.Json;
 using JetBrains.Annotations;
 
 namespace PostKit.BulkEmails;
@@ -23,7 +25,18 @@ public sealed record BulkEmailJob
     /// <summary>Gets the subject associated with the bulk request.</summary>
     public string Subject { [UsedImplicitly] get; }
 
-    internal BulkEmailJob(Guid id, BulkEmailStatus status, DateTimeOffset submittedAt, int totalMessages, double percentageCompleted, string subject)
+    /// <summary>Gets any additional server-provided fields returned for the bulk request.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? AdditionalProperties { [UsedImplicitly] get; }
+
+    internal BulkEmailJob(
+        Guid id,
+        BulkEmailStatus status,
+        DateTimeOffset submittedAt,
+        int totalMessages,
+        double percentageCompleted,
+        string subject,
+        ReadOnlyDictionary<string, JsonElement>? additionalProperties = null
+    )
     {
         Id = id;
         Status = status;
@@ -31,5 +44,6 @@ public sealed record BulkEmailJob
         TotalMessages = totalMessages;
         PercentageCompleted = percentageCompleted;
         Subject = subject;
+        AdditionalProperties = additionalProperties;
     }
 }

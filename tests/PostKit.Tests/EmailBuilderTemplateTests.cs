@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using LightResults;
 using Microsoft.Extensions.Logging;
@@ -21,10 +22,11 @@ public class EmailBuilderTemplateTests
             .To("recipient@postkit.com")
             .WithModel(templateModel)
             .Build();
+        var builtTemplateModel = Assert.IsType<JsonObject>(email.TemplateModel);
 
         Assert.Equal(42, email.TemplateId);
         Assert.Null(email.TemplateAlias);
-        Assert.Same(templateModel, email.TemplateModel);
+        Assert.Equal("Alice", builtTemplateModel["name"]!.GetValue<string>());
         Assert.True(email.InlineCss);
     }
 
@@ -38,10 +40,11 @@ public class EmailBuilderTemplateTests
             .To("recipient@postkit.com")
             .WithModel(templateModel)
             .Build();
+        var builtTemplateModel = Assert.IsType<JsonObject>(email.TemplateModel);
 
         Assert.Null(email.TemplateId);
         Assert.Equal("welcome-email", email.TemplateAlias);
-        Assert.Same(templateModel, email.TemplateModel);
+        Assert.Equal("Bob", builtTemplateModel["name"]!.GetValue<string>());
         Assert.False(email.InlineCss);
     }
 

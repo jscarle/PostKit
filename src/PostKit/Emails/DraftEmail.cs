@@ -583,7 +583,7 @@ internal sealed partial class DraftEmail
                 .AsReadOnly(),
             TemplateId = _templateId,
             TemplateAlias = _templateAlias,
-            TemplateModel = _templateModel,
+            TemplateModel = _templateModelSnapshot?.DeepClone(),
             TemplateModelNode = _templateModelSnapshot?.DeepClone(),
             TemplateModelSizeInBytes = _templateModelSizeInBytes,
             InlineCss = _inlineCss,

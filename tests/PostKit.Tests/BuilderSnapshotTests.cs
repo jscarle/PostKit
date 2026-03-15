@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using MimeKit;
 using PostKit.BulkEmails;
 using PostKit.Emails;
@@ -160,5 +161,38 @@ public class BuilderSnapshotTests
 
         Assert.Single(builtMetadata);
         Assert.False(builtMetadata.ContainsKey("Region"));
+    }
+
+    [Fact]
+    public void EmailBuild_WithExternalTemplateModelMutatedAfterBuild_UsesSnapshot()
+    {
+        var templateModel = new JsonObject { ["name"] = "Alice" };
+
+        var email = Email.FromTemplate(42)
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .WithModel(templateModel)
+            .Build();
+
+        templateModel["name"] = "Bob";
+
+        var builtTemplateModel = Assert.IsType<JsonObject>(email.TemplateModel);
+        Assert.Equal("Alice", builtTemplateModel["name"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void BulkEmailMessageBuild_WithExternalTemplateModelMutatedAfterBuild_UsesSnapshot()
+    {
+        var templateModel = new JsonObject { ["name"] = "Alice" };
+
+        var message = BulkEmailMessage.FromTemplate()
+            .To("recipient@postkit.com")
+            .WithModel(templateModel)
+            .Build();
+
+        templateModel["name"] = "Bob";
+
+        var builtTemplateModel = Assert.IsType<JsonObject>(message.TemplateModel);
+        Assert.Equal("Alice", builtTemplateModel["name"]!.GetValue<string>());
     }
 }
