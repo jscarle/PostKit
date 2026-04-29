@@ -532,7 +532,13 @@ internal sealed partial class PostKitClient
 
         BounceType? type = null;
         if (!string.IsNullOrWhiteSpace(response.Type))
-            type = TryMapBounceType(response.Type);
+        {
+            var mappedType = TryMapBounceType(response.Type);
+            if (mappedType.IsFailure(out var error, out var bounceType))
+                return Result.Failure<BounceSummary>(error);
+
+            type = bounceType;
+        }
 
         var bounceSummary = new BounceSummary(type, response.Name, response.Count.Value);
         return Result.Success(bounceSummary);
@@ -548,7 +554,9 @@ internal sealed partial class PostKitClient
         if (string.IsNullOrWhiteSpace(response.Type))
             return Result.Failure<BounceCore>("Type was not returned from the Postmark Bounces API.");
 
-        var type = TryMapBounceType(response.Type);
+        var mappedType = TryMapBounceType(response.Type);
+        if (mappedType.IsFailure(out var typeError, out var type))
+            return Result.Failure<BounceCore>(typeError);
 
         if (string.IsNullOrWhiteSpace(response.Name))
             return Result.Failure<BounceCore>("Name was not returned from the Postmark Bounces API.");
@@ -644,9 +652,9 @@ internal sealed partial class PostKitClient
         };
     }
 
-    private static BounceType TryMapBounceType(string type)
+    private static Result<BounceType> TryMapBounceType(string type)
     {
-        return type switch
+        var mappedType = type switch
         {
             "HardBounce" => BounceType.HardBounce,
             "Transient" => BounceType.Transient,
@@ -670,8 +678,13 @@ internal sealed partial class PostKitClient
             "DMARCPolicy" => BounceType.DmarcPolicy,
             "TemplateRenderingFailed" => BounceType.TemplateRenderingFailed,
             "ChallengeVerification" => BounceType.ChallengeVerification,
-            _ => throw new NotImplementedException($"Bounce type string value of '{type}' has not been implemented. Please open an issue in the PostKit repository (https://github.com/jscarle/PostKit/issues)."),
+            _ => (BounceType?)null,
         };
+
+        if (mappedType is null)
+            return Result.Failure<BounceType>($"Bounce type value '{type}' returned from the Postmark Bounces API is not supported.");
+
+        return Result.Success(mappedType.Value);
     }
 
     [LoggerMessage(LogLevel.Error, "An exception occurred while attempting to retrieve bounces.")]

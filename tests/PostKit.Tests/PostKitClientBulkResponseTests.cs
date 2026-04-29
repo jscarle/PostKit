@@ -151,6 +151,39 @@ public class PostKitClientBulkResponseTests
     }
 
     [Fact]
+    public async Task SendBulkEmailAsync_WhenSubmitResponseHasUnknownStatus_ReturnsFailure()
+    {
+        const string responseJson = """
+                                    {
+                                      "Id": "c42d4a19-b645-4cdd-9859-08d8f24b649a",
+                                      "SubmittedAt": "2026-03-11T00:31:10.9843566Z",
+                                      "TotalMessages": 1,
+                                      "PercentageCompleted": 0,
+                                      "Status": "QueuedForReview",
+                                      "Subject": "Bulk hello"
+                                    }
+                                    """;
+
+        var bulkEmail = BulkEmail.Compose()
+            .From("sender@postkit.com")
+            .Subject("Bulk hello")
+            .TextBody("Hello world")
+            .AddMessage(BulkEmailMessage.Compose()
+                .To("recipient@postkit.com")
+                .Build())
+            .Build();
+
+        var postmark = new RecordingPostmarkClient(responseJson);
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.SendBulkEmailAsync(bulkEmail, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out BulkEmailJob? _), result.ToString());
+        Assert.Equal("Status value 'QueuedForReview' returned from the Postmark Bulk API is not supported.", error.Message);
+    }
+
+    [Fact]
     public async Task GetBulkEmailStatusAsync_UsesBulkStatusEndpoint()
     {
         const string responseJson = """

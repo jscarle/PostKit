@@ -275,6 +275,45 @@ public class PostKitClientBounceResponseTests
     }
 
     [Fact]
+    public async Task GetBouncesAsync_WithUnknownBounceType_ReturnsFailure()
+    {
+        const string responseJson = """
+                                    {
+                                      "TotalCount": 1,
+                                      "Bounces": [
+                                        {
+                                          "RecordType": "Bounce",
+                                          "ID": 1599950051,
+                                          "Type": "BrandNewBounce",
+                                          "Name": "Brand new bounce",
+                                          "Tag": "",
+                                          "MessageID": "69ce4784-c202-41c6-a1a9-91757022b25e",
+                                          "ServerID": 18451835,
+                                          "MessageStream": "outbound",
+                                          "Description": "The server was unable to deliver your message.",
+                                          "Details": "smtp;550 mailbox unavailable",
+                                          "Email": "BrandNewBounce@bounce-testing.postmarkapp.com",
+                                          "BouncedAt": "2026-03-11T17:33:38Z",
+                                          "DumpAvailable": true,
+                                          "Inactive": true,
+                                          "CanActivate": true,
+                                          "Subject": "PostKit Bounces API probe"
+                                        }
+                                      ]
+                                    }
+                                    """;
+
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/bounces?count=10&offset=0"] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 10 }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out BouncePage? _), result.ToString());
+        Assert.Equal("Bounce item 0 could not be mapped: Bounce type value 'BrandNewBounce' returned from the Postmark Bounces API is not supported.", error.Message);
+    }
+
+    [Fact]
     public async Task GetBouncesAsync_WithChallengeVerificationFilter_UsesSupportedTypeValue()
     {
         const string responseJson = """
@@ -394,6 +433,32 @@ public class PostKitClientBounceResponseTests
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(BounceType.ChallengeVerification, Assert.Single(response.Bounces).Type);
+    }
+
+    [Fact]
+    public async Task GetDeliveryStatsAsync_WithUnknownBounceType_ReturnsFailure()
+    {
+        const string responseJson = """
+                                    {
+                                      "InactiveMails": 1,
+                                      "Bounces": [
+                                        {
+                                          "Name": "Brand new bounce",
+                                          "Count": 1,
+                                          "Type": "BrandNewBounce"
+                                        }
+                                      ]
+                                    }
+                                    """;
+
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/deliverystats"] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetDeliveryStatsAsync(CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out DeliveryStats? _), result.ToString());
+        Assert.Equal("Delivery stats bounce item 0 could not be mapped: Bounce type value 'BrandNewBounce' returned from the Postmark Bounces API is not supported.", error.Message);
     }
 
     [Fact]

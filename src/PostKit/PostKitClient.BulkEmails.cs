@@ -155,10 +155,13 @@ internal sealed partial class PostKitClient
             "Processing" => BulkEmailStatus.Processing,
             "Completed" => BulkEmailStatus.Completed,
             "Failed" => BulkEmailStatus.Failed,
-            _ => throw new NotImplementedException($"Status string value of '{nameof(BulkEmailStatus)}.{response.Status}' has not been implemented. Please open an issue in the PostKit repository (https://github.com/jscarle/PostKit/issues)."),
+            _ => (BulkEmailStatus?)null,
         };
 
-        var bulkEmailResponseCore = new BulkEmailResponseCore(bulkRequestId, status, response.SubmittedAt.Value);
+        if (status is null)
+            return Result.Failure<BulkEmailResponseCore>($"Status value '{response.Status}' returned from the Postmark Bulk API is not supported.");
+
+        var bulkEmailResponseCore = new BulkEmailResponseCore(bulkRequestId, status.Value, response.SubmittedAt.Value);
 
         return Result.Success(bulkEmailResponseCore);
     }
