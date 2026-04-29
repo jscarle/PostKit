@@ -21,6 +21,7 @@ internal static class BuilderSnapshotExtensions
 
     public static IReadOnlyDictionary<string, string> SnapshotReadOnly(this IEnumerable<KeyValuePair<string, string>> values)
     {
-        return new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(values, StringComparer.OrdinalIgnoreCase));
+        var dict = new Dictionary<string, string>(values, StringComparer.OrdinalIgnoreCase);
+        return new ReadOnlyDictionary<string, string>(dict);
     }
 }

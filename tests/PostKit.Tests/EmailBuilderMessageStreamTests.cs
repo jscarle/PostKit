@@ -72,7 +72,7 @@ public class EmailBuilderMessageStreamTests
     public void UsingMessageStream_WithNullString_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => Email.Compose()
-            .UseMessageStream((string)null!));
+            .UseMessageStream(null!));
 
         Assert.Equal("messageStreamId", exception.ParamName);
     }

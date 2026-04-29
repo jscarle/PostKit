@@ -21,21 +21,22 @@ public class PostKitClientBatchResponseTests
             .TextBody("success")
             .Build();
 
-        var postmark = new RecordingPostmarkClient(new List<EmailResponse>
-        {
-            new()
-            {
-                MessageId = messageId.ToString("D"),
-                SubmittedAt = submittedAt,
-                To = "recipient@postkit.com",
-                ErrorCode = 0,
-                Message = "OK",
-            },
-        });
+        var postmark = new RecordingPostmarkClient([
+                new()
+                {
+                    MessageId = messageId.ToString("D"),
+                    SubmittedAt = submittedAt,
+                    To = "recipient@postkit.com",
+                    ErrorCode = 0,
+                    Message = "OK",
+                },
+
+            ]
+        );
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.SendEmailBatchAsync(new[] { email }, CancellationToken.None);
+        var result = await client.SendEmailBatchAsync([email], CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
         Assert.True(batchResponse.IsSuccessful);
@@ -61,21 +62,22 @@ public class PostKitClientBatchResponseTests
             .AddHeader("X-PM-KeepID", "true")
             .Build();
 
-        var postmark = new RecordingPostmarkClient(new List<EmailResponse>
-        {
-            new()
-            {
-                MessageId = messageId.ToString("D"),
-                SubmittedAt = DateTimeOffset.UtcNow,
-                To = "recipient@postkit.com",
-                ErrorCode = 0,
-                Message = "OK",
-            },
-        });
+        var postmark = new RecordingPostmarkClient([
+                new()
+                {
+                    MessageId = messageId.ToString("D"),
+                    SubmittedAt = DateTimeOffset.UtcNow,
+                    To = "recipient@postkit.com",
+                    ErrorCode = 0,
+                    Message = "OK",
+                },
+
+            ]
+        );
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.SendEmailBatchAsync(new[] { email }, CancellationToken.None);
+        var result = await client.SendEmailBatchAsync([email], CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
         var itemResult = Assert.Single(batchResponse.Results);
@@ -93,18 +95,15 @@ public class PostKitClientBatchResponseTests
             .TextBody("failure")
             .Build();
 
-        var postmark = new RecordingPostmarkClient(new List<EmailResponse>
-        {
-            new()
-            {
-                ErrorCode = 300,
-                Message = "Invalid email request.",
-            },
-        });
+        var postmark = new RecordingPostmarkClient([
+                new() { ErrorCode = 300, Message = "Invalid email request.", },
+
+            ]
+        );
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.SendEmailBatchAsync(new[] { email }, CancellationToken.None);
+        var result = await client.SendEmailBatchAsync([email], CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
         Assert.False(batchResponse.IsSuccessful);
@@ -126,18 +125,15 @@ public class PostKitClientBatchResponseTests
             .TextBody("failure")
             .Build();
 
-        var postmark = new RecordingPostmarkClient(new List<EmailResponse>
-        {
-            new()
-            {
-                ErrorCode = 999999,
-                Message = "Brand new Postmark error.",
-            },
-        });
+        var postmark = new RecordingPostmarkClient([
+                new() { ErrorCode = 999999, Message = "Brand new Postmark error.", },
+
+            ]
+        );
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.SendEmailBatchAsync(new[] { email }, CancellationToken.None);
+        var result = await client.SendEmailBatchAsync([email], CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
         Assert.False(batchResponse.IsSuccessful);

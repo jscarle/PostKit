@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using JetBrains.Annotations;
 using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.Emails;
@@ -289,10 +290,8 @@ public class EmailBuilderTemplateTests
         Assert.Contains("SubmittedAt was not returned", result.ToString(), StringComparison.Ordinal);
     }
 
-    private sealed class RecordingPostmarkClient : IPostmarkClient
+    private sealed class RecordingPostmarkClient(EmailResponse response) : IPostmarkClient
     {
-        private readonly EmailResponse _response;
-
         public RecordingPostmarkClient()
             : this(new EmailResponse
             {
@@ -303,11 +302,6 @@ public class EmailBuilderTemplateTests
                 Message = "",
             })
         {
-        }
-
-        public RecordingPostmarkClient(EmailResponse response)
-        {
-            _response = response;
         }
 
         public string? LastEndpoint { get; private set; }
@@ -322,7 +316,7 @@ public class EmailBuilderTemplateTests
             if (typeof(TResponse) != typeof(EmailResponse))
                 throw new InvalidOperationException("Unexpected response type.");
 
-            return Task.FromResult(Result.Success((TResponse)(object)_response));
+            return Task.FromResult(Result.Success((TResponse)(object)response));
         }
 
         public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
@@ -333,7 +327,7 @@ public class EmailBuilderTemplateTests
 
     private sealed class CyclicTemplateModel
     {
-        public CyclicTemplateModel? Self { get; private set; }
+        public CyclicTemplateModel? Self { [UsedImplicitly] get; private set; }
 
         public static CyclicTemplateModel Create()
         {

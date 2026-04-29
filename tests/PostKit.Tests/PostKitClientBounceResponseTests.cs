@@ -576,25 +576,15 @@ public class PostKitClientBounceResponseTests
     [Fact]
     public async Task ActivateBounceAsync_WhenConfirmationNeverObservesActiveBounce_ReturnsFailure()
     {
-        var previousDelay = PostKitClient.BounceActivationDelayAsync;
-        PostKitClient.BounceActivationDelayAsync = static (_, _) => Task.CompletedTask;
+       var postmark = new NeverConfirmedBouncePostmarkClient();
+       var logger = new TestLogger();
+       var client = new PostKitClient(postmark, logger);
 
-        try
-        {
-            var postmark = new NeverConfirmedBouncePostmarkClient();
-            var logger = new TestLogger();
-            var client = new PostKitClient(postmark, logger);
+       var result = await client.ActivateBounceAsync(1599950051, CancellationToken.None);
 
-            var result = await client.ActivateBounceAsync(1599950051, CancellationToken.None);
-
-            Assert.True(result.IsFailure(out var error, out BounceActivation? _), result.ToString());
-            Assert.Contains("could not be confirmed as active", error.Message, StringComparison.Ordinal);
-            Assert.Equal(31, postmark.CalledEndpoints.Count);
-        }
-        finally
-        {
-            PostKitClient.BounceActivationDelayAsync = previousDelay;
-        }
+       Assert.True(result.IsFailure(out var error, out BounceActivation? _), result.ToString());
+       Assert.Contains("could not be confirmed as active", error.Message, StringComparison.Ordinal);
+       Assert.Equal(31, postmark.CalledEndpoints.Count);
     }
 
     [Fact]

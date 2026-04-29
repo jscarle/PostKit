@@ -72,17 +72,18 @@ internal sealed partial class PostKitClient
         return Result.Success(sendEmailResponse);
     }
 
-    public async Task<Result<EmailBatchSubmission>> SendEmailBatchAsync(IReadOnlyCollection<Email> emails, CancellationToken cancellationToken = default)
+    public async Task<Result<EmailBatchSubmission>> SendEmailBatchAsync(IEnumerable<Email> emails, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(emails);
 
-        if (emails.Count == 0)
+        var emailList = emails.ToList();
+
+        if (emailList.Count == 0)
             return Result.Failure<EmailBatchSubmission>("At least one email must be provided to send a batch.");
 
-        if (emails.Count > MaxBatchSize)
+        if (emailList.Count > MaxBatchSize)
             return Result.Failure<EmailBatchSubmission>($"Postmark only accepts {MaxBatchSize} emails per batch request.");
 
-        var emailList = emails.ToList();
         var requests = new List<EmailRequest>(emailList.Count);
         var templateCount = 0;
         long estimatedBatchSize = 0;
@@ -179,7 +180,9 @@ internal sealed partial class PostKitClient
             else
             {
                 LogBatchEmailFailure(index, emailResponse.Message, emailResponse.ErrorCode);
-                batchResults.Add(Result.Failure<EmailSubmission>(new PostmarkError(emailResponse.ErrorCode, emailResponse.Message)));
+                var postmarkError = new PostmarkError(emailResponse.ErrorCode, emailResponse.Message);
+                var failure = Result.Failure<EmailSubmission>(postmarkError);
+                batchResults.Add(failure);
             }
         }
 

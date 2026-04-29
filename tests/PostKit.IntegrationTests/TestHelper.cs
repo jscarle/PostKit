@@ -13,9 +13,8 @@ internal static class TestHelper
             .Build();
 
         var services = new ServiceCollection();
-        services.AddSingleton<IConfiguration>(configuration);
         services.AddLogging();
-        services.AddPostKit();
+        services.AddPostKit(configuration);
 
         var serviceProvider = services.BuildServiceProvider();
         return serviceProvider.GetRequiredService<IPostKitClient>();

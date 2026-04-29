@@ -36,7 +36,6 @@ internal sealed partial class DraftEmail
     private LinkTracking? _linkTracking;
     private string? _messageStream;
     private List<Attachment>? _attachments;
-    private long _attachmentBytes;
     private int? _templateId;
     private string? _templateAlias;
     private object? _templateModel;
@@ -57,7 +56,7 @@ internal sealed partial class DraftEmail
         return this;
     }
 
-    public DraftEmail From(string? name, string address)
+    public DraftEmail From(string address, string? name)
     {
         _from.EnsureNotSet(nameof(Email.From));
 
@@ -88,9 +87,9 @@ internal sealed partial class DraftEmail
         return AddRecipients(ref _replyTo, address.ToAddressList());
     }
 
-    public DraftEmail ReplyTo(string? name, string address)
+    public DraftEmail ReplyTo(string address, string? name)
     {
-        return AddRecipients(ref _replyTo, (name, address).ToAddressList());
+        return AddRecipients(ref _replyTo, (address, name).ToAddressList());
     }
 
     public DraftEmail ReplyTo(MailboxAddress mailboxAddress)
@@ -118,9 +117,9 @@ internal sealed partial class DraftEmail
         return AddRecipients(ref _to, address.ToAddressList());
     }
 
-    public DraftEmail To(string? name, string address)
+    public DraftEmail To(string address, string? name)
     {
-        return AddRecipients(ref _to, (name, address).ToAddressList());
+        return AddRecipients(ref _to, (address, name).ToAddressList());
     }
 
     public DraftEmail To(MailboxAddress mailboxAddress)
@@ -148,9 +147,9 @@ internal sealed partial class DraftEmail
         return AddRecipients(ref _cc, address.ToAddressList());
     }
 
-    public DraftEmail Cc(string? name, string address)
+    public DraftEmail Cc(string address, string? name)
     {
-        return AddRecipients(ref _cc, (name, address).ToAddressList());
+        return AddRecipients(ref _cc, (address, name).ToAddressList());
     }
 
     public DraftEmail Cc(MailboxAddress mailboxAddress)
@@ -178,9 +177,9 @@ internal sealed partial class DraftEmail
         return AddRecipients(ref _bcc, address.ToAddressList());
     }
 
-    public DraftEmail Bcc(string? name, string address)
+    public DraftEmail Bcc(string address, string? name)
     {
-        return AddRecipients(ref _bcc, (name, address).ToAddressList());
+        return AddRecipients(ref _bcc, (address, name).ToAddressList());
     }
 
     public DraftEmail Bcc(MailboxAddress mailboxAddress)
@@ -397,7 +396,6 @@ internal sealed partial class DraftEmail
         EnsureAttachmentsWithinLimit(estimatedSize);
 
         (_attachments ??= []).Add(attachment);
-        _attachmentBytes += estimatedSize;
 
         return this;
     }
@@ -420,7 +418,6 @@ internal sealed partial class DraftEmail
         EnsureAttachmentsWithinLimit(additionalBytes);
 
         (_attachments ??= []).AddRange(buffer);
-        _attachmentBytes += additionalBytes;
 
         return this;
     }

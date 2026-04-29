@@ -18,13 +18,13 @@ public interface IPostKitClient
     /// <param name="emails">The collection of emails to send.</param>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the batch send response or error information.</returns>
-    Task<Result<EmailBatchSubmission>> SendEmailBatchAsync(IReadOnlyCollection<Email> emails, CancellationToken cancellationToken = default);
+    Task<Result<EmailBatchSubmission>> SendEmailBatchAsync(IEnumerable<Email> emails, CancellationToken cancellationToken = default);
 
     /// <summary>Sends a bulk email request asynchronously.</summary>
-    /// <param name="bulkEmail">The bulk email request to submit.</param>
+    /// <param name="email">The bulk email request to submit.</param>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the current bulk email request status or error information.</returns>
-    Task<Result<BulkEmailJob>> SendBulkEmailAsync(BulkEmail bulkEmail, CancellationToken cancellationToken = default);
+    Task<Result<BulkEmailJob>> SendBulkEmailAsync(BulkEmail email, CancellationToken cancellationToken = default);
 
     /// <summary>Gets the current status of a bulk email request asynchronously.</summary>
     /// <param name="id">The identifier of the bulk email request.</param>

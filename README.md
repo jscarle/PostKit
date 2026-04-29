@@ -15,6 +15,7 @@ Upgrading to `10.1.0` requires a few source changes:
 - Public email types now live in `PostKit.Emails`. Add `using PostKit.Emails;` for `Email`, `ComposedEmailBuilder`, `TemplatedEmailBuilder`, `EmailSubmission`, and `EmailBatchSubmission`.
 - Shared email primitives now live in `PostKit.Common`. Add `using PostKit.Common;` for `Attachment`, `LinkTracking`, and `MessageStream`.
 - Bulk email types are new and live in `PostKit.BulkEmails`.
+- Display-name overloads are address-first. Use `.From("sender@example.com", "Sender Name")`, `.To("recipient@example.com", "Recipient Name")`, and the same order for `ReplyTo`, `Cc`, and `Bcc`.
 - `EmailSubmission.MessageId` is now a `Guid` containing Postmark's message identifier. `InternetMessageId` falls back to the RFC-style `<...@mtasv.net>` value, but preserves your `Message-ID` header when `X-PM-KeepID: true` is set on the outbound message.
 - `EmailBatchSubmission.Results` now exposes `IReadOnlyList<Result<EmailSubmission>>`. Per-email failures are represented as failed item results, typically with a `PostmarkError`, instead of `EmailSubmission` entries.
 
@@ -55,10 +56,12 @@ using PostKit;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add PostKit to services
-builder.Services.AddPostKit();
+builder.Services.AddPostKit(builder.Configuration);
 
 var app = builder.Build();
 ```
+
+In ASP.NET Core apps, `builder.Services.AddPostKit()` also works because `IConfiguration` is already registered in the service provider. The explicit `IConfiguration` overload shown above validates that the `PostKit` section exists immediately and does not require registering `IConfiguration` yourself.
 
 Configure your Postmark Server API Token in `appsettings.json`:
 
@@ -79,8 +82,17 @@ PostKit__ServerApiToken=your-postmark-server-token-here
 If you need multiple Postmark configurations (for example, separate servers or tenants), register keyed services with `AddKeyedPostKit`. Each keyed registration binds to `PostKit:{configurationKey}`; if you omit `configurationKey`, the
 `serviceKey.ToString()` value is used.
 
+When `IConfiguration` is available from dependency injection, you can use the shorter overloads:
+
 ```csharp
 builder.Services.AddKeyedPostKit("Marketing"); // binds PostKit:Marketing
+builder.Services.AddKeyedPostKit("Production", "Default"); // resolves with key "Production", binds PostKit:Default
+```
+
+When you are configuring a standalone `ServiceCollection` or want missing sections to fail immediately, pass the configuration explicitly:
+
+```csharp
+builder.Services.AddKeyedPostKit("Marketing", builder.Configuration); // binds PostKit:Marketing
 ```
 
 ```csharp
@@ -90,8 +102,8 @@ public enum PostmarkServer
     Production
 }
 
-builder.Services.AddKeyedPostKit(PostmarkServer.Development); // binds PostKit:Development
-builder.Services.AddKeyedPostKit(PostmarkServer.Production, "Default"); // binds PostKit:Default
+builder.Services.AddKeyedPostKit(PostmarkServer.Development, builder.Configuration); // binds PostKit:Development
+builder.Services.AddKeyedPostKit(PostmarkServer.Production, builder.Configuration, "Default"); // binds PostKit:Default
 ```
 
 ```json
@@ -103,6 +115,8 @@ builder.Services.AddKeyedPostKit(PostmarkServer.Production, "Default"); // binds
   }
 }
 ```
+
+PostKit validates that the selected configuration section defines `ServerApiToken`. When you use the explicit configuration overloads above, missing sections fail immediately and missing tokens fail during startup or first resolution.
 
 Resolve keyed clients with the standard keyed DI APIs:
 
@@ -124,9 +138,10 @@ Add `using PostKit.BulkEmails;` when working with the Bulk Email API, and `using
 
 PostKit uses a fluent builder pattern with the following capabilities:
 
-- **Email Addresses**: Support for simple strings, name/address pairs, or MimeKit `MailboxAddress` objects
+- **Email Addresses**: Support for simple strings, address/display-name pairs, or MimeKit `MailboxAddress` objects
+- **Display Names**: Address/display-name overloads are address-first, for example `.From("sender@example.com", "Sender Name")`
 - **Multiple Recipients**: Repeat `To()`, `Cc()`, `Bcc()`, or `ReplyTo()` to add additional recipients
-- **Templates**: Send templated emails by template ID or alias, including batch template sends
+- **Templates**: Send templated emails by template ID or alias, including in batches
 - **Bulk Email API**: Submit broadcast bulk email jobs and poll their processing status
 - **Validation**: Builder validation covers required fields, recipient counts, headers, metadata, message streams, template/body exclusivity, and size limits. Postmark still performs final sender and recipient validation
 
@@ -164,7 +179,7 @@ public class EmailService
 
 ```csharp
 var email = Email.Compose()
-    .From("Sarah Johnson", "sarah@company.com")
+    .From("sarah@company.com", "Sarah Johnson")
     .To("customer@example.com")
     .Subject("Your Order Confirmation")
     .HtmlBody(@"
@@ -318,6 +333,61 @@ if (submitResult.IsSuccess(out var submitted))
 
 PostKit enforces the Bulk Email API's broadcast-stream requirement. `MessageStream.Transactional` and the `outbound` stream ID are rejected by the bulk builder.
 
+Use `BulkEmail.Compose()` and `BulkEmailMessage.Compose()` for non-template bulk jobs with a shared subject and body:
+
+```csharp
+var bulkEmail = BulkEmail.Compose()
+    .From("announcements@company.com")
+    .Subject("Service update")
+    .TextBody("A service update is available.")
+    .UseMessageStream(MessageStream.Broadcast)
+    .AddMessage(BulkEmailMessage.Compose()
+        .To("alice@example.com")
+        .Build())
+    .AddMessage(BulkEmailMessage.Compose()
+        .To("bob@example.com")
+        .Build())
+    .Build();
+```
+
+If Postmark accepts the bulk request but reports unprocessable messages, `SendBulkEmailAsync` returns a failed result with `BulkEmailValidationError`. The error includes both the accepted bulk job and the server-provided unprocessable-content payload.
+
+```csharp
+using PostKit.Errors;
+
+var result = await _postKitClient.SendBulkEmailAsync(bulkEmail);
+
+if (result.IsFailure(out var error, out _) && error is BulkEmailValidationError validationError)
+{
+    Console.WriteLine($"Bulk request accepted as {validationError.AcceptedJob.Id}");
+    Console.WriteLine(validationError.UnprocessableContent);
+}
+```
+
+### Bounces
+
+```csharp
+using MimeKit;
+using PostKit.Bounces;
+
+var pageResult = await _postKitClient.GetBouncesAsync(new BounceQuery
+{
+    Count = 100,
+    Type = BounceType.HardBounce,
+    Inactive = true,
+    EmailFilter = new MailboxAddress(null, "user@example.com"),
+    MessageStream = "outbound",
+});
+
+if (pageResult.IsSuccess(out var page))
+{
+    foreach (var bounce in page.Bounces)
+        Console.WriteLine($"{bounce.Id}: {bounce.Type} for {bounce.Email}");
+}
+```
+
+The bounce client also supports `GetBounceAsync`, `GetBounceDumpAsync`, `GetDeliveryStatsAsync`, and `ActivateBounceAsync`. Bounce date filters are sent using Postmark's US Eastern time interpretation; UTC `DateTime` values are converted before the request is made.
+
 ### Template Model Serialization
 
 By default, template models use `System.Text.Json` web defaults with null values omitted. That means CLR property names are camel-cased.
@@ -357,7 +427,7 @@ prevent grossly oversized requests without doing expensive serialization. The lo
 
 ### Error Handling
 
-PostKit uses [LightResults](https://github.com/jscarle/LightResults) for error handling. `SendEmailAsync`, `SendEmailBatchAsync`, `SendBulkEmailAsync`, and `GetBulkEmailStatusAsync` all return `Result<T>` values. Add `using PostKit.Errors;` when you want to inspect concrete error types.
+PostKit uses [LightResults](https://github.com/jscarle/LightResults) for error handling. Every `IPostKitClient` operation returns a `Result<T>` value. Add `using PostKit.Errors;` when you want to inspect concrete error types.
 
 `SendEmailAsync` returns a `Result<EmailSubmission>` that contains either the response or error information:
 
@@ -413,6 +483,16 @@ if (error is PostmarkError postmarkError)
 }
 ```
 
+**BulkEmailValidationError** - Returned when the Bulk Email API accepts a request but reports unprocessable messages:
+
+```csharp
+if (error is BulkEmailValidationError bulkError)
+{
+    Console.WriteLine($"Accepted bulk job: {bulkError.AcceptedJob.Id}");
+    Console.WriteLine(bulkError.UnprocessableContent);
+}
+```
+
 See `PostmarkErrorCode` enum for the complete list of possible Postmark error codes.
 
 ### Message Streams
@@ -446,9 +526,8 @@ var configuration = new ConfigurationBuilder()
     .Build();
 
 var services = new ServiceCollection();
-services.AddSingleton<IConfiguration>(configuration);
 services.AddLogging();
-services.AddPostKit();
+services.AddPostKit(configuration);
 
 using var serviceProvider = services.BuildServiceProvider();
 
@@ -484,8 +563,8 @@ The following tables track development progress and map the different Postmark A
 
 ## Bulk Email API
 
-|    | Endpoint                                                                                                                                           | Implementation |
-|----|----------------------------------------------------------------------------------------------------------------------------------------------------|----------------|
+|   | Endpoint                                                                                                                                           | Implementation                           |
+|---|----------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------|
 | ✅ | [Send bulk emails BETA](https://postmarkapp.com/developer/api/bulk-email#send-bulk-emails)                                                         | `IPostKitClient.SendBulkEmailAsync`      |
 | ✅ | [Get the status/details of a bulk API request BETA](https://postmarkapp.com/developer/api/bulk-email#get-the-status-details-of-a-bulk-api-request) | `IPostKitClient.GetBulkEmailStatusAsync` |
 
@@ -493,15 +572,14 @@ The following tables track development progress and map the different Postmark A
 
 ## Bounce API
 
-|    | Endpoint                                                                                    | Implementation |
-|----|---------------------------------------------------------------------------------------------|----------------|
+|   | Endpoint                                                                                    | Implementation                         |
+|---|---------------------------------------------------------------------------------------------|----------------------------------------|
 | ✅ | [Get delivery stats](https://postmarkapp.com/developer/api/bounce-api#get-delivery-stats)   | `IPostKitClient.GetDeliveryStatsAsync` |
-| ✅ | [Get bounces](https://postmarkapp.com/developer/api/bounce-api#get-bounces)                 | `IPostKitClient.GetBouncesAsync` |
-| ✅ | [Get a single bounce](https://postmarkapp.com/developer/api/bounce-api#get-a-single-bounce) | `IPostKitClient.GetBounceAsync` |
-| ✅ | [Get bounce dump](https://postmarkapp.com/developer/api/bounce-api#get-bounce-dump)         | `IPostKitClient.GetBounceDumpAsync` |
-| ✅ | [Activate a bounce](https://postmarkapp.com/developer/api/bounce-api#activate-a-bounce)     | `IPostKitClient.ActivateBounceAsync` |
-| ✏️ | [Bounce types](https://postmarkapp.com/developer/api/bounce-api#bounce-types)               |                |
-| ✏️ | [Rebound](https://postmarkapp.com/developer/api/bounce-api#rebound)                         |                |
+| ✅ | [Get bounces](https://postmarkapp.com/developer/api/bounce-api#get-bounces)                 | `IPostKitClient.GetBouncesAsync`       |
+| ✅ | [Get a single bounce](https://postmarkapp.com/developer/api/bounce-api#get-a-single-bounce) | `IPostKitClient.GetBounceAsync`        |
+| ✅ | [Get bounce dump](https://postmarkapp.com/developer/api/bounce-api#get-bounce-dump)         | `IPostKitClient.GetBounceDumpAsync`    |
+| ✅ | [Activate a bounce](https://postmarkapp.com/developer/api/bounce-api#activate-a-bounce)     | `IPostKitClient.ActivateBounceAsync`   |
+| ✅ | [Bounce types](https://postmarkapp.com/developer/api/bounce-api#bounce-types)               |                                        |
 
 ---
 

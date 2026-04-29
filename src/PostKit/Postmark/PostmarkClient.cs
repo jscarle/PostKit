@@ -83,7 +83,10 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             return Result.Failure<TResponse>(parseError);
 
         if (postmarkErrorResponse is not null)
-            return Result.Failure<TResponse>(new PostmarkError(responseMessage.StatusCode, postmarkErrorResponse));
+        {
+            var postmarkError = new PostmarkError(responseMessage.StatusCode, postmarkErrorResponse);
+            return Result.Failure<TResponse>(postmarkError);
+        }
 
         if (responseMessage.StatusCode == HttpStatusCode.Unauthorized)
         {
@@ -138,7 +141,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             if (response is null && strict)
                 return Result.Failure<PostmarkResponse?>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
 
-            return Result.Success<PostmarkResponse?>(response);
+            return Result.Success(response);
         }
         catch (JsonException) when (!strict)
         {

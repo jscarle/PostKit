@@ -8,34 +8,118 @@ namespace PostKit.Tests;
 public class PostKitExtensionsTests
 {
     [Fact]
+    public void AddPostKit_WithConfiguration_BindsPostKitSectionWithoutIConfigurationRegistration()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["PostKit:ServerApiToken"] = "root-token",
+                ["PostKit:AccountApiToken"] = "account-token",
+            }
+        ).Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddPostKit(configuration);
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>().Value;
+
+        Assert.Equal("root-token", options.ServerApiToken);
+        Assert.Equal("account-token", options.AccountApiToken);
+        Assert.NotNull(serviceProvider.GetRequiredService<IPostKitClient>());
+    }
+
+    [Fact]
+    public void AddPostKit_WithConfigurationSection_BindsProvidedSectionWithoutIConfigurationRegistration()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Tenants:Marketing:ServerApiToken"] = "marketing-token",
+                ["Tenants:Marketing:AccountApiToken"] = "marketing-account",
+            }
+        ).Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddPostKit(configuration.GetSection("Tenants:Marketing"));
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>().Value;
+
+        Assert.Equal("marketing-token", options.ServerApiToken);
+        Assert.Equal("marketing-account", options.AccountApiToken);
+        Assert.NotNull(serviceProvider.GetRequiredService<IPostKitClient>());
+    }
+
+    [Fact]
+    public void AddPostKit_WithConfiguration_ThrowsWhenPostKitSectionIsMissing()
+    {
+        var configuration = new ConfigurationBuilder().Build();
+
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => services.AddPostKit(configuration));
+
+        Assert.Contains("PostKit", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AddPostKit_WithConfigurationSection_ThrowsWhenSectionIsMissing()
+    {
+        var configuration = new ConfigurationBuilder().Build();
+
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => services.AddPostKit(configuration.GetSection("Tenants:Missing")));
+
+        Assert.Equal("The configuration section 'Tenants:Missing' could not be found.", exception.Message);
+    }
+
+    [Fact]
+    public void AddKeyedPostKit_WithConfiguration_BindsInferredSectionWithoutIConfigurationRegistration()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["PostKit:Marketing:ServerApiToken"] = "marketing-token",
+            }
+        ).Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddKeyedPostKit("Marketing", configuration);
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        Assert.NotNull(serviceProvider.GetRequiredKeyedService<IPostKitClient>("Marketing"));
+    }
+
+    [Fact]
+    public void AddKeyedPostKit_WithConfigurationSection_BindsProvidedSectionWithoutIConfigurationRegistration()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Tenants:Marketing:ServerApiToken"] = "marketing-token",
+            }
+        ).Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddKeyedPostKit("Marketing", configuration.GetSection("Tenants:Marketing"));
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        Assert.NotNull(serviceProvider.GetRequiredKeyedService<IPostKitClient>("Marketing"));
+    }
+
+    [Fact]
     public void AddKeyedPostKit_DefaultRegistration_UsesRequestedConfigurationSectionOnly()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["PostKit:ServerApiToken"] = "root-token",
-                ["PostKit:Secondary:AccountApiToken"] = "account-only",
-            }
-        ).Build();
-
-        var services = new ServiceCollection();
-        services.AddSingleton<IConfiguration>(configuration);
-        services.AddLogging();
-        services.AddPostKit();
-        services.AddKeyedPostKit(configurationKey: "Secondary");
-
-        using var serviceProvider = services.BuildServiceProvider();
-
-        var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredService<IPostKitClient>());
-
-        Assert.Equal("The server API token has not been set.", exception.Message);
-    }
-
-    [Fact]
-    public void AddKeyedPostKit_DefaultRegistration_ExposesRequestedSectionAsDefaultOptions()
-    {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["PostKit:ServerApiToken"] = "root-token",
+                ["PostKit:Secondary:ServerApiToken"] = "secondary-token",
                 ["PostKit:Secondary:AccountApiToken"] = "account-only",
             }
         ).Build();
@@ -50,8 +134,9 @@ public class PostKitExtensionsTests
 
         var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>().Value;
 
-        Assert.Null(options.ServerApiToken);
+        Assert.Equal("secondary-token", options.ServerApiToken);
         Assert.Equal("account-only", options.AccountApiToken);
+        Assert.NotNull(serviceProvider.GetRequiredService<IPostKitClient>());
     }
 
     [Fact]
@@ -60,6 +145,7 @@ public class PostKitExtensionsTests
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["PostKit:ServerApiToken"] = "root-token",
+                ["PostKit:Secondary:ServerApiToken"] = "secondary-token",
                 ["PostKit:Secondary:AccountApiToken"] = "account-only",
             }
         ).Build();
@@ -74,7 +160,7 @@ public class PostKitExtensionsTests
 
         var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<PostKitOptions>>();
 
-        Assert.Null(optionsMonitor.CurrentValue.ServerApiToken);
+        Assert.Equal("secondary-token", optionsMonitor.CurrentValue.ServerApiToken);
         Assert.Equal("account-only", optionsMonitor.CurrentValue.AccountApiToken);
     }
 
@@ -84,6 +170,7 @@ public class PostKitExtensionsTests
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["PostKit:ServerApiToken"] = "root-token",
+                ["PostKit:Secondary:ServerApiToken"] = "secondary-token",
                 ["PostKit:Secondary:AccountApiToken"] = "account-only",
             }
         ).Build();
@@ -99,16 +186,16 @@ public class PostKitExtensionsTests
 
         var optionsSnapshot = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<PostKitOptions>>();
 
-        Assert.Null(optionsSnapshot.Value.ServerApiToken);
+        Assert.Equal("secondary-token", optionsSnapshot.Value.ServerApiToken);
         Assert.Equal("account-only", optionsSnapshot.Value.AccountApiToken);
     }
 
     [Fact]
-    public void AddKeyedPostKit_DefaultRegistration_LastCallWins()
+    public void AddKeyedPostKit_DefaultRegistration_ThrowsValidationExceptionWhenRequestedSectionIsMissingServerApiToken()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["PostKit:Primary:ServerApiToken"] = "primary-token",
+                ["PostKit:ServerApiToken"] = "root-token",
                 ["PostKit:Secondary:AccountApiToken"] = "account-only",
             }
         ).Build();
@@ -116,14 +203,14 @@ public class PostKitExtensionsTests
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
         services.AddLogging();
-        services.AddKeyedPostKit(configurationKey: "Primary");
+        services.AddPostKit();
         services.AddKeyedPostKit(configurationKey: "Secondary");
 
         using var serviceProvider = services.BuildServiceProvider();
 
-        var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredService<IPostKitClient>());
+        var exception = Assert.Throws<OptionsValidationException>(serviceProvider.GetRequiredService<IPostKitClient>);
 
-        Assert.Equal("The server API token has not been set.", exception.Message);
+        Assert.Contains("The configuration section 'PostKit:Secondary' must define 'ServerApiToken'.", exception.Failures);
     }
 
     [Fact]
@@ -132,6 +219,7 @@ public class PostKitExtensionsTests
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["PostKit:Primary:ServerApiToken"] = "primary-token",
+                ["PostKit:Secondary:ServerApiToken"] = "secondary-token",
                 ["PostKit:Secondary:AccountApiToken"] = "account-only",
             }
         ).Build();
@@ -146,7 +234,7 @@ public class PostKitExtensionsTests
 
         var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>().Value;
 
-        Assert.Null(options.ServerApiToken);
+        Assert.Equal("secondary-token", options.ServerApiToken);
         Assert.Equal("account-only", options.AccountApiToken);
     }
 
@@ -168,8 +256,8 @@ public class PostKitExtensionsTests
 
         using var serviceProvider = services.BuildServiceProvider();
 
-        var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredKeyedService<IPostKitClient>("shared"));
+        var exception = Assert.Throws<OptionsValidationException>(() => serviceProvider.GetRequiredKeyedService<IPostKitClient>("shared"));
 
-        Assert.Equal("The server API token has not been set.", exception.Message);
+        Assert.Contains("The configuration section 'PostKit:Secondary' must define 'ServerApiToken'.", exception.Failures);
     }
 }

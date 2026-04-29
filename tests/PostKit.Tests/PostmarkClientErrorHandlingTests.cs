@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Mime;
 using System.Text;
 using System.Text.Json.Nodes;
-using LightResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PostKit.Configuration;

@@ -24,7 +24,7 @@ public class PostKitClientCancellationTests
             .Build();
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel();
+        await cts.CancelAsync();
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => client.SendEmailAsync(email, cts.Token));
     }
@@ -44,7 +44,7 @@ public class PostKitClientCancellationTests
         };
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel();
+        await cts.CancelAsync();
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => client.SendEmailBatchAsync(emails, cts.Token));
     }
@@ -64,7 +64,7 @@ public class PostKitClientCancellationTests
             .Build();
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel();
+        await cts.CancelAsync();
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => client.SendBulkEmailAsync(bulkEmail, cts.Token));
     }
@@ -75,7 +75,7 @@ public class PostKitClientCancellationTests
         var client = new PostKitClient(new CancelingPostmarkClient(), new TestLogger());
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel();
+        await cts.CancelAsync();
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetBouncesAsync(new BounceQuery { Count = 10 }, cts.Token));
     }
@@ -86,7 +86,7 @@ public class PostKitClientCancellationTests
         var client = new PostKitClient(new CancelingPostmarkClient(), new TestLogger());
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel();
+        await cts.CancelAsync();
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => client.ActivateBounceAsync(1, cts.Token));
     }
@@ -110,7 +110,7 @@ public class PostKitClientCancellationTests
         var client = new PostKitClient(new CancelingPostmarkClient(), new TestLogger());
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel();
+        await cts.CancelAsync();
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetBulkEmailStatusAsync(Guid.NewGuid(), cts.Token));
     }

@@ -324,7 +324,7 @@ public class SendEmailIntegrationTests
     {
         // Arrange
         var email = Email.Compose()
-            .From("Test Sender", TestConfiguration.TestFromEmail)
+            .From(TestConfiguration.TestFromEmail, "Test Sender")
             .To(TestConfiguration.TestToEmail)
             .Subject("From Name Test")
             .TextBody("This email has a sender name.")
@@ -344,7 +344,7 @@ public class SendEmailIntegrationTests
         // Arrange
         var email = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
-            .To("Test Recipient", TestConfiguration.TestToEmail)
+            .To(TestConfiguration.TestToEmail, "Test Recipient")
             .Subject("To Name Test")
             .TextBody("This email has a recipient name.")
             .Build();
@@ -364,8 +364,8 @@ public class SendEmailIntegrationTests
         var attachment = Attachment.Create("document.txt", "text/plain", "Document content"u8.ToArray());
 
         var email = Email.Compose()
-            .From("Integration Test Sender", TestConfiguration.TestFromEmail)
-            .To("Primary Recipient", TestConfiguration.TestToEmail)
+            .From(TestConfiguration.TestFromEmail, "Integration Test Sender")
+            .To(TestConfiguration.TestToEmail, "Primary Recipient")
             .To("second@postkit.com")
             .Cc(TestConfiguration.TestCcEmail)
             .Bcc(TestConfiguration.TestBccEmail)

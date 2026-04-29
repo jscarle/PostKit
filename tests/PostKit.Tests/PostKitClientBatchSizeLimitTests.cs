@@ -2,7 +2,6 @@ using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.Emails;
 using PostKit.Postmark;
-using PostKit.Postmark.Common;
 
 namespace PostKit.Tests;
 

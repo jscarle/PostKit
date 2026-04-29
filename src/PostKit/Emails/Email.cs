@@ -37,7 +37,7 @@ public sealed class Email
     /// <summary>Gets the custom headers applied to the email.</summary>
     public IReadOnlyDictionary<string, string>? Headers { get; internal init; }
 
-    /// <summary>Gets the metadata that accompanies the email.</summary>
+    /// <summary>Gets the metadata that goes with the email.</summary>
     public IReadOnlyDictionary<string, string>? Metadata { get; internal init; }
 
     /// <summary>Gets a value indicating whether open tracking is enabled for the email.</summary>

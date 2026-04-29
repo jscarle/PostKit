@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using PostKit.Common;
 using PostKit.Emails;
 
@@ -21,13 +22,13 @@ public class EmailBuilderValidationTests
         var serviceProvider = services.BuildServiceProvider();
 
         // Act
-        var exception = Assert.Throws<InvalidOperationException>(() =>
+        var exception = Assert.Throws<OptionsValidationException>(() =>
         {
             serviceProvider.GetRequiredService<IPostKitClient>();
         });
 
         // Assert
-        Assert.Contains("API token has not been set", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("The configuration section 'PostKit' must define 'ServerApiToken'.", exception.Failures);
     }
 
     [Fact]
@@ -191,7 +192,7 @@ public class EmailBuilderValidationTests
         Assert.NotNull(subjectField);
         subjectField.SetValue(draft, "Unexpected subject");
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
         Assert.Equal("Neither a text or HTML body, nor a subject may be specified when using a template.", exception.Message);
     }

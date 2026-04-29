@@ -32,7 +32,7 @@ public class ErrorScenarioIntegrationTests
             .Build();
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel(); // Cancel immediately
+        await cts.CancelAsync(); // Cancel immediately
 
         // Act & Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => _client.SendEmailAsync(email, cts.Token));
@@ -51,7 +51,7 @@ public class ErrorScenarioIntegrationTests
 
         var emails = new[] { email };
         using var cts = new CancellationTokenSource();
-        cts.Cancel(); // Cancel immediately
+        await cts.CancelAsync(); // Cancel immediately
 
         // Act & Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => _client.SendEmailBatchAsync(emails, cts.Token));

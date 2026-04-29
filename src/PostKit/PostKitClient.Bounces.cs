@@ -2,7 +2,6 @@ using System.Globalization;
 using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.Bounces;
-using PostKit.Errors;
 using PostKit.Postmark.Common;
 using ActivateBounceModel = PostKit.Postmark.Bounces.ActivateBounceResponse;
 using BounceModel = PostKit.Postmark.Bounces.BounceResponse;
@@ -19,8 +18,8 @@ internal sealed partial class PostKitClient
     private const int MaxBounceSearchWindow = 10_000;
     private const int BounceActivationConfirmationAttempts = 30;
     private static readonly TimeSpan BounceActivationConfirmationDelay = TimeSpan.FromSeconds(2);
+    private static readonly string[] ValidTimeZoneIds = ["Eastern Standard Time", "America/New_York"];
     private static readonly TimeZoneInfo EasternTimeZone = ResolveEasternTimeZone();
-    internal static Func<TimeSpan, CancellationToken, Task> BounceActivationDelayAsync { get; set; } = Task.Delay;
 
     public async Task<Result<BouncePage>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default)
     {
@@ -30,11 +29,10 @@ internal sealed partial class PostKitClient
         if (validationError is not null)
             return Result.Failure<BouncePage>(validationError);
 
-        string endpoint;
         Result<GetBouncesModel> response;
         try
         {
-            endpoint = BuildBounceSearchEndpoint(query);
+            var endpoint = BuildBounceSearchEndpoint(query);
             response = await postmark.GetAsync<GetBouncesModel>(endpoint, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -161,7 +159,8 @@ internal sealed partial class PostKitClient
         if (bounceDumpModel.Body is null)
             return Result.Failure<BounceDump>("Body was not returned from the Postmark Bounces API.");
 
-        return Result.Success(new BounceDump(bounceDumpModel.Body));
+        var bounceDump = new BounceDump(bounceDumpModel.Body);
+        return Result.Success(bounceDump);
     }
 
     public async Task<Result<BounceActivation>> ActivateBounceAsync(long id, CancellationToken cancellationToken = default)
@@ -207,7 +206,8 @@ internal sealed partial class PostKitClient
         if (confirmedBounce.IsFailure(out var confirmationError, out var activatedBounce))
             return Result.Failure<BounceActivation>(confirmationError);
 
-        return Result.Success(new BounceActivation(bounceActivationModel.Message, activatedBounce));
+        var bounceActivation = new BounceActivation(bounceActivationModel.Message, activatedBounce);
+        return Result.Success(bounceActivation);
     }
 
     private async Task<Result<Bounce>> ConfirmActivatedBounceAsync(long id, Bounce fallbackBounce, CancellationToken cancellationToken)
@@ -270,7 +270,7 @@ internal sealed partial class PostKitClient
             {
                 try
                 {
-                    await BounceActivationDelayAsync(BounceActivationConfirmationDelay, cancellationToken);
+                    await Task.Delay(BounceActivationConfirmationDelay, cancellationToken);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -324,7 +324,7 @@ internal sealed partial class PostKitClient
         if (query.MessageStream is not null && !query.MessageStream.AsSpan().IsValidMessageStreamId())
             return "The bounce query message stream filter is invalid.";
 
-        if (query.FromDate.HasValue && query.ToDate.HasValue && query.FromDate.Value > query.ToDate.Value)
+        if (query is { FromDate: not null, ToDate: not null } && query.FromDate.Value > query.ToDate.Value)
             return "The bounce query from-date must not be later than the to-date.";
 
         if (query.FromDate.HasValue && IsInvalidLocalBounceQueryDate(query.FromDate.Value))
@@ -395,7 +395,7 @@ internal sealed partial class PostKitClient
 
     private static TimeZoneInfo ResolveEasternTimeZone()
     {
-        foreach (var timeZoneId in new[] { "Eastern Standard Time", "America/New_York" })
+        foreach (var timeZoneId in ValidTimeZoneIds)
         {
             try
             {
@@ -433,7 +433,8 @@ internal sealed partial class PostKitClient
             bounces.Add(bounce);
         }
 
-        return Result.Success(new BouncePage(response.TotalCount.Value, bounces));
+        var bouncePage = new BouncePage(response.TotalCount.Value, bounces);
+        return Result.Success(bouncePage);
     }
 
     private static Result<Bounce> CreateBounce(BounceModel response)
@@ -442,7 +443,7 @@ internal sealed partial class PostKitClient
         if (mappedCore.IsFailure(out var error, out var bounceCore))
             return Result.Failure<Bounce>(error);
 
-        return Result.Success(new Bounce(
+        var bounce = new Bounce(
             bounceCore.RecordType,
             bounceCore.Id,
             bounceCore.Type,
@@ -460,7 +461,8 @@ internal sealed partial class PostKitClient
             bounceCore.Inactive,
             bounceCore.CanActivate,
             bounceCore.Subject
-        ));
+        );
+        return Result.Success(bounce);
     }
 
     private static Result<BounceDetails> CreateGetBounceResponse(BounceModel response)
@@ -472,7 +474,7 @@ internal sealed partial class PostKitClient
         if (response.Content is null)
             return Result.Failure<BounceDetails>("Content was not returned from the Postmark Bounces API.");
 
-        return Result.Success(new BounceDetails(
+        var bounceDetails = new BounceDetails(
             bounceCore.RecordType,
             bounceCore.Id,
             bounceCore.Type,
@@ -491,7 +493,8 @@ internal sealed partial class PostKitClient
             bounceCore.CanActivate,
             bounceCore.Subject,
             response.Content
-        ));
+        );
+        return Result.Success(bounceDetails);
     }
 
     private static Result<DeliveryStats> CreateGetDeliveryStatsResponse(GetDeliveryStatsModel response)
@@ -515,7 +518,8 @@ internal sealed partial class PostKitClient
             bounces.Add(bounceSummary);
         }
 
-        return Result.Success(new DeliveryStats(response.InactiveMails.Value, bounces));
+        var deliveryStats = new DeliveryStats(response.InactiveMails.Value, bounces);
+        return Result.Success(deliveryStats);
     }
 
     private static Result<BounceSummary> CreateBounceSummary(BounceCountElementModel response)
@@ -523,36 +527,28 @@ internal sealed partial class PostKitClient
         if (string.IsNullOrWhiteSpace(response.Name))
             return Result.Failure<BounceSummary>("Name was not returned from the Postmark Bounces API.");
 
-        if (response.Count is null || response.Count.Value < 0)
+        if (response.Count is null or < 0)
             return Result.Failure<BounceSummary>("Count returned from the Postmark Bounces API was invalid.");
 
         BounceType? type = null;
         if (!string.IsNullOrWhiteSpace(response.Type))
-        {
-            var mappedType = TryMapBounceType(response.Type);
-            if (mappedType is null)
-                return Result.Failure<BounceSummary>($"Type '{response.Type}' returned from the Postmark Bounces API is not supported.");
+            type = TryMapBounceType(response.Type);
 
-            type = mappedType.Value;
-        }
-
-        return Result.Success(new BounceSummary(type, response.Name, response.Count.Value));
+        var bounceSummary = new BounceSummary(type, response.Name, response.Count.Value);
+        return Result.Success(bounceSummary);
     }
 
     private static Result<BounceCore> CreateBounceCore(BounceModel response)
     {
         var recordType = string.IsNullOrWhiteSpace(response.RecordType) ? "Bounce" : response.RecordType;
 
-        if (response.Id is null || response.Id.Value <= 0)
+        if (response.Id is null or <= 0)
             return Result.Failure<BounceCore>("ID returned from the Postmark Bounces API was invalid.");
 
         if (string.IsNullOrWhiteSpace(response.Type))
             return Result.Failure<BounceCore>("Type was not returned from the Postmark Bounces API.");
 
         var type = TryMapBounceType(response.Type);
-
-        if (type is null)
-            return Result.Failure<BounceCore>($"Type '{response.Type}' returned from the Postmark Bounces API is not supported.");
 
         if (string.IsNullOrWhiteSpace(response.Name))
             return Result.Failure<BounceCore>("Name was not returned from the Postmark Bounces API.");
@@ -566,7 +562,7 @@ internal sealed partial class PostKitClient
         if (!Guid.TryParse(response.MessageId, out var messageId))
             return Result.Failure<BounceCore>("MessageID returned from the Postmark Bounces API was not a valid GUID.");
 
-        if (response.ServerId is null || response.ServerId.Value <= 0)
+        if (response.ServerId is null or <= 0)
             return Result.Failure<BounceCore>("ServerID returned from the Postmark Bounces API was invalid.");
 
         if (string.IsNullOrWhiteSpace(response.MessageStream))
@@ -596,10 +592,10 @@ internal sealed partial class PostKitClient
         if (response.Subject is null)
             return Result.Failure<BounceCore>("Subject was not returned from the Postmark Bounces API.");
 
-        return Result.Success(new BounceCore(
+        var bounceCore = new BounceCore(
             recordType,
             response.Id.Value,
-            type.Value,
+            type,
             response.Name,
             response.Tag,
             messageId,
@@ -614,7 +610,8 @@ internal sealed partial class PostKitClient
             response.Inactive.Value,
             response.CanActivate.Value,
             response.Subject
-        ));
+        );
+        return Result.Success(bounceCore);
     }
 
     private static string GetBounceTypeValue(BounceType type)
@@ -643,11 +640,11 @@ internal sealed partial class PostKitClient
             BounceType.DmarcPolicy => "DMARCPolicy",
             BounceType.TemplateRenderingFailed => "TemplateRenderingFailed",
             BounceType.ChallengeVerification => "ChallengeVerification",
-            _ => throw new System.Diagnostics.UnreachableException($"Enum value of '{nameof(BounceType)}.{type}' has not been handled."),
+            _ => throw new NotImplementedException($"Bounce type enum value of '{nameof(BounceType)}.{type}' has not been implemented. Please open an issue in the PostKit repository (https://github.com/jscarle/PostKit/issues)."),
         };
     }
 
-    private static BounceType? TryMapBounceType(string type)
+    private static BounceType TryMapBounceType(string type)
     {
         return type switch
         {
@@ -673,7 +670,7 @@ internal sealed partial class PostKitClient
             "DMARCPolicy" => BounceType.DmarcPolicy,
             "TemplateRenderingFailed" => BounceType.TemplateRenderingFailed,
             "ChallengeVerification" => BounceType.ChallengeVerification,
-            _ => null,
+            _ => throw new NotImplementedException($"Bounce type string value of '{type}' has not been implemented. Please open an issue in the PostKit repository (https://github.com/jscarle/PostKit/issues)."),
         };
     }
 

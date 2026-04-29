@@ -3,7 +3,7 @@ using PostKit.Emails;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddPostKit();
+builder.Services.AddPostKit(builder.Configuration);
 
 var app = builder.Build();
 

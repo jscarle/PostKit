@@ -9,7 +9,7 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void AttachmentCreate_WithForbiddenFileType_ThrowsArgumentException()
     {
-        var exception = Assert.Throws<ArgumentException>(() => Attachment.Create("payload.bin", "application/octet-stream", new byte[] { 1 }));
+        var exception = Assert.Throws<ArgumentException>(() => Attachment.Create("payload.bin", "application/octet-stream", [1]));
 
         Assert.Equal("Attachment file type is not accepted by Postmark. (Parameter 'name')", exception.Message);
     }
@@ -17,7 +17,7 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void AttachmentCreate_WithPrefixedContentId_NormalizesAndSucceeds()
     {
-        var attachment = Attachment.Create("image.png", "image/png", new byte[] { 1 }, "cid:part1.01030607.06070005@gmail.com");
+        var attachment = Attachment.Create("image.png", "image/png", [1], "cid:part1.01030607.06070005@gmail.com");
 
         Assert.Equal("cid:part1.01030607.06070005@gmail.com", attachment.ContentId);
     }
@@ -25,7 +25,7 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void AttachmentCreate_WithAsciiContentIdWithoutAt_Succeeds()
     {
-        var attachment = Attachment.Create("image.png", "image/png", new byte[] { 1 }, "c7d-2q41-zfw");
+        var attachment = Attachment.Create("image.png", "image/png", [1], "c7d-2q41-zfw");
 
         Assert.Equal("cid:c7d-2q41-zfw", attachment.ContentId);
     }
@@ -49,7 +49,7 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void AttachmentCreate_WithWhitespaceInContentId_ThrowsArgumentException()
     {
-        var exception = Assert.Throws<ArgumentException>(() => Attachment.Create("image.png", "image/png", new byte[] { 1 }, "part 1@example.com"));
+        var exception = Assert.Throws<ArgumentException>(() => Attachment.Create("image.png", "image/png", [1], "part 1@example.com"));
 
         Assert.Equal("Content ID must contain only visible ASCII characters and no spaces. (Parameter 'contentId')", exception.Message);
     }
@@ -57,7 +57,7 @@ public class EmailBuilderHeaderTests
     [Fact]
     public void AttachmentCreate_WithNonAsciiContentId_ThrowsArgumentException()
     {
-        var exception = Assert.Throws<ArgumentException>(() => Attachment.Create("image.png", "image/png", new byte[] { 1 }, "parté@example.com"));
+        var exception = Assert.Throws<ArgumentException>(() => Attachment.Create("image.png", "image/png", [1], "parté@example.com"));
 
         Assert.Equal("Content ID must contain only visible ASCII characters and no spaces. (Parameter 'contentId')", exception.Message);
     }

@@ -17,7 +17,7 @@ public class EmailBuilderSizeLimitTests
             .Subject("Oversized text body")
             .TextBody(oversizedText);
 
-        Assert.Throws<InvalidOperationException>(() => builder.Build());
+        Assert.Throws<InvalidOperationException>(builder.Build);
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public class EmailBuilderSizeLimitTests
             .Subject("Oversized HTML body")
             .HtmlBody(oversizedHtml);
 
-        Assert.Throws<InvalidOperationException>(() => builder.Build());
+        Assert.Throws<InvalidOperationException>(builder.Build);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class EmailBuilderSizeLimitTests
             .Subject("Oversized UTF-8 text body")
             .TextBody(oversizedText);
 
-        Assert.Throws<InvalidOperationException>(() => builder.Build());
+        Assert.Throws<InvalidOperationException>(builder.Build);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class EmailBuilderSizeLimitTests
             .AddAttachment(attachment)
             .TextBody(textBody);
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
         Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
     }
@@ -115,7 +115,7 @@ public class EmailBuilderSizeLimitTests
             .HtmlBody(htmlBody)
             .AddHeader("X-Large-Header", largeHeaderValue);
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
         Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
     }
@@ -130,7 +130,7 @@ public class EmailBuilderSizeLimitTests
             .To("recipient@postkit.com")
             .WithModel(templateModel);
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
         Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
     }

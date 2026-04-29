@@ -21,9 +21,9 @@ internal sealed class DraftBulkEmailMessage
         return AddRecipients(ref _to, address.ToAddressList());
     }
 
-    public DraftBulkEmailMessage To(string? name, string address)
+    public DraftBulkEmailMessage To(string address, string? name)
     {
-        return AddRecipients(ref _to, (name, address).ToAddressList());
+        return AddRecipients(ref _to, (address, name).ToAddressList());
     }
 
     public DraftBulkEmailMessage To(MailboxAddress mailboxAddress)
@@ -51,9 +51,9 @@ internal sealed class DraftBulkEmailMessage
         return AddRecipients(ref _cc, address.ToAddressList());
     }
 
-    public DraftBulkEmailMessage Cc(string? name, string address)
+    public DraftBulkEmailMessage Cc(string address, string? name)
     {
-        return AddRecipients(ref _cc, (name, address).ToAddressList());
+        return AddRecipients(ref _cc, (address, name).ToAddressList());
     }
 
     public DraftBulkEmailMessage Cc(MailboxAddress mailboxAddress)
@@ -81,9 +81,9 @@ internal sealed class DraftBulkEmailMessage
         return AddRecipients(ref _bcc, address.ToAddressList());
     }
 
-    public DraftBulkEmailMessage Bcc(string? name, string address)
+    public DraftBulkEmailMessage Bcc(string address, string? name)
     {
-        return AddRecipients(ref _bcc, (name, address).ToAddressList());
+        return AddRecipients(ref _bcc, (address, name).ToAddressList());
     }
 
     public DraftBulkEmailMessage Bcc(MailboxAddress mailboxAddress)

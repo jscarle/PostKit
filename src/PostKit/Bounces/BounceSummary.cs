@@ -5,7 +5,7 @@ namespace PostKit.Bounces;
 /// <summary>Represents a bounce summary entry returned by Postmark delivery stats.</summary>
 public sealed record BounceSummary
 {
-    /// <summary>Gets the bounce type for the entry, when Postmark provides one.</summary>
+    /// <summary>Gets the bounce type for the entry when Postmark provides one.</summary>
     public BounceType? Type { [UsedImplicitly] get; }
 
     /// <summary>Gets the display name for the entry.</summary>

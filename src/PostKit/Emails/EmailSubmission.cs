@@ -43,7 +43,7 @@ public sealed record EmailSubmission
         return messageIdHeader.Trim();
     }
 
-    internal static string FormatInternetMessageId(Guid messageId)
+    private static string FormatInternetMessageId(Guid messageId)
     {
         return $"<{messageId:D}@mtasv.net>";
     }

@@ -240,8 +240,8 @@ public class SendEmailBatchIntegrationTests
         var attachment = Attachment.Create("report.txt", "text/plain", "Report data"u8.ToArray());
 
         var email1 = Email.Compose()
-            .From("Batch Sender", TestConfiguration.TestFromEmail)
-            .To("Recipient 1", TestConfiguration.TestToEmail)
+            .From(TestConfiguration.TestFromEmail, "Batch Sender")
+            .To(TestConfiguration.TestToEmail, "Recipient 1")
             .Cc(TestConfiguration.TestCcEmail)
             .ReplyTo(TestConfiguration.TestReplyToEmail)
             .Subject("Complex Batch Email 1")
@@ -255,8 +255,8 @@ public class SendEmailBatchIntegrationTests
             .Build();
 
         var email2 = Email.Compose()
-            .From("Batch Sender", TestConfiguration.TestFromEmail)
-            .To("Recipient 2", "recipient2@postkit.com")
+            .From(TestConfiguration.TestFromEmail, "Batch Sender")
+            .To("recipient2@postkit.com", "Recipient 2")
             .Bcc(TestConfiguration.TestBccEmail)
             .Subject("Complex Batch Email 2")
             .HtmlBody("<html><body><p>Another complex email with <a href='https://example.com'>link</a>.</p></body></html>")

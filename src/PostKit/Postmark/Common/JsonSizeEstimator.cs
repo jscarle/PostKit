@@ -4,15 +4,10 @@ using System.Text.Json.Nodes;
 
 namespace PostKit.Postmark.Common;
 
-internal sealed class CountingBufferWriter : IBufferWriter<byte>, IDisposable
+internal sealed class CountingBufferWriter(int initialSize = 256) : IBufferWriter<byte>, IDisposable
 {
-    private byte[] _buffer;
+    private byte[] _buffer = ArrayPool<byte>.Shared.Rent(Math.Max(initialSize, 1));
     private int _count;
-
-    public CountingBufferWriter(int initialSize = 256)
-    {
-        _buffer = ArrayPool<byte>.Shared.Rent(Math.Max(initialSize, 1));
-    }
 
     public int BytesWritten => _count;
 

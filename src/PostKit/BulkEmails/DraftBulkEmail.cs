@@ -31,7 +31,6 @@ internal sealed partial class DraftBulkEmail
     private LinkTracking? _linkTracking;
     private string? _messageStream;
     private List<Attachment>? _attachments;
-    private long _attachmentBytes;
     private int? _templateId;
     private string? _templateAlias;
     private bool? _inlineCss;
@@ -50,7 +49,7 @@ internal sealed partial class DraftBulkEmail
         return this;
     }
 
-    public DraftBulkEmail From(string? name, string address)
+    public DraftBulkEmail From(string address, string? name)
     {
         _from.EnsureNotSet(nameof(BulkEmail.From));
 
@@ -81,9 +80,9 @@ internal sealed partial class DraftBulkEmail
         return AddReplyTo(address.ToAddressList());
     }
 
-    public DraftBulkEmail ReplyTo(string? name, string address)
+    public DraftBulkEmail ReplyTo(string address, string? name)
     {
-        return AddReplyTo((name, address).ToAddressList());
+        return AddReplyTo((address, name).ToAddressList());
     }
 
     public DraftBulkEmail ReplyTo(MailboxAddress mailboxAddress)
@@ -345,7 +344,6 @@ internal sealed partial class DraftBulkEmail
         EnsureAttachmentsWithinLimit(estimatedSize);
 
         (_attachments ??= []).Add(attachment);
-        _attachmentBytes += estimatedSize;
 
         return this;
     }
@@ -368,7 +366,6 @@ internal sealed partial class DraftBulkEmail
         EnsureAttachmentsWithinLimit(additionalBytes);
 
         (_attachments ??= []).AddRange(buffer);
-        _attachmentBytes += additionalBytes;
 
         return this;
     }

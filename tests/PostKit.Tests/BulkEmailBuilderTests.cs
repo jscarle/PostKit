@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JetBrains.Annotations;
 using PostKit.BulkEmails;
 using PostKit.Common;
 using PostKit.Postmark.Common;
@@ -159,7 +160,7 @@ public class BulkEmailBuilderTests
     public void UsingMessageStream_WithNullString_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => BulkEmail.Compose()
-            .UseMessageStream((string)null!));
+            .UseMessageStream(null!));
 
         Assert.Equal("messageStreamId", exception.ParamName);
     }
@@ -274,7 +275,7 @@ public class BulkEmailBuilderTests
                 .Build());
         }
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
         Assert.Equal("Estimated bulk request size exceeds Postmark's 50 MB limit.", exception.Message);
     }
@@ -313,7 +314,7 @@ public class BulkEmailBuilderTests
             .AddMetadata("message-extra", "value")
             .Build());
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
         Assert.Equal("Cannot set more than 10 metadata values per message after combining request-level and message-level metadata.", exception.Message);
     }
@@ -353,7 +354,7 @@ public class BulkEmailBuilderTests
                 .Build());
         }
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
         Assert.Equal("Estimated bulk request size exceeds Postmark's 50 MB limit.", exception.Message);
     }
@@ -373,7 +374,7 @@ public class BulkEmailBuilderTests
                 .To("recipient@postkit.com")
                 .Build());
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
         Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
     }
@@ -393,7 +394,7 @@ public class BulkEmailBuilderTests
                 .To("recipient@postkit.com")
                 .Build());
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
         Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
     }
@@ -408,14 +409,14 @@ public class BulkEmailBuilderTests
                 .WithModel(new { Data = new string('x', 11 * 1024 * 1024) })
                 .Build());
 
-        var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
         Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
     }
 
     private sealed class CyclicTemplateModel
     {
-        public CyclicTemplateModel? Self { get; private set; }
+        public CyclicTemplateModel? Self { [UsedImplicitly] get; private set; }
 
         public static CyclicTemplateModel Create()
         {

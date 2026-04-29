@@ -64,7 +64,7 @@ public class BuilderNullValidationTests
     public void EmailBuilder_WithNullHeadersDictionary_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => Email.Compose()
-            .AddHeader((IDictionary<string, string>)null!));
+            .AddHeader(null!));
 
         Assert.Equal("headers", exception.ParamName);
     }
@@ -144,7 +144,7 @@ public class BuilderNullValidationTests
     public void BulkEmailMessageBuilder_WithNullHeadersDictionary_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => BulkEmailMessage.Compose()
-            .AddHeader((IDictionary<string, string>)null!));
+            .AddHeader(null!));
 
         Assert.Equal("headers", exception.ParamName);
     }
@@ -153,7 +153,7 @@ public class BuilderNullValidationTests
     public void BulkEmailMessageBuilder_WithNullMetadataDictionary_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => BulkEmailMessage.Compose()
-            .AddMetadata((IDictionary<string, string>)null!));
+            .AddMetadata(null!));
 
         Assert.Equal("metadata", exception.ParamName);
     }

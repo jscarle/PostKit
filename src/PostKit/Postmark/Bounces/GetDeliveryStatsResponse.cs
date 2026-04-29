@@ -9,5 +9,6 @@ internal sealed class GetDeliveryStatsResponse
     public int? InactiveMails { get; [UsedImplicitly] init; }
 
     [JsonPropertyName("Bounces")]
+    // ReSharper disable once CollectionNeverUpdated.Global
     public List<BounceCountElement>? Bounces { get; [UsedImplicitly] init; }
 }

@@ -86,8 +86,8 @@ public class BounceIntegrationTests
 
         Assert.True(stats.InactiveMails >= 0);
         Assert.NotEmpty(stats.Bounces);
-        Assert.Contains(stats.Bounces, item => item.Name == "All" && item.Type is null && item.Count >= 1);
-        Assert.Contains(stats.Bounces, item => item.Type == BounceType.SoftBounce && item.Count >= 1);
+        Assert.Contains(stats.Bounces, item => item is { Name: "All", Type: null, Count: >= 1 });
+        Assert.Contains(stats.Bounces, item => item is { Type: BounceType.SoftBounce, Count: >= 1 });
     }
 
     [Fact]
@@ -181,7 +181,7 @@ public class BounceIntegrationTests
             var result = await _client.GetDeliveryStatsAsync(cancellationToken);
             lastResponse = RequireBounceApi(result);
 
-            if (lastResponse.Bounces.Any(item => item.Type == BounceType.SoftBounce && item.Count >= 1))
+            if (lastResponse.Bounces.Any(item => item is { Type: BounceType.SoftBounce, Count: >= 1 }))
                 break;
 
             await Task.Delay(BounceSearchDelay, cancellationToken);

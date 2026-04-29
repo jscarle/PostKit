@@ -1,5 +1,4 @@
 using System.Text;
-using MimeKit;
 using PostKit.BulkEmails;
 using PostKit.Common;
 
@@ -25,7 +24,7 @@ internal static class PostmarkSizeEstimator
         return base64Content.Length;
     }
 
-    internal static long EstimateAttachmentPayloadSizeLowerBound(IReadOnlyCollection<Attachment>? attachments)
+    private static long EstimateAttachmentPayloadSizeLowerBound(IReadOnlyCollection<Attachment>? attachments)
     {
         if (attachments is null || attachments.Count == 0)
             return 0;
@@ -53,7 +52,7 @@ internal static class PostmarkSizeEstimator
         return total;
     }
 
-    internal static long EstimateMetadataSizeLowerBound(IReadOnlyDictionary<string, string>? metadata)
+    private static long EstimateMetadataSizeLowerBound(IReadOnlyDictionary<string, string>? metadata)
     {
         if (metadata is null || metadata.Count == 0)
             return 0;
@@ -128,7 +127,7 @@ internal static class PostmarkSizeEstimator
         return total;
     }
 
-    internal static long EstimateStringSizeLowerBound(string? value)
+    private static long EstimateStringSizeLowerBound(string? value)
     {
         return value is null ? 0 : Encoding.UTF8.GetByteCount(value);
     }

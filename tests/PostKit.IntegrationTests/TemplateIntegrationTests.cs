@@ -249,8 +249,8 @@ public class TemplateIntegrationTests
         var attachment = Attachment.Create("data.txt", "text/plain", "Additional data"u8.ToArray());
 
         var email = Email.FromTemplate(41813873, true)
-            .From("Template Sender", TestConfiguration.TestFromEmail)
-            .To("Template Recipient", TestConfiguration.TestToEmail)
+            .From(TestConfiguration.TestFromEmail, "Template Sender")
+            .To(TestConfiguration.TestToEmail, "Template Recipient")
             .Cc(TestConfiguration.TestCcEmail)
             .ReplyTo(TestConfiguration.TestReplyToEmail)
             .WithModel(templateModel)

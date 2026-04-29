@@ -9,5 +9,6 @@ internal sealed class GetBouncesResponse
     public int? TotalCount { get; [UsedImplicitly] init; }
 
     [JsonPropertyName("Bounces")]
+    // ReSharper disable once CollectionNeverUpdated.Global
     public List<BounceResponse>? Bounces { get; [UsedImplicitly] init; }
 }
