@@ -1,5 +1,9 @@
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using PostKit.Common;
+using PostKit.Emails;
 
 namespace PostKit.Tests;
 
@@ -18,13 +22,10 @@ public class EmailBuilderValidationTests
         var serviceProvider = services.BuildServiceProvider();
 
         // Act
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-        {
-            serviceProvider.GetRequiredService<IPostKitClient>();
-        });
+        var exception = Assert.Throws<OptionsValidationException>(() => { serviceProvider.GetRequiredService<IPostKitClient>(); });
 
         // Assert
-        Assert.Contains("API token has not been set", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("The configuration section 'PostKit' must define 'ServerApiToken'.", exception.Failures);
     }
 
     [Fact]
@@ -33,10 +34,10 @@ public class EmailBuilderValidationTests
         // Arrange & Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                Email.CreateBuilder()
-                    .To("test@example.com")
-                    .WithSubject("No From Address")
-                    .WithTextBody("This should fail without From address.")
+                Email.Compose()
+                    .To("test@postkit.com")
+                    .Subject("No From Address")
+                    .TextBody("This should fail without From address.")
                     .Build();
             }
         );
@@ -50,10 +51,10 @@ public class EmailBuilderValidationTests
         // Arrange & Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                Email.CreateBuilder()
-                    .From("sender@example.com")
-                    .WithSubject("No Recipients")
-                    .WithTextBody("This should fail without recipients.")
+                Email.Compose()
+                    .From("sender@postkit.com")
+                    .Subject("No Recipients")
+                    .TextBody("This should fail without recipients.")
                     .Build();
             }
         );
@@ -67,15 +68,15 @@ public class EmailBuilderValidationTests
         // Arrange & Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                var builder = Email.CreateBuilder()
-                    .From("sender@example.com")
-                    .WithSubject("Too Many Recipients")
-                    .WithTextBody("This should fail with too many recipients.");
+                var builder = Email.Compose()
+                    .From("sender@postkit.com")
+                    .Subject("Too Many Recipients")
+                    .TextBody("This should fail with too many recipients.");
 
                 // Add 51 recipients (limit is 50)
-                var toBuilder = builder.To($"recipient@example.com");
+                var toBuilder = builder.To("recipient@postkit.com");
                 for (var i = 1; i < 51; i++)
-                    toBuilder.AlsoTo($"recipient{i}@example.com");
+                    toBuilder.To($"recipient{i}@postkit.com");
 
                 builder.Build();
             }
@@ -90,10 +91,10 @@ public class EmailBuilderValidationTests
         // Arrange & Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                Email.CreateBuilder()
-                    .From("sender@example.com")
-                    .To("recipient@example.com")
-                    .WithTextBody("This should fail without subject or template.")
+                Email.Compose()
+                    .From("sender@postkit.com")
+                    .To("recipient@postkit.com")
+                    .TextBody("This should fail without subject or template.")
                     .Build();
             }
         );
@@ -107,10 +108,10 @@ public class EmailBuilderValidationTests
         // Arrange & Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                Email.CreateBuilder()
-                    .From("sender@example.com")
-                    .To("recipient@example.com")
-                    .WithSubject("No Body")
+                Email.Compose()
+                    .From("sender@postkit.com")
+                    .To("recipient@postkit.com")
+                    .Subject("No Body")
                     .Build();
             }
         );
@@ -124,12 +125,11 @@ public class EmailBuilderValidationTests
         // Arrange & Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                Email.CreateBuilder()
-                    .From("sender@example.com")
-                    .To("recipient@example.com")
-                    .WithSubject("Body and Template Conflict")
-                    .WithTemplate(41813873)
-                    .Build();
+                Email.Compose()
+                    .From("sender@postkit.com")
+                    .To("recipient@postkit.com")
+                    .Subject("First subject")
+                    .Subject("Second subject");
             }
         );
 
@@ -142,12 +142,11 @@ public class EmailBuilderValidationTests
         // Arrange & Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                Email.CreateBuilder()
-                    .From("sender@example.com")
-                    .To("recipient@example.com")
-                    .WithTextBody("This should fail when combining body with template.")
-                    .WithTemplate(41813873)
-                    .Build();
+                Email.Compose()
+                    .From("sender@postkit.com")
+                    .To("recipient@postkit.com")
+                    .TextBody("First body")
+                    .TextBody("Second body");
             }
         );
 
@@ -160,16 +159,39 @@ public class EmailBuilderValidationTests
         // Arrange & Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                Email.CreateBuilder()
-                    .From("sender@example.com")
-                    .To("recipient@example.com")
-                    .WithHtmlBody("This should fail when combining body with template.")
-                    .WithTemplate(41813873)
-                    .Build();
+                Email.Compose()
+                    .From("sender@postkit.com")
+                    .To("recipient@postkit.com")
+                    .HtmlBody("First body")
+                    .HtmlBody("Second body");
             }
         );
 
         Assert.Contains("already been set", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void EmailBuilder_Build_WithTemplateAndSubjectInInvalidState_ThrowsException()
+    {
+        var builder = Email.FromTemplate(41813873)
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .WithModel(new { Name = "Alice" });
+
+        var draftField = typeof(TemplatedEmailBuilder).GetField("_draft", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(draftField);
+
+        var draft = draftField.GetValue(builder);
+        Assert.NotNull(draft);
+
+        var subjectField = draft.GetType()
+            .GetField("_subject", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(subjectField);
+        subjectField.SetValue(draft, "Unexpected subject");
+
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
+
+        Assert.Equal("Neither a text or HTML body, nor a subject may be specified when using a template.", exception.Message);
     }
 
     [Fact]
@@ -181,11 +203,11 @@ public class EmailBuilderValidationTests
         // Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                Email.CreateBuilder()
-                    .From("sender@example.com")
-                    .To("recipient@example.com")
-                    .WithSubject("Large Text Body")
-                    .WithTextBody(largeText)
+                Email.Compose()
+                    .From("sender@postkit.com")
+                    .To("recipient@postkit.com")
+                    .Subject("Large Text Body")
+                    .TextBody(largeText)
                     .Build();
             }
         );
@@ -203,11 +225,11 @@ public class EmailBuilderValidationTests
         // Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                Email.CreateBuilder()
-                    .From("sender@example.com")
-                    .To("recipient@example.com")
-                    .WithSubject("Large HTML Body")
-                    .WithHtmlBody(largeHtml)
+                Email.Compose()
+                    .From("sender@postkit.com")
+                    .To("recipient@postkit.com")
+                    .Subject("Large HTML Body")
+                    .HtmlBody(largeHtml)
                     .Build();
             }
         );
@@ -216,25 +238,23 @@ public class EmailBuilderValidationTests
     }
 
     [Fact]
-    public void EmailBuilder_WithTotalSizeExceedingLimit_ThrowsException()
+    public void EmailBuilder_WithLargeBodyAndAttachmentCombination_ThrowsException()
     {
-        // Arrange - Create bodies and attachments that together exceed 10 MB
-        var text = new string('A', 3 * 1024 * 1024); // 3 MB
-        var html = new string('B', 3 * 1024 * 1024); // 3 MB
-        var attachmentData = new byte[5 * 1024 * 1024]; // 5 MB
+        // Arrange - Build still enforces the limit when attachments are added before the bodies.
+        var text = new string('A', 5 * 1024 * 1024); // 5 MB
+        var attachmentData = new byte[6 * 1024 * 1024]; // 6 MB
         Array.Fill(attachmentData, (byte)'C');
-        var attachment = Attachment.Create("large.bin", "application/octet-stream", attachmentData);
+        var attachment = Attachment.Create("large.dat", "application/octet-stream", attachmentData);
 
         // Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                Email.CreateBuilder()
-                    .From("sender@example.com")
-                    .To("recipient@example.com")
-                    .WithSubject("Total Size Too Large")
-                    .WithTextBody(text)
-                    .WithHtmlBody(html)
-                    .WithAttachment(attachment)
+                Email.Compose()
+                    .From("sender@postkit.com")
+                    .To("recipient@postkit.com")
+                    .Subject("Large Body And Attachment")
+                    .AddAttachment(attachment)
+                    .TextBody(text)
                     .Build();
             }
         );
@@ -249,11 +269,11 @@ public class EmailBuilderValidationTests
         // This test verifies the builder doesn't reject malformed emails at build time.
 
         // Arrange & Act
-        var email = Email.CreateBuilder()
+        var email = Email.Compose()
             .From("invalid-email")
             .To("also-invalid")
-            .WithSubject("Invalid Email Format")
-            .WithTextBody("Testing invalid email addresses.")
+            .Subject("Invalid Email Format")
+            .TextBody("Testing invalid email addresses.")
             .Build();
 
         // Assert - Build succeeds, but send would fail
@@ -262,15 +282,62 @@ public class EmailBuilderValidationTests
         Assert.Equal("invalid-email", email.From.Address);
     }
 
+    [Theory]
+    [InlineData("From")]
+    [InlineData("ReplyTo")]
+    [InlineData("To")]
+    [InlineData("Cc")]
+    [InlineData("Bcc")]
+    public void EmailBuilder_DisplayNameOverloadWithOldOrder_ThrowsHelpfulException(string methodName)
+    {
+        var builder = Email.Compose();
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            {
+                switch (methodName)
+                {
+                    case "From":
+                        builder.From("Recipient Name", "recipient@example.com");
+                        break;
+                    case "ReplyTo":
+                        builder.ReplyTo("Recipient Name", "recipient@example.com");
+                        break;
+                    case "To":
+                        builder.To("Recipient Name", "recipient@example.com");
+                        break;
+                    case "Cc":
+                        builder.Cc("Recipient Name", "recipient@example.com");
+                        break;
+                    case "Bcc":
+                        builder.Bcc("Recipient Name", "recipient@example.com");
+                        break;
+                }
+            }
+        );
+
+        Assert.Equal("address", exception.ParamName);
+        Assert.Equal($"Display name overloads must specify the email address first: use .{methodName}(\"recipient@example.com\", \"Recipient Name\"). (Parameter 'address')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_DisplayNameOverloadWithInvalidAddressAndName_DoesNotThrowDefensiveOrderException()
+    {
+        var exception = Record.Exception(() => Email.Compose()
+            .To("invalid-email", "Recipient @ Company")
+        );
+
+        Assert.Null(exception);
+    }
+
     [Fact]
     public void EmailBuilder_WithEmptyTag_Succeeds()
     {
         // Arrange & Act
-        var email = Email.CreateBuilder()
-            .From("sender@example.com")
-            .To("recipient@example.com")
-            .WithSubject("Empty Tag Test")
-            .WithTextBody("Testing empty tag.")
+        var email = Email.Compose()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .Subject("Empty Tag Test")
+            .TextBody("Testing empty tag.")
             .WithTag(string.Empty)
             .Build();
 
@@ -280,17 +347,83 @@ public class EmailBuilderValidationTests
     }
 
     [Fact]
-    public void EmailBuilder_WithNullTemplateModel_Succeeds()
+    public void EmailBuilder_WithEmptyMetadataValue_Succeeds()
     {
-        // Arrange & Act
-        var email = Email.CreateBuilder()
-            .From("sender@example.com")
-            .To("recipient@example.com")
-            .WithTemplate(41813873)
+        var email = Email.Compose()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .Subject("Empty Metadata Value")
+            .TextBody("Testing empty metadata values.")
+            .AddMetadata("empty_value", string.Empty)
             .Build();
 
-        // Assert
-        Assert.NotNull(email);
-        Assert.Null(email.TemplateModel);
+        Assert.NotNull(email.Metadata);
+        Assert.Equal(string.Empty, email.Metadata["empty_value"]);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithNullTag_ThrowsArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => Email.Compose()
+            .WithTag(null!)
+        );
+
+        Assert.Equal("tag", exception.ParamName);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithNullTemplateModel_ThrowsException()
+    {
+        // Arrange & Act & Assert
+        Assert.Throws<ArgumentNullException>(() =>
+            {
+                Email.FromTemplate(41813873)
+                    .From("sender@postkit.com")
+                    .To("recipient@postkit.com")
+                    .WithModel(null!);
+            }
+        );
+    }
+
+    [Fact]
+    public void EmailBuilder_WithTemplateModelWithoutTemplate_ThrowsException()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            {
+                Email.FromTemplate(41813873)
+                    .From("sender@postkit.com")
+                    .To("recipient@postkit.com")
+                    .Build();
+            }
+        );
+
+        Assert.Equal("A template model is required when using a template.", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithFromCalledTwice_ThrowsException()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            {
+                Email.Compose()
+                    .From("sender@postkit.com")
+                    .From("sender2@postkit.com")
+                    .Build();
+            }
+        );
+
+        Assert.Contains("already been set", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithEmojiSubjectExceedingUtf16Limit_ThrowsException()
+    {
+        var subject = string.Concat(Enumerable.Repeat("😀", 1001));
+
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .Subject(subject)
+        );
+
+        Assert.Equal("The subject cannot be longer than 2000 characters. (Parameter 'subject')", exception.Message);
     }
 }

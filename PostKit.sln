@@ -3,6 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sandbox", "tools\Sandbox\Sandbox.csproj", "{4C9C196B-46C2-461E-AD67-1C2A71E28084}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{83B35624-97C6-4EF6-A198-552522CC5662}"
+	ProjectSection(SolutionItems) = preProject
+		tools\reference.yml = tools\reference.yml
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostKit", "src\PostKit\PostKit.csproj", "{C9D7514E-34AE-45A3-980B-84DBD5120BF2}"
 EndProject

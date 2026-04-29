@@ -1,8 +1,9 @@
 using PostKit;
+using PostKit.Emails;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddPostKit();
+builder.Services.AddPostKit(builder.Configuration);
 
 var app = builder.Build();
 
@@ -16,11 +17,11 @@ ArgumentNullException.ThrowIfNull(defaultSender);
 var testRecipient = configuration.GetValue<string>("PostKit:TestRecipient");
 ArgumentNullException.ThrowIfNull(testRecipient);
 
-var email = Email.CreateBuilder()
+var email = Email.Compose()
     .From(defaultSender)
     .To(testRecipient)
-    .WithSubject("Development Test Message")
-    .WithTextBody("This is a development test message.")
+    .Subject("Development Test Message")
+    .TextBody("This is a development test message.")
     .Build();
 
 await client.SendEmailAsync(email);

@@ -1,15 +1,19 @@
+using System.Text;
+using PostKit.BulkEmails;
+using PostKit.Emails;
+
 namespace PostKit.Common;
 
 internal static class PostmarkSizeEstimator
 {
     internal const long BodySizeLimitInBytes = 5L * 1024 * 1024;
     internal const long MessageSizeLimitInBytes = 10L * 1024 * 1024;
+    internal const long BulkPayloadSizeLimitInBytes = 50L * 1024 * 1024;
     internal const long BatchPayloadSizeLimitInBytes = 50L * 1024 * 1024;
-    private const int Base64LowEndSlackDivisor = 10;
 
     internal static long EstimateBodySizeLowerBound(string? body)
     {
-        return body?.Length ?? 0;
+        return body is null ? 0 : Encoding.UTF8.GetByteCount(body);
     }
 
     internal static long EstimateBase64SizeLowerBound(string? base64Content)
@@ -17,13 +21,68 @@ internal static class PostmarkSizeEstimator
         if (string.IsNullOrEmpty(base64Content))
             return 0;
 
-        var encodedSize = base64Content.Length;
-        encodedSize -= encodedSize / Base64LowEndSlackDivisor;
-
-        return encodedSize;
+        return base64Content.Length;
     }
 
-    internal static long EstimateAttachmentsSizeLowerBound(IReadOnlyCollection<Attachment>? attachments)
+    internal static long EstimateHeaderSizeLowerBound(IReadOnlyDictionary<string, string>? headers)
+    {
+        if (headers is null || headers.Count == 0)
+            return 0;
+
+        long total = 0;
+        foreach (var header in headers)
+        {
+            total += EstimateStringSizeLowerBound(header.Key);
+            total += EstimateStringSizeLowerBound(header.Value);
+            total += 4; // ": " + CRLF
+        }
+
+        return total;
+    }
+
+    internal static long EstimateMessageContentSizeLowerBound(string? textBody, string? htmlBody, int templateModelSizeInBytes, IReadOnlyCollection<Attachment>? attachments, IReadOnlyDictionary<string, string>? headers = null)
+    {
+        return EstimateBodySizeLowerBound(textBody) + EstimateBodySizeLowerBound(htmlBody) + templateModelSizeInBytes + EstimateAttachmentPayloadSizeLowerBound(attachments) + EstimateHeaderSizeLowerBound(headers);
+    }
+
+    internal static long EstimateMessagePayloadSizeLowerBound(Email email)
+    {
+        ArgumentNullException.ThrowIfNull(email);
+
+        return EstimateMessageContentSizeLowerBound(email.TextBody, email.HtmlBody, email.TemplateModelSizeInBytes, email.Attachments, email.Headers) + EstimateMetadataSizeLowerBound(email.Metadata);
+    }
+
+    internal static long EstimateBatchPayloadSizeLowerBound(IReadOnlyCollection<Email> emails)
+    {
+        ArgumentNullException.ThrowIfNull(emails);
+
+        long total = 0;
+        foreach (var email in emails)
+        {
+            ArgumentNullException.ThrowIfNull(email);
+            total += EstimateMessagePayloadSizeLowerBound(email);
+        }
+
+        return total;
+    }
+
+    internal static long EstimateBulkEmailPayloadSizeLowerBound(BulkEmail bulkEmail)
+    {
+        ArgumentNullException.ThrowIfNull(bulkEmail);
+
+        var total = EstimateMessageContentSizeLowerBound(bulkEmail.TextBody, bulkEmail.HtmlBody, 0, bulkEmail.Attachments, bulkEmail.Headers) + EstimateMetadataSizeLowerBound(bulkEmail.Metadata);
+
+        foreach (var message in bulkEmail.Messages)
+        {
+            total += message.TemplateModelSizeInBytes;
+            total += EstimateHeaderSizeLowerBound(message.Headers);
+            total += EstimateMetadataSizeLowerBound(message.Metadata);
+        }
+
+        return total;
+    }
+
+    private static long EstimateAttachmentPayloadSizeLowerBound(IReadOnlyCollection<Attachment>? attachments)
     {
         if (attachments is null || attachments.Count == 0)
             return 0;
@@ -35,10 +94,23 @@ internal static class PostmarkSizeEstimator
         return total;
     }
 
-    internal static long EstimateMessageSizeLowerBound(Email email)
+    private static long EstimateMetadataSizeLowerBound(IReadOnlyDictionary<string, string>? metadata)
     {
-        return EstimateAttachmentsSizeLowerBound(email.Attachments)
-            + EstimateBodySizeLowerBound(email.TextBody)
-            + EstimateBodySizeLowerBound(email.HtmlBody);
+        if (metadata is null || metadata.Count == 0)
+            return 0;
+
+        long total = 0;
+        foreach (var entry in metadata)
+        {
+            total += EstimateStringSizeLowerBound(entry.Key);
+            total += EstimateStringSizeLowerBound(entry.Value);
+        }
+
+        return total;
+    }
+
+    private static long EstimateStringSizeLowerBound(string? value)
+    {
+        return value is null ? 0 : Encoding.UTF8.GetByteCount(value);
     }
 }

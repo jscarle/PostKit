@@ -474,3 +474,4 @@ fabric.properties
 
 # Ignore environment app settings
 appsettings.*.json
+!tests/PostKit.IntegrationTests/appsettings.Development.json
