@@ -30,10 +30,10 @@ jobs:
           dotnet-version: 10.x
           
       - name: Restore dependencies
-        run: dotnet restore tests/PostKit.Tests/PostKit.Tests.csproj
+        run: dotnet restore
 
       - name: Build
-        run: dotnet build tests/PostKit.Tests/PostKit.Tests.csproj --configuration Release --no-restore
+        run: dotnet build --configuration Release --no-restore
 
       - name: Test
         run: dotnet test tests/PostKit.Tests/PostKit.Tests.csproj --configuration Release --no-build --verbosity normal
