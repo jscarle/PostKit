@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using MimeKit;
-using PostKit.Postmark.Common;
+using PostKit.Common;
 
 namespace PostKit.BulkEmails;
 
@@ -23,6 +23,7 @@ internal sealed class DraftBulkEmailMessage
 
     public DraftBulkEmailMessage To(string address, string? name)
     {
+        ValidationExtensions.EnsureAddressFirst(address, name);
         return AddRecipients(ref _to, (address, name).ToAddressList());
     }
 
@@ -53,6 +54,7 @@ internal sealed class DraftBulkEmailMessage
 
     public DraftBulkEmailMessage Cc(string address, string? name)
     {
+        ValidationExtensions.EnsureAddressFirst(address, name);
         return AddRecipients(ref _cc, (address, name).ToAddressList());
     }
 
@@ -83,6 +85,7 @@ internal sealed class DraftBulkEmailMessage
 
     public DraftBulkEmailMessage Bcc(string address, string? name)
     {
+        ValidationExtensions.EnsureAddressFirst(address, name);
         return AddRecipients(ref _bcc, (address, name).ToAddressList());
     }
 

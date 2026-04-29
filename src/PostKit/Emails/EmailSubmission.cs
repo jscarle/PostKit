@@ -20,9 +20,7 @@ public sealed record EmailSubmission
     internal EmailSubmission(Guid messageId, string? to, DateTimeOffset submittedAt, string? internetMessageId = null)
     {
         MessageId = messageId;
-        InternetMessageId = string.IsNullOrWhiteSpace(internetMessageId)
-            ? FormatInternetMessageId(messageId)
-            : internetMessageId.Trim();
+        InternetMessageId = string.IsNullOrWhiteSpace(internetMessageId) ? FormatInternetMessageId(messageId) : internetMessageId.Trim();
         To = to;
         SubmittedAt = submittedAt;
     }
@@ -57,8 +55,10 @@ public sealed record EmailSubmission
             return value;
 
         foreach (var header in headers)
+        {
             if (string.Equals(header.Key, headerName, StringComparison.OrdinalIgnoreCase))
                 return header.Value;
+        }
 
         return null;
     }

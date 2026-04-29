@@ -172,7 +172,7 @@ internal sealed partial class PostKitClient
             return null;
 
         var dict = additionalProperties.ToDictionary(static entry => entry.Key, static entry => entry.Value.Clone(), StringComparer.Ordinal);
-        
+
         return new ReadOnlyDictionary<string, JsonElement>(dict);
     }
 

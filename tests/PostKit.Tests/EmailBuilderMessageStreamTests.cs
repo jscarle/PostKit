@@ -45,7 +45,8 @@ public class EmailBuilderMessageStreamTests
     public void UsingMessageStream_WithLeadingUnderscore_ThrowsArgumentException()
     {
         var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
-            .UseMessageStream("_marketing"));
+            .UseMessageStream("_marketing")
+        );
 
         Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
     }
@@ -54,7 +55,8 @@ public class EmailBuilderMessageStreamTests
     public void UsingMessageStream_WithReservedPrefix_ThrowsArgumentException()
     {
         var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
-            .UseMessageStream("pm-marketing"));
+            .UseMessageStream("pm-marketing")
+        );
 
         Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
     }
@@ -63,7 +65,8 @@ public class EmailBuilderMessageStreamTests
     public void UsingMessageStream_WithReservedAllId_ThrowsArgumentException()
     {
         var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
-            .UseMessageStream("all"));
+            .UseMessageStream("all")
+        );
 
         Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
     }
@@ -72,7 +75,8 @@ public class EmailBuilderMessageStreamTests
     public void UsingMessageStream_WithNullString_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => Email.Compose()
-            .UseMessageStream(null!));
+            .UseMessageStream(null!)
+        );
 
         Assert.Equal("messageStreamId", exception.ParamName);
     }

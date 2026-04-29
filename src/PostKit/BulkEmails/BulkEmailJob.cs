@@ -28,15 +28,7 @@ public sealed record BulkEmailJob
     /// <summary>Gets any additional server-provided fields returned for the bulk request.</summary>
     public IReadOnlyDictionary<string, JsonElement>? AdditionalProperties { [UsedImplicitly] get; }
 
-    internal BulkEmailJob(
-        Guid id,
-        BulkEmailStatus status,
-        DateTimeOffset submittedAt,
-        int totalMessages,
-        double percentageCompleted,
-        string subject,
-        ReadOnlyDictionary<string, JsonElement>? additionalProperties = null
-    )
+    internal BulkEmailJob(Guid id, BulkEmailStatus status, DateTimeOffset submittedAt, int totalMessages, double percentageCompleted, string subject, ReadOnlyDictionary<string, JsonElement>? additionalProperties = null)
     {
         Id = id;
         Status = status;

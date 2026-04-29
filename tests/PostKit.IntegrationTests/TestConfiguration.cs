@@ -5,16 +5,6 @@ namespace PostKit.IntegrationTests;
 /// <summary>Test configuration for integration tests.</summary>
 internal static class TestConfiguration
 {
-    private const string DefaultApiToken = "POSTMARK_API_TEST";
-    private const string DefaultTestFromEmail = "sender@postkit.com";
-    private const string DefaultTestToEmail = "receiver@postkit.com";
-    private const string DefaultTestCcEmail = "cc@postkit.com";
-    private const string DefaultTestBccEmail = "bcc@postkit.com";
-    private const string DefaultTestReplyToEmail = "replyto@postkit.com";
-
-    private static readonly Lazy<IConfigurationRoot> Configuration = new(CreateConfiguration);
-    private static readonly Lazy<IConfigurationRoot> DevelopmentConfiguration = new(CreateDevelopmentConfiguration);
-
     /// <summary>Postmark test API token - This is a special test token provided by Postmark.</summary>
     public static string ApiToken => GetValue("ApiToken", DefaultApiToken);
 
@@ -28,30 +18,36 @@ internal static class TestConfiguration
 
     /// <summary>Values loaded directly from appsettings.Development.json for live-server-only integration tests.</summary>
     public static string? DevelopmentApiToken => GetDevelopmentValue("ApiToken");
+
     public static string? DevelopmentFromEmail => GetDevelopmentValue("FromEmail");
     public static string? DevelopmentToEmail => GetDevelopmentValue("ToEmail");
     public static string? DevelopmentCcEmail => GetDevelopmentValue("CcEmail");
     public static string? DevelopmentBccEmail => GetDevelopmentValue("BccEmail");
     public static string? DevelopmentReplyToEmail => GetDevelopmentValue("ReplyToEmail");
+    private const string DefaultApiToken = "POSTMARK_API_TEST";
+    private const string DefaultTestFromEmail = "sender@postkit.com";
+    private const string DefaultTestToEmail = "receiver@postkit.com";
+    private const string DefaultTestCcEmail = "cc@postkit.com";
+    private const string DefaultTestBccEmail = "bcc@postkit.com";
+    private const string DefaultTestReplyToEmail = "replyto@postkit.com";
+
+    private static readonly Lazy<IConfigurationRoot> Configuration = new(CreateConfiguration);
+    private static readonly Lazy<IConfigurationRoot> DevelopmentConfiguration = new(CreateDevelopmentConfiguration);
 
     private static IConfigurationRoot CreateConfiguration()
     {
-        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
-            ?? "Production";
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
 
-        return new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: true)
-            .AddJsonFile($"appsettings.{environment}.json", optional: true)
+        return new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", true)
+            .AddJsonFile($"appsettings.{environment}.json", true)
             .Build();
     }
 
     private static IConfigurationRoot CreateDevelopmentConfiguration()
     {
-        return new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.Development.json", optional: true)
+        return new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.Development.json", true)
             .Build();
     }
 

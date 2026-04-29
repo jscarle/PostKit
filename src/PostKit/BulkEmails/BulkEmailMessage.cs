@@ -18,15 +18,15 @@ public sealed class BulkEmailMessage
     /// <summary>Gets a snapshot of the template model for recipient-specific rendering.</summary>
     public object? TemplateModel { get; internal init; }
 
-    internal JsonNode? TemplateModelNode { get; init; }
-
-    internal int TemplateModelSizeInBytes { get; init; }
-
     /// <summary>Gets the metadata that applies only to this message.</summary>
     public IReadOnlyDictionary<string, string>? Metadata { get; internal init; }
 
     /// <summary>Gets the headers that apply only to this message.</summary>
     public IReadOnlyDictionary<string, string>? Headers { get; internal init; }
+
+    internal JsonNode? TemplateModelNode { get; init; }
+
+    internal int TemplateModelSizeInBytes { get; init; }
 
     internal BulkEmailMessage()
     {

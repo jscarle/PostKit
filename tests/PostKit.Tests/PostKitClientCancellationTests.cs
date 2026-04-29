@@ -4,9 +4,9 @@ using PostKit.Bounces;
 using PostKit.BulkEmails;
 using PostKit.Common;
 using PostKit.Emails;
+using PostKit.Postmark;
 using ActivateBounceModel = PostKit.Postmark.Bounces.ActivateBounceResponse;
 using BounceModel = PostKit.Postmark.Bounces.BounceResponse;
-using PostKit.Postmark;
 
 namespace PostKit.Tests;
 
@@ -60,7 +60,8 @@ public class PostKitClientCancellationTests
             .UseMessageStream(MessageStream.Broadcast)
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build())
+                .Build()
+            )
             .Build();
 
         using var cts = new CancellationTokenSource();
@@ -146,7 +147,7 @@ public class PostKitClientCancellationTests
         {
             CalledEndpoints.Add(endpoint);
 
-            var bounce = CreateBounceModel(inactive: true);
+            var bounce = CreateBounceModel(true);
             return Task.FromResult(Result.Success((TResponse)(object)bounce));
         }
 
@@ -154,11 +155,7 @@ public class PostKitClientCancellationTests
         {
             CalledEndpoints.Add(endpoint);
 
-            var activation = new ActivateBounceModel
-            {
-                Message = "OK",
-                Bounce = CreateBounceModel(inactive: true),
-            };
+            var activation = new ActivateBounceModel { Message = "OK", Bounce = CreateBounceModel(true) };
 
             return Task.FromResult(Result.Success((TResponse)(object)activation));
         }

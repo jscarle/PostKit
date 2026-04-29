@@ -22,10 +22,7 @@ public class EmailBuilderValidationTests
         var serviceProvider = services.BuildServiceProvider();
 
         // Act
-        var exception = Assert.Throws<OptionsValidationException>(() =>
-        {
-            serviceProvider.GetRequiredService<IPostKitClient>();
-        });
+        var exception = Assert.Throws<OptionsValidationException>(() => { serviceProvider.GetRequiredService<IPostKitClient>(); });
 
         // Assert
         Assert.Contains("The configuration section 'PostKit' must define 'ServerApiToken'.", exception.Failures);
@@ -77,7 +74,7 @@ public class EmailBuilderValidationTests
                     .TextBody("This should fail with too many recipients.");
 
                 // Add 51 recipients (limit is 50)
-                var toBuilder = builder.To($"recipient@postkit.com");
+                var toBuilder = builder.To("recipient@postkit.com");
                 for (var i = 1; i < 51; i++)
                     toBuilder.To($"recipient{i}@postkit.com");
 
@@ -285,6 +282,53 @@ public class EmailBuilderValidationTests
         Assert.Equal("invalid-email", email.From.Address);
     }
 
+    [Theory]
+    [InlineData("From")]
+    [InlineData("ReplyTo")]
+    [InlineData("To")]
+    [InlineData("Cc")]
+    [InlineData("Bcc")]
+    public void EmailBuilder_DisplayNameOverloadWithOldOrder_ThrowsHelpfulException(string methodName)
+    {
+        var builder = Email.Compose();
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            {
+                switch (methodName)
+                {
+                    case "From":
+                        builder.From("Recipient Name", "recipient@example.com");
+                        break;
+                    case "ReplyTo":
+                        builder.ReplyTo("Recipient Name", "recipient@example.com");
+                        break;
+                    case "To":
+                        builder.To("Recipient Name", "recipient@example.com");
+                        break;
+                    case "Cc":
+                        builder.Cc("Recipient Name", "recipient@example.com");
+                        break;
+                    case "Bcc":
+                        builder.Bcc("Recipient Name", "recipient@example.com");
+                        break;
+                }
+            }
+        );
+
+        Assert.Equal("address", exception.ParamName);
+        Assert.Equal($"Display name overloads must specify the email address first: use .{methodName}(\"recipient@example.com\", \"Recipient Name\"). (Parameter 'address')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_DisplayNameOverloadWithInvalidAddressAndName_DoesNotThrowDefensiveOrderException()
+    {
+        var exception = Record.Exception(() => Email.Compose()
+            .To("invalid-email", "Recipient @ Company")
+        );
+
+        Assert.Null(exception);
+    }
+
     [Fact]
     public void EmailBuilder_WithEmptyTag_Succeeds()
     {
@@ -321,7 +365,8 @@ public class EmailBuilderValidationTests
     public void EmailBuilder_WithNullTag_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => Email.Compose()
-            .WithTag(null!));
+            .WithTag(null!)
+        );
 
         Assert.Equal("tag", exception.ParamName);
     }
@@ -376,7 +421,8 @@ public class EmailBuilderValidationTests
         var subject = string.Concat(Enumerable.Repeat("😀", 1001));
 
         var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
-            .Subject(subject));
+            .Subject(subject)
+        );
 
         Assert.Equal("The subject cannot be longer than 2000 characters. (Parameter 'subject')", exception.Message);
     }

@@ -16,7 +16,8 @@ Upgrading to `10.1.0` requires a few source changes:
 - Shared email primitives now live in `PostKit.Common`. Add `using PostKit.Common;` for `Attachment`, `LinkTracking`, and `MessageStream`.
 - Bulk email types are new and live in `PostKit.BulkEmails`.
 - Display-name overloads are address-first. Use `.From("sender@example.com", "Sender Name")`, `.To("recipient@example.com", "Recipient Name")`, and the same order for `ReplyTo`, `Cc`, and `Bcc`.
-- `EmailSubmission.MessageId` is now a `Guid` containing Postmark's message identifier. `InternetMessageId` falls back to the RFC-style `<...@mtasv.net>` value, but preserves your `Message-ID` header when `X-PM-KeepID: true` is set on the outbound message.
+- `EmailSubmission.MessageId` is now a `Guid` containing Postmark's message identifier. `InternetMessageId` falls back to the RFC-style `<...@mtasv.net>` value, but preserves your `Message-ID` header when `X-PM-KeepID: true` is set on the
+  outbound message.
 - `EmailBatchSubmission.Results` now exposes `IReadOnlyList<Result<EmailSubmission>>`. Per-email failures are represented as failed item results, typically with a `PostmarkError`, instead of `EmailSubmission` entries.
 
 Typical upgrade imports:
@@ -61,7 +62,8 @@ builder.Services.AddPostKit(builder.Configuration);
 var app = builder.Build();
 ```
 
-In ASP.NET Core apps, `builder.Services.AddPostKit()` also works because `IConfiguration` is already registered in the service provider. The explicit `IConfiguration` overload shown above validates that the `PostKit` section exists immediately and does not require registering `IConfiguration` yourself.
+In ASP.NET Core apps, `builder.Services.AddPostKit()` also works because `IConfiguration` is already registered in the service provider. The explicit `IConfiguration` overload shown above validates that the `PostKit` section exists
+immediately and does not require registering `IConfiguration` yourself.
 
 Configure your Postmark Server API Token in `appsettings.json`:
 
@@ -258,7 +260,8 @@ await _postKitClient.SendEmailAsync(email);
 
 When batching template emails, every email in the batch must use a template. Mixing templated and non-templated emails in the same batch is rejected by the client.
 
-Template models use `System.Text.Json` web defaults by default, so CLR properties such as `FirstName` serialize as `firstName`. If you want different naming, set [PostKitTemplateModelSerialization.DefaultSerializerOptions](#template-model-serialization) globally or pass explicit serializer options to `WithModel(...)` for that call.
+Template models use `System.Text.Json` web defaults by default, so CLR properties such as `FirstName` serialize as `firstName`. If you want different naming,
+set [PostKitTemplateModelSerialization.DefaultSerializerOptions](#template-model-serialization) globally or pass explicit serializer options to `WithModel(...)` for that call.
 
 #### Advanced Features
 
@@ -350,7 +353,8 @@ var bulkEmail = BulkEmail.Compose()
     .Build();
 ```
 
-If Postmark accepts the bulk request but reports unprocessable messages, `SendBulkEmailAsync` returns a failed result with `BulkEmailValidationError`. The error includes both the accepted bulk job and the server-provided unprocessable-content payload.
+If Postmark accepts the bulk request but reports unprocessable messages, `SendBulkEmailAsync` returns a failed result with `BulkEmailValidationError`. The error includes both the accepted bulk job and the server-provided
+unprocessable-content payload.
 
 ```csharp
 using PostKit.Errors;
@@ -386,7 +390,8 @@ if (pageResult.IsSuccess(out var page))
 }
 ```
 
-The bounce client also supports `GetBounceAsync`, `GetBounceDumpAsync`, `GetDeliveryStatsAsync`, and `ActivateBounceAsync`. Bounce date filters are sent using Postmark's US Eastern time interpretation; UTC `DateTime` values are converted before the request is made.
+The bounce client also supports `GetBounceAsync`, `GetBounceDumpAsync`, `GetDeliveryStatsAsync`, and `ActivateBounceAsync`. Bounce date filters are sent using Postmark's US Eastern time interpretation; UTC `DateTime` values are converted
+before the request is made.
 
 ### Template Model Serialization
 
@@ -422,8 +427,10 @@ var email = Email.FromTemplate("welcome-email")
 
 ### Size Limits
 
-Postmark limits `TextBody` and `HtmlBody` to 5 MB each, email message size to 10 MB, bulk email payloads to 50 MB, and email batches to 500 items / 50 MB. PostKit uses conservative lower-bound estimates based on already-materialized values to
-prevent grossly oversized requests without doing expensive serialization. The local pre-checks count template-model bytes, body bytes, Base64 attachment bytes, and custom-header bytes, and the batch/bulk payload checks also include metadata bytes; Postmark remains the authoritative source of truth for the final server-side size checks.
+Postmark limits `TextBody` and `HtmlBody` to 5 MB each, email message size to 10 MB, bulk email payloads to 50 MB, and email batches to 500 items / 50 MB. PostKit uses conservative lower-bound estimates based on already-materialized values
+to
+prevent grossly oversized requests without doing expensive serialization. The local pre-checks count template-model bytes, body bytes, Base64 attachment bytes, and custom-header bytes, and the batch/bulk payload checks also include metadata
+bytes; Postmark remains the authoritative source of truth for the final server-side size checks.
 
 ### Error Handling
 

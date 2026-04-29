@@ -5,11 +5,6 @@ namespace PostKit.Common;
 /// <summary>Represents an email attachment that can be sent with a <see cref="Email"/>.</summary>
 public sealed class Attachment
 {
-    private static readonly HashSet<string> ForbiddenFileTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "vbs", "exe", "bin", "bat", "chm", "com", "cpl", "crt", "hlp", "hta", "inf", "ins", "isp", "jse", "lnk", "mdb", "pcd", "pif", "reg", "scr", "sct", "shs", "vbe", "vba", "wsf", "wsh", "wsl", "msc", "msi", "msp", "mst",
-    };
-
     /// <summary>Gets the file name that will be presented to the email recipient.</summary>
     public string Name { get; }
 
@@ -21,6 +16,41 @@ public sealed class Attachment
 
     /// <summary>Gets the optional content identifier of the attachment when it should be embedded in the message body.</summary>
     public string? ContentId { get; }
+
+    private static readonly HashSet<string> ForbiddenFileTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "vbs",
+        "exe",
+        "bin",
+        "bat",
+        "chm",
+        "com",
+        "cpl",
+        "crt",
+        "hlp",
+        "hta",
+        "inf",
+        "ins",
+        "isp",
+        "jse",
+        "lnk",
+        "mdb",
+        "pcd",
+        "pif",
+        "reg",
+        "scr",
+        "sct",
+        "shs",
+        "vbe",
+        "vba",
+        "wsf",
+        "wsh",
+        "wsl",
+        "msc",
+        "msi",
+        "msp",
+        "mst",
+    };
 
     private Attachment(string name, string contentType, string content, string? contentId)
     {
@@ -66,9 +96,7 @@ public sealed class Attachment
         if (trimmedContentId.Length == 0)
             throw new ArgumentException("Content ID cannot be empty or whitespace.", nameof(contentId));
 
-        var contentIdValue = trimmedContentId.StartsWith("cid:", StringComparison.OrdinalIgnoreCase)
-            ? trimmedContentId["cid:".Length..]
-            : trimmedContentId;
+        var contentIdValue = trimmedContentId.StartsWith("cid:", StringComparison.OrdinalIgnoreCase) ? trimmedContentId["cid:".Length..] : trimmedContentId;
 
         if (contentIdValue.Length == 0)
             throw new ArgumentException("Content ID cannot be empty or whitespace.", nameof(contentId));
@@ -77,8 +105,10 @@ public sealed class Attachment
             throw new ArgumentException("Content ID should not contain angle brackets.", nameof(contentId));
 
         foreach (var ch in contentIdValue)
+        {
             if (ch is < (char)0x21 or > (char)0x7E)
                 throw new ArgumentException("Content ID must contain only visible ASCII characters and no spaces.", nameof(contentId));
+        }
 
         var normalizedContentId = $"cid:{contentIdValue}";
 
@@ -88,8 +118,10 @@ public sealed class Attachment
     private static bool ContainsInvalidNameCharacter(string name)
     {
         foreach (var ch in name)
+        {
             if (char.IsControl(ch) || ch is '/' or '\\')
                 return true;
+        }
 
         return false;
     }

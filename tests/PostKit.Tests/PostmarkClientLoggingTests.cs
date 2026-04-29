@@ -27,11 +27,7 @@ public class PostmarkClientLoggingTests
                                     }
                                     """;
 
-        using var httpClient = new HttpClient(new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(responseJson, Encoding.UTF8, MediaTypeNames.Application.Json),
-            }
-        ));
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(responseJson, Encoding.UTF8, MediaTypeNames.Application.Json) }));
         var logger = new CollectingLogger<PostmarkClient>();
         var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), logger);
         var request = new EmailRequest

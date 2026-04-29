@@ -78,7 +78,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
 
     private async Task<Result<TResponse>> GetRequestFailure<TResponse>(string endpoint, HttpResponseMessage responseMessage, CancellationToken cancellationToken)
     {
-        var parsedErrorResponse = await TryGetPostmarkErrorResponse(endpoint, responseMessage, strict: responseMessage.StatusCode == HttpStatusCode.UnprocessableEntity, cancellationToken);
+        var parsedErrorResponse = await TryGetPostmarkErrorResponse(endpoint, responseMessage, responseMessage.StatusCode == HttpStatusCode.UnprocessableEntity, cancellationToken);
         if (parsedErrorResponse.IsFailure(out var parseError, out var postmarkErrorResponse))
             return Result.Failure<TResponse>(parseError);
 
@@ -123,7 +123,8 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             var httpError = new HttpError(HttpStatusCode.ServiceUnavailable, "The Postmark API is currently unavailable.");
             return Result.Failure<TResponse>(httpError);
         }
-        var genericHttpError = new HttpError(responseMessage.StatusCode, $"An '{(int)responseMessage.StatusCode} {responseMessage.ReasonPhrase}' error occurred while processing the request to the '{endpoint}' endpoint of the Postmark API.");
+        var genericHttpError = new HttpError(responseMessage.StatusCode, $"An '{(int)responseMessage.StatusCode} {responseMessage.ReasonPhrase}' error occurred while processing the request to the '{endpoint}' endpoint of the Postmark API."
+        );
         return Result.Failure<TResponse>(genericHttpError);
     }
 

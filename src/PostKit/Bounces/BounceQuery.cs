@@ -26,12 +26,10 @@ public sealed record BounceQuery
     /// <summary>Gets the optional tag filter.</summary>
     public string? Tag { get; init; }
 
-    /// <summary>Gets the optional upper bound for the bounce timestamp.
-    /// Postmark accepts either a date (`yyyy-MM-dd`) or a timestamp up to seconds (`yyyy-MM-ddTHH:mm:ss`) and interprets it using US Eastern time.</summary>
+    /// <summary>Gets the optional upper bound for the bounce timestamp. Postmark accepts either a date (`yyyy-MM-dd`) or a timestamp up to seconds (`yyyy-MM-ddTHH:mm:ss`) and interprets it using US Eastern time.</summary>
     public DateTime? ToDate { get; init; }
 
-    /// <summary>Gets the optional lower bound for the bounce timestamp.
-    /// Postmark accepts either a date (`yyyy-MM-dd`) or a timestamp up to seconds (`yyyy-MM-ddTHH:mm:ss`) and interprets it using US Eastern time.</summary>
+    /// <summary>Gets the optional lower bound for the bounce timestamp. Postmark accepts either a date (`yyyy-MM-dd`) or a timestamp up to seconds (`yyyy-MM-ddTHH:mm:ss`) and interprets it using US Eastern time.</summary>
     public DateTime? FromDate { get; init; }
 
     /// <summary>Gets the optional message stream ID filter.</summary>

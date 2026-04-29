@@ -129,7 +129,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /bounces/{bounceid}:
     get:
       operationId: "getSingleBounce"
@@ -156,7 +156,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /bounces/{bounceid}/activate:
     put:
       operationId: "activateBounce"
@@ -183,7 +183,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /bounces/{bounceid}/dump:
     get:
       tags:
@@ -209,7 +209,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /data-removals:
     post:
       operationId: "createDataRemovalRequest"
@@ -217,7 +217,7 @@ paths:
       tags:
         - "Data Removal"
       security:
-        - accountToken: []
+        - accountToken: [ ]
       requestBody:
         required: true
         content:
@@ -242,7 +242,7 @@ paths:
       tags:
         - "Data Removal"
       security:
-        - accountToken: []
+        - accountToken: [ ]
       parameters:
         - name: "id"
           in: "path"
@@ -279,7 +279,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /domains:
     get:
       operationId: "listDomains"
@@ -314,7 +314,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
     post:
       operationId: "createDomain"
       summary: "Create a Domain"
@@ -337,7 +337,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /domains/{domainid}:
     get:
       operationId: "getDomain"
@@ -363,7 +363,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
     put:
       operationId: "editDomain"
       tags:
@@ -393,7 +393,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
     delete:
       operationId: "deleteDomain"
       tags:
@@ -418,7 +418,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /domains/{domainid}/rotatedkim:
     post:
       operationId: "rotateDKIMKeyForDomain"
@@ -458,7 +458,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /domains/{domainid}/verifydkim:
     put:
       operationId: "requestDkimVerificationForDomain"
@@ -485,7 +485,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /domains/{domainid}/verifyreturnpath:
     put:
       operationId: "requestReturnPathVerificationForDomain"
@@ -512,7 +512,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /domains/{domainid}/verifyspf:
     post:
       operationId: "requestSPFVerificationForDomain"
@@ -538,7 +538,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /email:
     post:
       operationId: "sendEmail"
@@ -562,7 +562,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /email/batch:
     post:
       operationId: "sendEmailBatch"
@@ -586,7 +586,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /email/batchWithTemplates:
     post:
       operationId: "sendEmailBatchWithTemplates"
@@ -612,7 +612,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /email/bulk:
     post:
       operationId: "sendBulkEmail"
@@ -620,7 +620,7 @@ paths:
       tags:
         - "Email"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       requestBody:
         required: true
         content:
@@ -645,7 +645,7 @@ paths:
       tags:
         - "Email"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "bulkRequestId"
           in: "path"
@@ -689,7 +689,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /message-streams:
     get:
       operationId: "listMessageStreams"
@@ -697,7 +697,7 @@ paths:
       tags:
         - "Message Streams"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "MessageStreamType"
           in: "query"
@@ -729,7 +729,7 @@ paths:
       tags:
         - "Message Streams"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       requestBody:
         required: true
         content:
@@ -754,7 +754,7 @@ paths:
       tags:
         - "Message Streams"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "streamId"
           in: "path"
@@ -779,7 +779,7 @@ paths:
       tags:
         - "Message Streams"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "streamId"
           in: "path"
@@ -811,7 +811,7 @@ paths:
       tags:
         - "Message Streams"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "streamId"
           in: "path"
@@ -837,7 +837,7 @@ paths:
       tags:
         - "Suppressions"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "streamId"
           in: "path"
@@ -869,7 +869,7 @@ paths:
       tags:
         - "Suppressions"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "streamId"
           in: "path"
@@ -901,7 +901,7 @@ paths:
       tags:
         - "Suppressions"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "streamId"
           in: "path"
@@ -958,7 +958,7 @@ paths:
       tags:
         - "Message Streams"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "streamId"
           in: "path"
@@ -1059,7 +1059,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /messages/inbound/{messageid}/bypass:
     put:
       operationId: "bypassRulesForInboundMessage"
@@ -1085,7 +1085,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /messages/inbound/{messageid}/details:
     get:
       operationId: "getInboundMessageDetails"
@@ -1111,7 +1111,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /messages/inbound/{messageid}/retry:
     put:
       operationId: "retryInboundMessageProcessing"
@@ -1137,7 +1137,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /messages/outbound:
     get:
       operationId: "searchOutboundMessages"
@@ -1222,7 +1222,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /messages/outbound/clicks:
     get:
       operationId: "searchClicksForOutboundMessages"
@@ -1336,7 +1336,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /messages/outbound/clicks/{messageid}:
     get:
       operationId: "getClicksForSingleOutboundMessage"
@@ -1380,7 +1380,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /messages/outbound/opens:
     get:
       operationId: "searchOpensForOutboundMessages"
@@ -1494,7 +1494,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /messages/outbound/opens/{messageid}:
     get:
       operationId: "getOpensForSingleOutboundMessage"
@@ -1538,7 +1538,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /messages/outbound/{messageid}/details:
     get:
       operationId: "getOutboundMessageDetails"
@@ -1564,7 +1564,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /messages/outbound/{messageid}/dump:
     get:
       operationId: "getOutboundMessageDump"
@@ -1590,7 +1590,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /senders:
     get:
       operationId: "listSenderSignatures"
@@ -1625,7 +1625,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
     post:
       operationId: "createSenderSignature"
       summary: "Create a Sender Signature"
@@ -1648,7 +1648,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /senders/{signatureid}:
     get:
       operationId: "getSenderSignature"
@@ -1674,7 +1674,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
     put:
       operationId: "editSenderSignature"
       tags:
@@ -1705,7 +1705,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
     delete:
       operationId: "deleteSenderSignature"
       tags:
@@ -1731,7 +1731,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /senders/{signatureid}/requestnewdkim:
     post:
       operationId: "requestNewDKIMKeyForSenderSignature"
@@ -1771,7 +1771,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /senders/{signatureid}/resend:
     post:
       operationId: "resendSenderSignatureConfirmationEmail"
@@ -1798,7 +1798,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /senders/{signatureid}/verifyspf:
     post:
       operationId: "requestSPFVerificationForSenderSignature"
@@ -1825,7 +1825,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /server:
     get:
       summary: "Get Server Configuration"
@@ -1844,7 +1844,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
     put:
       summary: "Edit Server Configuration"
       operationId: "editCurrentServerConfiguration"
@@ -1868,7 +1868,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /servers:
     get:
       operationId: "listServers"
@@ -1905,7 +1905,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
     post:
       operationId: "createServer"
       tags:
@@ -1928,7 +1928,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /servers/{serverid}:
     get:
       operationId: "getServerInformation"
@@ -1954,7 +1954,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
     put:
       operationId: "editServerInformation"
       tags:
@@ -1984,7 +1984,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
     delete:
       operationId: "deleteServer"
       tags:
@@ -2005,7 +2005,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /stats/outbound:
     get:
       operationId: "getOutboundOverviewStatistics"
@@ -2042,7 +2042,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /stats/outbound/bounces:
     get:
       operationId: "getBounceCounts"
@@ -2101,7 +2101,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /stats/outbound/clicks:
     get:
       operationId: "getOutboundClickCounts"
@@ -2138,7 +2138,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /stats/outbound/clicks/browserfamilies:
     get:
       operationId: "getOutboundClickCountsByBrowserFamily"
@@ -2175,7 +2175,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /stats/outbound/clicks/location:
     get:
       operationId: "getOutboundClickCountsByLocation"
@@ -2212,7 +2212,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /stats/outbound/clicks/platforms:
     get:
       operationId: "getOutboundClickCountsByPlatform"
@@ -2249,7 +2249,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /stats/outbound/opens:
     get:
       operationId: "getOutboundOpenCounts"
@@ -2300,7 +2300,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /stats/outbound/opens/emailclients:
     get:
       operationId: "getOutboundOpenCountsByEmailClient"
@@ -2349,7 +2349,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /stats/outbound/opens/platforms:
     get:
       operationId: "getOutboundOpenCountsByPlatform"
@@ -2408,7 +2408,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /stats/outbound/sends:
     get:
       operationId: "getSentCounts"
@@ -2445,7 +2445,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /stats/outbound/spam:
     get:
       operationId: "getSpamComplaints"
@@ -2492,7 +2492,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /stats/outbound/tracked:
     get:
       operationId: "getTrackedEmailCounts"
@@ -2539,7 +2539,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /templates:
     get:
       operationId: "listTemplates"
@@ -2586,7 +2586,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
     post:
       summary: "Create a Template"
       tags:
@@ -2609,7 +2609,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /templates/push:
     put:
       operationId: "pushTemplates"
@@ -2634,7 +2634,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - accountToken: []
+        - accountToken: [ ]
   /templates/validate:
     post:
       operationId: "testTemplateContent"
@@ -2658,7 +2658,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /templates/{templateIdOrAlias}:
     get:
       operationId: "getSingleTemplate"
@@ -2685,7 +2685,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
     put:
       operationId: "updateTemplate"
       summary: "Update a Template"
@@ -2717,7 +2717,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
     delete:
       operationId: "deleteTemplate"
       summary: "Delete a Template"
@@ -2743,7 +2743,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /triggers/inboundrules:
     post:
       operationId: "createInboundRule"
@@ -2771,7 +2771,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
     get:
       operationId: "listInboundRules"
       tags:
@@ -2813,7 +2813,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /triggers/inboundrules/{triggerid}:
     delete:
       operationId: "deleteInboundRule"
@@ -2839,7 +2839,7 @@ paths:
         500:
           $ref: "#/components/responses/500"
       security:
-        - serverToken: []
+        - serverToken: [ ]
   /webhooks:
     get:
       operationId: "listWebhooks"
@@ -2847,7 +2847,7 @@ paths:
       tags:
         - "Webhooks"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "MessageStream"
           in: "query"
@@ -2870,7 +2870,7 @@ paths:
       tags:
         - "Webhooks"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       requestBody:
         required: true
         content:
@@ -2895,7 +2895,7 @@ paths:
       tags:
         - "Webhooks"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "id"
           in: "path"
@@ -2920,7 +2920,7 @@ paths:
       tags:
         - "Webhooks"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "id"
           in: "path"
@@ -2951,7 +2951,7 @@ paths:
       tags:
         - "Webhooks"
       security:
-        - serverToken: []
+        - serverToken: [ ]
       parameters:
         - name: "id"
           in: "path"

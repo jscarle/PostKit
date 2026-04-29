@@ -51,7 +51,8 @@ internal static class BulkEmailExtensions
             TrackLinks = trackLinks,
             Attachments = attachments,
             Headers = headers,
-            Messages = bulkEmail.Messages.Select(ToBulkEmailMessageRequest)
+            Messages = bulkEmail.Messages
+                .Select(ToBulkEmailMessageRequest)
                 .ToList(),
         };
     }

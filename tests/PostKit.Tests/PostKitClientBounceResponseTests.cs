@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using MimeKit;
 using PostKit.Bounces;
 using PostKit.Postmark;
+using PostKit.Postmark.Bounces;
 
 namespace PostKit.Tests;
 
@@ -41,7 +42,12 @@ public class PostKitClientBounceResponseTests
                                     }
                                     """;
 
-        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&todate=2026-03-11T13%3A59%3A59&fromdate=2026-03-11T13%3A00%3A00&messagestream=outbound"] = responseJson });
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string>
+            {
+                ["/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&todate=2026-03-11T13%3A59%3A59&fromdate=2026-03-11T13%3A00%3A00&messagestream=outbound"] =
+                    responseJson,
+            }
+        );
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
         var query = new BounceQuery
@@ -61,7 +67,10 @@ public class PostKitClientBounceResponseTests
         var result = await client.GetBouncesAsync(query, CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.Equal("/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&todate=2026-03-11T13%3A59%3A59&fromdate=2026-03-11T13%3A00%3A00&messagestream=outbound", postmark.LastEndpoint);
+        Assert.Equal(
+            "/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&todate=2026-03-11T13%3A59%3A59&fromdate=2026-03-11T13%3A00%3A00&messagestream=outbound",
+            postmark.LastEndpoint
+        );
 
         Assert.Equal(1, response.TotalCount);
         var bounce = Assert.Single(response.Bounces);
@@ -91,12 +100,7 @@ public class PostKitClientBounceResponseTests
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
-        var query = new BounceQuery
-        {
-            Count = 10,
-            FromDate = new DateTime(2026, 1, 15, 18, 0, 0, DateTimeKind.Utc),
-            ToDate = new DateTime(2026, 1, 15, 18, 59, 59, DateTimeKind.Utc),
-        };
+        var query = new BounceQuery { Count = 10, FromDate = new DateTime(2026, 1, 15, 18, 0, 0, DateTimeKind.Utc), ToDate = new DateTime(2026, 1, 15, 18, 59, 59, DateTimeKind.Utc) };
 
         var result = await client.GetBouncesAsync(query, CancellationToken.None);
 
@@ -119,12 +123,7 @@ public class PostKitClientBounceResponseTests
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
-        var query = new BounceQuery
-        {
-            Count = 10,
-            FromDate = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc),
-            ToDate = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc),
-        };
+        var query = new BounceQuery { Count = 10, FromDate = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc), ToDate = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc) };
 
         var result = await client.GetBouncesAsync(query, CancellationToken.None);
 
@@ -146,7 +145,7 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.GetBouncesAsync(new BounceQuery { Count = 10, FromDate = invalidLocalTime }, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out BouncePage? _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
         Assert.Equal("The bounce query from-date is an invalid local time.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -271,7 +270,9 @@ public class PostKitClientBounceResponseTests
         var result = await client.GetBouncesAsync(new BounceQuery { Count = 10 }, CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.Equal(BounceType.ChallengeVerification, Assert.Single(response.Bounces).Type);
+        Assert.Equal(BounceType.ChallengeVerification, Assert.Single(response.Bounces)
+            .Type
+        );
     }
 
     [Fact]
@@ -309,7 +310,7 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.GetBouncesAsync(new BounceQuery { Count = 10 }, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out BouncePage? _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
         Assert.Equal("Bounce item 0 could not be mapped: Bounce type value 'BrandNewBounce' returned from the Postmark Bounces API is not supported.", error.Message);
     }
 
@@ -432,7 +433,9 @@ public class PostKitClientBounceResponseTests
         var result = await client.GetDeliveryStatsAsync(CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.Equal(BounceType.ChallengeVerification, Assert.Single(response.Bounces).Type);
+        Assert.Equal(BounceType.ChallengeVerification, Assert.Single(response.Bounces)
+            .Type
+        );
     }
 
     [Fact]
@@ -457,7 +460,7 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.GetDeliveryStatsAsync(CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out DeliveryStats? _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
         Assert.Equal("Delivery stats bounce item 0 could not be mapped: Bounce type value 'BrandNewBounce' returned from the Postmark Bounces API is not supported.", error.Message);
     }
 
@@ -531,20 +534,14 @@ public class PostKitClientBounceResponseTests
                                        }
                                        """;
 
-        var postmark = new RecordingPostmarkClient(
-            getResponses: new Dictionary<string, string> { ["/bounces/1599950051"] = getResponseJson },
-            putResponses: new Dictionary<string, string> { ["/bounces/1599950051/activate"] = activateResponseJson }
-        );
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/bounces/1599950051"] = getResponseJson }, new Dictionary<string, string> { ["/bounces/1599950051/activate"] = activateResponseJson });
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
         var result = await client.ActivateBounceAsync(1599950051, CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
-        Assert.Equal(
-            ["/bounces/1599950051/activate", "/bounces/1599950051"],
-            postmark.CalledEndpoints
-        );
+        Assert.Equal(["/bounces/1599950051/activate", "/bounces/1599950051"], postmark.CalledEndpoints);
         Assert.Equal("OK", response.Message);
         Assert.Equal("Bounce", response.Bounce.RecordType);
         Assert.Equal(1599950051, response.Bounce.Id);
@@ -602,10 +599,7 @@ public class PostKitClientBounceResponseTests
                                        }
                                        """;
 
-        var postmark = new RecordingPostmarkClient(
-            getResponses: new Dictionary<string, string> { ["/bounces/1599950051"] = getResponseJson },
-            putResponses: new Dictionary<string, string> { ["/bounces/1599950051/activate"] = activateResponseJson }
-        );
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/bounces/1599950051"] = getResponseJson }, new Dictionary<string, string> { ["/bounces/1599950051/activate"] = activateResponseJson });
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
@@ -614,10 +608,7 @@ public class PostKitClientBounceResponseTests
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal("OK", response.Message);
         Assert.False(response.Bounce.Inactive);
-        Assert.Equal(
-            ["/bounces/1599950051/activate", "/bounces/1599950051"],
-            postmark.CalledEndpoints
-        );
+        Assert.Equal(["/bounces/1599950051/activate", "/bounces/1599950051"], postmark.CalledEndpoints);
     }
 
     [Fact]
@@ -632,24 +623,21 @@ public class PostKitClientBounceResponseTests
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal("OK", response.Message);
         Assert.False(response.Bounce.Inactive);
-        Assert.Equal(
-            ["/bounces/1599950051/activate", "/bounces/1599950051", "/bounces/1599950051"],
-            postmark.CalledEndpoints
-        );
+        Assert.Equal(["/bounces/1599950051/activate", "/bounces/1599950051", "/bounces/1599950051"], postmark.CalledEndpoints);
     }
 
     [Fact]
     public async Task ActivateBounceAsync_WhenConfirmationNeverObservesActiveBounce_ReturnsFailure()
     {
-       var postmark = new NeverConfirmedBouncePostmarkClient();
-       var logger = new TestLogger();
-       var client = new PostKitClient(postmark, logger);
+        var postmark = new NeverConfirmedBouncePostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
 
-       var result = await client.ActivateBounceAsync(1599950051, CancellationToken.None);
+        var result = await client.ActivateBounceAsync(1599950051, CancellationToken.None);
 
-       Assert.True(result.IsFailure(out var error, out BounceActivation? _), result.ToString());
-       Assert.Contains("could not be confirmed as active", error.Message, StringComparison.Ordinal);
-       Assert.Equal(31, postmark.CalledEndpoints.Count);
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Contains("could not be confirmed as active", error.Message, StringComparison.Ordinal);
+        Assert.Equal(31, postmark.CalledEndpoints.Count);
     }
 
     [Fact]
@@ -691,16 +679,13 @@ public class PostKitClientBounceResponseTests
         Assert.Null(postmark.LastEndpoint);
     }
 
-    private sealed class RecordingPostmarkClient(
-        Dictionary<string, string>? getResponses = null,
-        Dictionary<string, string>? putResponses = null
-    ) : IPostmarkClient
+    private sealed class RecordingPostmarkClient(Dictionary<string, string>? getResponses = null, Dictionary<string, string>? putResponses = null) : IPostmarkClient
     {
-        private readonly Dictionary<string, string> _getResponses = getResponses ?? [];
-        private readonly Dictionary<string, string> _putResponses = putResponses ?? [];
+        public List<string> CalledEndpoints { get; } = [];
 
         public string? LastEndpoint { get; private set; }
-        public List<string> CalledEndpoints { get; } = [];
+        private readonly Dictionary<string, string> _getResponses = getResponses ?? [];
+        private readonly Dictionary<string, string> _putResponses = putResponses ?? [];
 
         public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
@@ -733,9 +718,8 @@ public class PostKitClientBounceResponseTests
 
     private sealed class TransientConfirmationFailurePostmarkClient : IPostmarkClient
     {
-        private int _getAttempts;
-
         public List<string> CalledEndpoints { get; } = [];
+        private int _getAttempts;
 
         public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
@@ -750,7 +734,7 @@ public class PostKitClientBounceResponseTests
             if (_getAttempts == 1)
                 throw new InvalidOperationException("Transient confirmation failure.");
 
-            var bounce = new PostKit.Postmark.Bounces.BounceResponse
+            var bounce = new BounceResponse
             {
                 Id = 1599950051,
                 Type = "HardBounce",
@@ -778,10 +762,10 @@ public class PostKitClientBounceResponseTests
         {
             CalledEndpoints.Add(endpoint);
 
-            var activation = new PostKit.Postmark.Bounces.ActivateBounceResponse
+            var activation = new ActivateBounceResponse
             {
                 Message = "OK",
-                Bounce = new PostKit.Postmark.Bounces.BounceResponse
+                Bounce = new BounceResponse
                 {
                     Id = 1599950051,
                     Type = "HardBounce",
@@ -819,7 +803,7 @@ public class PostKitClientBounceResponseTests
         {
             CalledEndpoints.Add(endpoint);
 
-            var bounce = new PostKit.Postmark.Bounces.BounceResponse
+            var bounce = new BounceResponse
             {
                 Id = 1599950051,
                 Type = "HardBounce",
@@ -847,10 +831,10 @@ public class PostKitClientBounceResponseTests
         {
             CalledEndpoints.Add(endpoint);
 
-            var activation = new PostKit.Postmark.Bounces.ActivateBounceResponse
+            var activation = new ActivateBounceResponse
             {
                 Message = "OK",
-                Bounce = new PostKit.Postmark.Bounces.BounceResponse
+                Bounce = new BounceResponse
                 {
                     Id = 1599950051,
                     Type = "HardBounce",

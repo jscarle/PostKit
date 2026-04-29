@@ -2,7 +2,7 @@ using System.Globalization;
 using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.Bounces;
-using PostKit.Postmark.Common;
+using PostKit.Common;
 using ActivateBounceModel = PostKit.Postmark.Bounces.ActivateBounceResponse;
 using BounceModel = PostKit.Postmark.Bounces.BounceResponse;
 using GetBounceDumpModel = PostKit.Postmark.Bounces.GetBounceDumpResponse;
@@ -267,7 +267,6 @@ internal sealed partial class PostKitClient
             }
 
             if (attempt < BounceActivationConfirmationAttempts - 1)
-            {
                 try
                 {
                     await Task.Delay(BounceActivationConfirmationDelay, cancellationToken);
@@ -277,7 +276,6 @@ internal sealed partial class PostKitClient
                     LogActivateBounceConfirmationCanceled(id);
                     throw;
                 }
-            }
         }
 
         if (lastError is not null)
@@ -321,7 +319,10 @@ internal sealed partial class PostKitClient
         if (query.MessageStream is not null && string.IsNullOrWhiteSpace(query.MessageStream))
             return "The bounce query message stream filter must not be empty.";
 
-        if (query.MessageStream is not null && !query.MessageStream.AsSpan().IsValidMessageStreamId())
+        if (query.MessageStream is not null
+            && !query.MessageStream
+                .AsSpan()
+                .IsValidMessageStreamId())
             return "The bounce query message stream filter is invalid.";
 
         if (query is { FromDate: not null, ToDate: not null } && query.FromDate.Value > query.ToDate.Value)
@@ -338,11 +339,7 @@ internal sealed partial class PostKitClient
 
     private static string BuildBounceSearchEndpoint(BounceQuery query)
     {
-        var parameters = new List<string>(10)
-        {
-            $"count={query.Count.ToString(CultureInfo.InvariantCulture)}",
-            $"offset={query.Offset.ToString(CultureInfo.InvariantCulture)}",
-        };
+        var parameters = new List<string>(10) { $"count={query.Count.ToString(CultureInfo.InvariantCulture)}", $"offset={query.Offset.ToString(CultureInfo.InvariantCulture)}" };
 
         if (query.Type.HasValue)
             parameters.Add($"type={Uri.EscapeDataString(GetBounceTypeValue(query.Type.Value))}");
@@ -382,10 +379,7 @@ internal sealed partial class PostKitClient
             _ => value,
         };
 
-        return normalizedValue.ToString(
-            useDateOnlyFormat ? "yyyy-MM-dd" : "yyyy-MM-ddTHH:mm:ss",
-            CultureInfo.InvariantCulture
-        );
+        return normalizedValue.ToString(useDateOnlyFormat ? "yyyy-MM-dd" : "yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
     }
 
     private static bool IsInvalidLocalBounceQueryDate(DateTime value)
@@ -443,24 +437,8 @@ internal sealed partial class PostKitClient
         if (mappedCore.IsFailure(out var error, out var bounceCore))
             return Result.Failure<Bounce>(error);
 
-        var bounce = new Bounce(
-            bounceCore.RecordType,
-            bounceCore.Id,
-            bounceCore.Type,
-            bounceCore.Name,
-            bounceCore.Tag,
-            bounceCore.MessageId,
-            bounceCore.ServerId,
-            bounceCore.MessageStream,
-            bounceCore.Description,
-            bounceCore.Details,
-            bounceCore.Email,
-            bounceCore.From,
-            bounceCore.BouncedAt,
-            bounceCore.DumpAvailable,
-            bounceCore.Inactive,
-            bounceCore.CanActivate,
-            bounceCore.Subject
+        var bounce = new Bounce(bounceCore.RecordType, bounceCore.Id, bounceCore.Type, bounceCore.Name, bounceCore.Tag, bounceCore.MessageId, bounceCore.ServerId, bounceCore.MessageStream, bounceCore.Description, bounceCore.Details,
+            bounceCore.Email, bounceCore.From, bounceCore.BouncedAt, bounceCore.DumpAvailable, bounceCore.Inactive, bounceCore.CanActivate, bounceCore.Subject
         );
         return Result.Success(bounce);
     }
@@ -474,25 +452,8 @@ internal sealed partial class PostKitClient
         if (response.Content is null)
             return Result.Failure<BounceDetails>("Content was not returned from the Postmark Bounces API.");
 
-        var bounceDetails = new BounceDetails(
-            bounceCore.RecordType,
-            bounceCore.Id,
-            bounceCore.Type,
-            bounceCore.Name,
-            bounceCore.Tag,
-            bounceCore.MessageId,
-            bounceCore.ServerId,
-            bounceCore.MessageStream,
-            bounceCore.Description,
-            bounceCore.Details,
-            bounceCore.Email,
-            bounceCore.From,
-            bounceCore.BouncedAt,
-            bounceCore.DumpAvailable,
-            bounceCore.Inactive,
-            bounceCore.CanActivate,
-            bounceCore.Subject,
-            response.Content
+        var bounceDetails = new BounceDetails(bounceCore.RecordType, bounceCore.Id, bounceCore.Type, bounceCore.Name, bounceCore.Tag, bounceCore.MessageId, bounceCore.ServerId, bounceCore.MessageStream, bounceCore.Description,
+            bounceCore.Details, bounceCore.Email, bounceCore.From, bounceCore.BouncedAt, bounceCore.DumpAvailable, bounceCore.Inactive, bounceCore.CanActivate, bounceCore.Subject, response.Content
         );
         return Result.Success(bounceDetails);
     }
@@ -600,24 +561,8 @@ internal sealed partial class PostKitClient
         if (response.Subject is null)
             return Result.Failure<BounceCore>("Subject was not returned from the Postmark Bounces API.");
 
-        var bounceCore = new BounceCore(
-            recordType,
-            response.Id.Value,
-            type,
-            response.Name,
-            response.Tag,
-            messageId,
-            response.ServerId.Value,
-            response.MessageStream,
-            response.Description,
-            response.Details,
-            response.Email,
-            string.IsNullOrWhiteSpace(response.From) ? null : response.From,
-            response.BouncedAt.Value,
-            response.DumpAvailable.Value,
-            response.Inactive.Value,
-            response.CanActivate.Value,
-            response.Subject
+        var bounceCore = new BounceCore(recordType, response.Id.Value, type, response.Name, response.Tag, messageId, response.ServerId.Value, response.MessageStream, response.Description, response.Details, response.Email,
+            string.IsNullOrWhiteSpace(response.From) ? null : response.From, response.BouncedAt.Value, response.DumpAvailable.Value, response.Inactive.Value, response.CanActivate.Value, response.Subject
         );
         return Result.Success(bounceCore);
     }

@@ -1,7 +1,8 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace PostKit.Postmark.Common;
+namespace PostKit.Common;
 
 internal static class ValidationExtensions
 {
@@ -11,9 +12,7 @@ internal static class ValidationExtensions
             throw new InvalidOperationException($"{propertyName} has already been set.");
     }
 
-    /// <summary>
-    /// Gets the length using UTF-16 code units, which matches how Postmark applies the documented limits for fields such as <c>From</c> and <c>Subject</c>.
-    /// </summary>
+    /// <summary>Gets the length using UTF-16 code units, which matches how Postmark applies the documented limits for fields such as <c>From</c> and <c>Subject</c>.</summary>
     /// <param name="input">The input span to measure.</param>
     /// <returns>The number of UTF-16 code units.</returns>
     public static int GetPostmarkCharacterCount(this ReadOnlySpan<char> input)
@@ -63,6 +62,14 @@ internal static class ValidationExtensions
         }
 
         return true;
+    }
+
+    public static void EnsureAddressFirst(string? address, string? name, [CallerMemberName] string methodName = "")
+    {
+        if (LooksLikeEmailAddress(address) || !LooksLikeEmailAddress(name))
+            return;
+
+        throw new ArgumentException($"Display name overloads must specify the email address first: use .{methodName}(\"recipient@example.com\", \"Recipient Name\").", nameof(address));
     }
 
     public static bool IsValidHeaderName(this ReadOnlySpan<char> name)
@@ -140,5 +147,25 @@ internal static class ValidationExtensions
         {
             throw new ArgumentException("The template model could not be serialized.", paramName, ex);
         }
+    }
+
+    private static bool LooksLikeEmailAddress(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        var span = value.AsSpan()
+            .Trim();
+        var atIndex = span.IndexOf('@');
+        if (atIndex <= 0 || atIndex >= span.Length - 1)
+            return false;
+
+        foreach (var ch in span)
+        {
+            if (char.IsWhiteSpace(ch))
+                return false;
+        }
+
+        return true;
     }
 }

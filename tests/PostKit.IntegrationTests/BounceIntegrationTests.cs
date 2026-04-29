@@ -21,7 +21,7 @@ public class BounceIntegrationTests
     public async Task GetBouncesAsync_AfterSoftBounce_ReturnsMatchingBounce()
     {
         var sent = await SendSoftBounceAsync(TestContext.Current.CancellationToken);
-        var searchResponse = await WaitForBounceAsync(sent.MessageId, inactive: false, TestContext.Current.CancellationToken);
+        var searchResponse = await WaitForBounceAsync(sent.MessageId, false, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, searchResponse.TotalCount);
 
@@ -42,13 +42,10 @@ public class BounceIntegrationTests
     public async Task GetBounceAsync_AfterSoftBounce_ReturnsRawContent()
     {
         var sent = await SendSoftBounceAsync(TestContext.Current.CancellationToken);
-        var searchResponse = await WaitForBounceAsync(sent.MessageId, inactive: false, TestContext.Current.CancellationToken);
+        var searchResponse = await WaitForBounceAsync(sent.MessageId, false, TestContext.Current.CancellationToken);
         var bounce = Assert.Single(searchResponse.Bounces);
 
-        var detail = await WaitForBounceDetailsAsync(
-            bounce.Id,
-            response => response.MessageId == sent.MessageId
-                        && response.Content.Contains($"X-PM-Message-Id: {sent.MessageId:D}", StringComparison.Ordinal),
+        var detail = await WaitForBounceDetailsAsync(bounce.Id, response => response.MessageId == sent.MessageId && response.Content.Contains($"X-PM-Message-Id: {sent.MessageId:D}", StringComparison.Ordinal),
             TestContext.Current.CancellationToken
         );
 
@@ -64,14 +61,10 @@ public class BounceIntegrationTests
     public async Task GetBounceDumpAsync_AfterSoftBounce_ReturnsRawBody()
     {
         var sent = await SendSoftBounceAsync(TestContext.Current.CancellationToken);
-        var searchResponse = await WaitForBounceAsync(sent.MessageId, inactive: false, TestContext.Current.CancellationToken);
+        var searchResponse = await WaitForBounceAsync(sent.MessageId, false, TestContext.Current.CancellationToken);
         var bounce = Assert.Single(searchResponse.Bounces);
 
-        var dump = await WaitForBounceDumpAsync(
-            bounce.Id,
-            response => response.Body.Contains($"X-PM-Message-Id: {sent.MessageId:D}", StringComparison.Ordinal),
-            TestContext.Current.CancellationToken
-        );
+        var dump = await WaitForBounceDumpAsync(bounce.Id, response => response.Body.Contains($"X-PM-Message-Id: {sent.MessageId:D}", StringComparison.Ordinal), TestContext.Current.CancellationToken);
 
         Assert.Contains($"X-PM-Message-Id: {sent.MessageId:D}", dump.Body, StringComparison.Ordinal);
     }
@@ -80,7 +73,7 @@ public class BounceIntegrationTests
     public async Task GetDeliveryStatsAsync_AfterSoftBounce_ReturnsCounts()
     {
         var sent = await SendSoftBounceAsync(TestContext.Current.CancellationToken);
-        await WaitForBounceAsync(sent.MessageId, inactive: false, TestContext.Current.CancellationToken);
+        await WaitForBounceAsync(sent.MessageId, false, TestContext.Current.CancellationToken);
 
         var stats = await WaitForDeliveryStatsAsync(TestContext.Current.CancellationToken);
 
@@ -103,7 +96,7 @@ public class BounceIntegrationTests
         Assert.Equal(BounceType.HardBounce, activation.Bounce.Type);
         Assert.False(activation.Bounce.Inactive);
 
-        var reactivated = await WaitForBounceStateAsync(bounce.Id, inactive: false, TestContext.Current.CancellationToken);
+        var reactivated = await WaitForBounceStateAsync(bounce.Id, false, TestContext.Current.CancellationToken);
         Assert.False(reactivated.Inactive);
     }
 
@@ -134,12 +127,10 @@ public class BounceIntegrationTests
         for (var attempt = 0; attempt < 24; attempt++)
         {
             var result = await _client.GetBouncesAsync(new BounceQuery
-            {
-                Count = 10,
-                MessageId = messageId,
-                Inactive = inactive,
-                MessageStream = "outbound",
-            }, cancellationToken);
+                {
+                    Count = 10, MessageId = messageId, Inactive = inactive, MessageStream = "outbound",
+                }, cancellationToken
+            );
 
             lastResponse = RequireBounceApi(result);
             if (lastResponse.TotalCount > 0)
@@ -154,22 +145,12 @@ public class BounceIntegrationTests
 
     private Task<BounceDetails> WaitForBounceDetailsAsync(long id, Func<BounceDetails, bool> isReady, CancellationToken cancellationToken)
     {
-        return WaitForBounceApiAsync(
-            ct => _client.GetBounceAsync(id, ct),
-            isReady,
-            $"Bounce '{id}' details were not ready after waiting for replication.",
-            cancellationToken
-        );
+        return WaitForBounceApiAsync(ct => _client.GetBounceAsync(id, ct), isReady, $"Bounce '{id}' details were not ready after waiting for replication.", cancellationToken);
     }
 
     private Task<BounceDump> WaitForBounceDumpAsync(long id, Func<BounceDump, bool> isReady, CancellationToken cancellationToken)
     {
-        return WaitForBounceApiAsync(
-            ct => _client.GetBounceDumpAsync(id, ct),
-            isReady,
-            $"Bounce '{id}' dump was not ready after waiting for replication.",
-            cancellationToken
-        );
+        return WaitForBounceApiAsync(ct => _client.GetBounceDumpAsync(id, ct), isReady, $"Bounce '{id}' dump was not ready after waiting for replication.", cancellationToken);
     }
 
     private async Task<DeliveryStats> WaitForDeliveryStatsAsync(CancellationToken cancellationToken)
@@ -193,29 +174,30 @@ public class BounceIntegrationTests
 
     private async Task<Bounce> EnsureInactiveHardBounceAsync(CancellationToken cancellationToken)
     {
-        var existing = await FindHardBounceAsync(inactive: true, cancellationToken);
+        var existing = await FindHardBounceAsync(true, cancellationToken);
         if (existing is not null)
             return existing;
 
         var sendResult = await _client.SendEmailAsync(Email.Compose()
-            .From(RequireDevelopmentValue(TestConfiguration.DevelopmentFromEmail, nameof(TestConfiguration.DevelopmentFromEmail)))
-            .To(HardBounceRecipient)
-            .Subject($"PostKit hard bounce activation {Guid.NewGuid():N}")
-            .TextBody("Generate a hard bounce that can be reactivated.")
-            .UseMessageStream(MessageStream.Transactional)
-            .Build(), cancellationToken);
+                .From(RequireDevelopmentValue(TestConfiguration.DevelopmentFromEmail, nameof(TestConfiguration.DevelopmentFromEmail)))
+                .To(HardBounceRecipient)
+                .Subject($"PostKit hard bounce activation {Guid.NewGuid():N}")
+                .TextBody("Generate a hard bounce that can be reactivated.")
+                .UseMessageStream(MessageStream.Transactional)
+                .Build(), cancellationToken
+        );
 
         if (sendResult.IsSuccess(out var sent))
         {
-            var searchResponse = await WaitForBounceAsync(sent.MessageId, inactive: true, cancellationToken);
+            var searchResponse = await WaitForBounceAsync(sent.MessageId, true, cancellationToken);
             return Assert.Single(searchResponse.Bounces);
         }
 
-        Assert.True(sendResult.IsFailure(out var sendError, out EmailSubmission? _), sendResult.ToString());
+        Assert.True(sendResult.IsFailure(out var sendError, out var _), sendResult.ToString());
 
         if (sendError.Message.Contains("inactive", StringComparison.OrdinalIgnoreCase))
         {
-            existing = await FindHardBounceAsync(inactive: true, cancellationToken);
+            existing = await FindHardBounceAsync(true, cancellationToken);
             if (existing is not null)
                 return existing;
         }
@@ -227,13 +209,14 @@ public class BounceIntegrationTests
     private async Task<Bounce?> FindHardBounceAsync(bool inactive, CancellationToken cancellationToken)
     {
         var result = await _client.GetBouncesAsync(new BounceQuery
-        {
-            Count = 1,
-            Type = BounceType.HardBounce,
-            Inactive = inactive,
-            EmailFilter = new MailboxAddress(string.Empty, HardBounceRecipient),
-            MessageStream = "outbound",
-        }, cancellationToken);
+            {
+                Count = 1,
+                Type = BounceType.HardBounce,
+                Inactive = inactive,
+                EmailFilter = new MailboxAddress(string.Empty, HardBounceRecipient),
+                MessageStream = "outbound",
+            }, cancellationToken
+        );
 
         var response = RequireBounceApi(result);
         return response.Bounces.FirstOrDefault();
@@ -259,7 +242,7 @@ public class BounceIntegrationTests
         if (result.IsSuccess(out var response))
             return response;
 
-        Assert.True(result.IsFailure(out var error, out T? _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
 
         if (ShouldSkip(error))
             Assert.Skip($"Bounces API is not available in this environment: {error.Message}");
@@ -289,8 +272,7 @@ public class BounceIntegrationTests
             return true;
 
         return error.Message.Contains("requires activation", StringComparison.OrdinalIgnoreCase)
-               || error.Message.Contains("bounces api", StringComparison.OrdinalIgnoreCase)
-               && error.Message.Contains("activation", StringComparison.OrdinalIgnoreCase);
+               || (error.Message.Contains("bounces api", StringComparison.OrdinalIgnoreCase) && error.Message.Contains("activation", StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool ShouldRetryBounceLookup(IError error)
@@ -298,11 +280,7 @@ public class BounceIntegrationTests
         return error is PostmarkError { ErrorCode: PostmarkErrorCode.BounceNotFound };
     }
 
-    private static async Task<T> WaitForBounceApiAsync<T>(
-        Func<CancellationToken, Task<Result<T>>> operation,
-        Func<T, bool> isReady,
-        string timeoutMessage,
-        CancellationToken cancellationToken)
+    private static async Task<T> WaitForBounceApiAsync<T>(Func<CancellationToken, Task<Result<T>>> operation, Func<T, bool> isReady, string timeoutMessage, CancellationToken cancellationToken)
         where T : class
     {
         for (var attempt = 0; attempt < 30; attempt++)
@@ -315,7 +293,7 @@ public class BounceIntegrationTests
             }
             else
             {
-                Assert.True(result.IsFailure(out var error, out T? _), result.ToString());
+                Assert.True(result.IsFailure(out var error, out var _), result.ToString());
 
                 if (ShouldSkip(error))
                     Assert.Skip($"Bounces API is not available in this environment: {error.Message}");

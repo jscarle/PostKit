@@ -4,19 +4,13 @@ using PostKit.Postmark.Email;
 
 namespace PostKit.Errors;
 
-/// <summary>
-/// Represents an error returned by the Postmark API.
-/// </summary>
+/// <summary>Represents an error returned by the Postmark API.</summary>
 public sealed class PostmarkError : HttpError
 {
-    /// <summary>
-    /// The error code returned by the Postmark API.
-    /// </summary>
+    /// <summary>The error code returned by the Postmark API.</summary>
     public PostmarkErrorCode ErrorCode { get; }
 
-    /// <summary>
-    /// Additional field-level error details returned by the Postmark API when available.
-    /// </summary>
+    /// <summary>Additional field-level error details returned by the Postmark API when available.</summary>
     public JsonNode? Errors { get; }
 
     internal PostmarkError(PostmarkResponse response)
@@ -30,7 +24,7 @@ public sealed class PostmarkError : HttpError
     }
 
     internal PostmarkError(int errorCode, string message)
-        : this(HttpStatusCode.UnprocessableEntity, errorCode, message, errors: null)
+        : this(HttpStatusCode.UnprocessableEntity, errorCode, message, null)
     {
     }
 

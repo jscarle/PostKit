@@ -4,7 +4,6 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using MimeKit;
 using PostKit.Common;
-using PostKit.Postmark.Common;
 
 namespace PostKit.Emails;
 
@@ -59,6 +58,7 @@ internal sealed partial class DraftEmail
     public DraftEmail From(string address, string? name)
     {
         _from.EnsureNotSet(nameof(Email.From));
+        ValidationExtensions.EnsureAddressFirst(address, name);
 
         var mailboxAddress = new MailboxAddress(name, address);
 
@@ -89,6 +89,7 @@ internal sealed partial class DraftEmail
 
     public DraftEmail ReplyTo(string address, string? name)
     {
+        ValidationExtensions.EnsureAddressFirst(address, name);
         return AddRecipients(ref _replyTo, (address, name).ToAddressList());
     }
 
@@ -119,6 +120,7 @@ internal sealed partial class DraftEmail
 
     public DraftEmail To(string address, string? name)
     {
+        ValidationExtensions.EnsureAddressFirst(address, name);
         return AddRecipients(ref _to, (address, name).ToAddressList());
     }
 
@@ -149,6 +151,7 @@ internal sealed partial class DraftEmail
 
     public DraftEmail Cc(string address, string? name)
     {
+        ValidationExtensions.EnsureAddressFirst(address, name);
         return AddRecipients(ref _cc, (address, name).ToAddressList());
     }
 
@@ -179,6 +182,7 @@ internal sealed partial class DraftEmail
 
     public DraftEmail Bcc(string address, string? name)
     {
+        ValidationExtensions.EnsureAddressFirst(address, name);
         return AddRecipients(ref _bcc, (address, name).ToAddressList());
     }
 
@@ -459,7 +463,8 @@ internal sealed partial class DraftEmail
         _messageStream.EnsureNotSet(nameof(Email.MessageStream));
         ArgumentNullException.ThrowIfNull(messageStreamId);
 
-        if (!messageStreamId.AsSpan().IsValidMessageStreamId())
+        if (!messageStreamId.AsSpan()
+                .IsValidMessageStreamId())
             throw new ArgumentException("The message stream ID is invalid.", nameof(messageStreamId));
 
         _messageStream = messageStreamId;
@@ -685,8 +690,7 @@ internal sealed partial class DraftEmail
     {
         ArgumentOutOfRangeException.ThrowIfNegative(additionalBytes);
 
-        var projectedTotal = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, _templateModelSizeInBytes, _attachments, _headers)
-            + additionalBytes;
+        var projectedTotal = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, _templateModelSizeInBytes, _attachments, _headers) + additionalBytes;
         if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
             throw new InvalidOperationException("Estimated message content exceeds Postmark's 10 MB limit.");
     }

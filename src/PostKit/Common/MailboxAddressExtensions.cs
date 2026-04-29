@@ -1,6 +1,6 @@
 ﻿using MimeKit;
 
-namespace PostKit.Postmark.Common;
+namespace PostKit.Common;
 
 internal static class MailboxAddressExtensions
 {
@@ -49,13 +49,11 @@ internal static class MailboxAddressExtensions
         ArgumentNullException.ThrowIfNull(mailboxAddresses);
 
         if (mailboxAddressesList is List<MailboxAddress> list)
-        {
             foreach (var mailboxAddress in mailboxAddresses)
             {
                 ArgumentNullException.ThrowIfNull(mailboxAddress);
                 list.Add(mailboxAddress);
             }
-        }
         else
             foreach (var mailboxAddress in mailboxAddresses)
             {

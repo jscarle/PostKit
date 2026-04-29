@@ -1,5 +1,5 @@
-using PostKit.Common;
 using PostKit.BulkEmails;
+using PostKit.Common;
 using PostKit.Emails;
 
 namespace PostKit.Tests;

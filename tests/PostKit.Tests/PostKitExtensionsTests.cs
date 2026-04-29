@@ -10,12 +10,8 @@ public class PostKitExtensionsTests
     [Fact]
     public void AddPostKit_WithConfiguration_BindsPostKitSectionWithoutIConfigurationRegistration()
     {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["PostKit:ServerApiToken"] = "root-token",
-                ["PostKit:AccountApiToken"] = "account-token",
-            }
-        ).Build();
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:ServerApiToken"] = "root-token", ["PostKit:AccountApiToken"] = "account-token" })
+            .Build();
 
         var services = new ServiceCollection();
         services.AddLogging();
@@ -23,7 +19,8 @@ public class PostKitExtensionsTests
 
         using var serviceProvider = services.BuildServiceProvider();
 
-        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>().Value;
+        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>()
+            .Value;
 
         Assert.Equal("root-token", options.ServerApiToken);
         Assert.Equal("account-token", options.AccountApiToken);
@@ -33,12 +30,8 @@ public class PostKitExtensionsTests
     [Fact]
     public void AddPostKit_WithConfigurationSection_BindsProvidedSectionWithoutIConfigurationRegistration()
     {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Tenants:Marketing:ServerApiToken"] = "marketing-token",
-                ["Tenants:Marketing:AccountApiToken"] = "marketing-account",
-            }
-        ).Build();
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Tenants:Marketing:ServerApiToken"] = "marketing-token", ["Tenants:Marketing:AccountApiToken"] = "marketing-account" })
+            .Build();
 
         var services = new ServiceCollection();
         services.AddLogging();
@@ -46,7 +39,8 @@ public class PostKitExtensionsTests
 
         using var serviceProvider = services.BuildServiceProvider();
 
-        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>().Value;
+        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>()
+            .Value;
 
         Assert.Equal("marketing-token", options.ServerApiToken);
         Assert.Equal("marketing-account", options.AccountApiToken);
@@ -80,11 +74,8 @@ public class PostKitExtensionsTests
     [Fact]
     public void AddKeyedPostKit_WithConfiguration_BindsInferredSectionWithoutIConfigurationRegistration()
     {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["PostKit:Marketing:ServerApiToken"] = "marketing-token",
-            }
-        ).Build();
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:Marketing:ServerApiToken"] = "marketing-token" })
+            .Build();
 
         var services = new ServiceCollection();
         services.AddLogging();
@@ -98,11 +89,8 @@ public class PostKitExtensionsTests
     [Fact]
     public void AddKeyedPostKit_WithConfigurationSection_BindsProvidedSectionWithoutIConfigurationRegistration()
     {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Tenants:Marketing:ServerApiToken"] = "marketing-token",
-            }
-        ).Build();
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Tenants:Marketing:ServerApiToken"] = "marketing-token" })
+            .Build();
 
         var services = new ServiceCollection();
         services.AddLogging();
@@ -117,12 +105,11 @@ public class PostKitExtensionsTests
     public void AddKeyedPostKit_DefaultRegistration_UsesRequestedConfigurationSectionOnly()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["PostKit:ServerApiToken"] = "root-token",
-                ["PostKit:Secondary:ServerApiToken"] = "secondary-token",
-                ["PostKit:Secondary:AccountApiToken"] = "account-only",
-            }
-        ).Build();
+                {
+                    ["PostKit:ServerApiToken"] = "root-token", ["PostKit:Secondary:ServerApiToken"] = "secondary-token", ["PostKit:Secondary:AccountApiToken"] = "account-only",
+                }
+            )
+            .Build();
 
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
@@ -132,7 +119,8 @@ public class PostKitExtensionsTests
 
         using var serviceProvider = services.BuildServiceProvider();
 
-        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>().Value;
+        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>()
+            .Value;
 
         Assert.Equal("secondary-token", options.ServerApiToken);
         Assert.Equal("account-only", options.AccountApiToken);
@@ -143,12 +131,11 @@ public class PostKitExtensionsTests
     public void AddKeyedPostKit_DefaultRegistration_ExposesRequestedSectionThroughOptionsMonitor()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["PostKit:ServerApiToken"] = "root-token",
-                ["PostKit:Secondary:ServerApiToken"] = "secondary-token",
-                ["PostKit:Secondary:AccountApiToken"] = "account-only",
-            }
-        ).Build();
+                {
+                    ["PostKit:ServerApiToken"] = "root-token", ["PostKit:Secondary:ServerApiToken"] = "secondary-token", ["PostKit:Secondary:AccountApiToken"] = "account-only",
+                }
+            )
+            .Build();
 
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
@@ -168,12 +155,11 @@ public class PostKitExtensionsTests
     public void AddKeyedPostKit_DefaultRegistration_ExposesRequestedSectionThroughOptionsSnapshot()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["PostKit:ServerApiToken"] = "root-token",
-                ["PostKit:Secondary:ServerApiToken"] = "secondary-token",
-                ["PostKit:Secondary:AccountApiToken"] = "account-only",
-            }
-        ).Build();
+                {
+                    ["PostKit:ServerApiToken"] = "root-token", ["PostKit:Secondary:ServerApiToken"] = "secondary-token", ["PostKit:Secondary:AccountApiToken"] = "account-only",
+                }
+            )
+            .Build();
 
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
@@ -193,12 +179,8 @@ public class PostKitExtensionsTests
     [Fact]
     public void AddKeyedPostKit_DefaultRegistration_ThrowsValidationExceptionWhenRequestedSectionIsMissingServerApiToken()
     {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["PostKit:ServerApiToken"] = "root-token",
-                ["PostKit:Secondary:AccountApiToken"] = "account-only",
-            }
-        ).Build();
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:ServerApiToken"] = "root-token", ["PostKit:Secondary:AccountApiToken"] = "account-only" })
+            .Build();
 
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
@@ -217,12 +199,11 @@ public class PostKitExtensionsTests
     public void AddKeyedPostKit_DefaultRegistration_LastCallWinsForDefaultOptions()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["PostKit:Primary:ServerApiToken"] = "primary-token",
-                ["PostKit:Secondary:ServerApiToken"] = "secondary-token",
-                ["PostKit:Secondary:AccountApiToken"] = "account-only",
-            }
-        ).Build();
+                {
+                    ["PostKit:Primary:ServerApiToken"] = "primary-token", ["PostKit:Secondary:ServerApiToken"] = "secondary-token", ["PostKit:Secondary:AccountApiToken"] = "account-only",
+                }
+            )
+            .Build();
 
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
@@ -232,7 +213,8 @@ public class PostKitExtensionsTests
 
         using var serviceProvider = services.BuildServiceProvider();
 
-        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>().Value;
+        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>()
+            .Value;
 
         Assert.Equal("secondary-token", options.ServerApiToken);
         Assert.Equal("account-only", options.AccountApiToken);
@@ -241,12 +223,8 @@ public class PostKitExtensionsTests
     [Fact]
     public void AddKeyedPostKit_KeyedRegistration_LastCallWinsForSameServiceKey()
     {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["PostKit:Primary:ServerApiToken"] = "primary-token",
-                ["PostKit:Secondary:AccountApiToken"] = "account-only",
-            }
-        ).Build();
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:Primary:ServerApiToken"] = "primary-token", ["PostKit:Secondary:AccountApiToken"] = "account-only" })
+            .Build();
 
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);

@@ -22,7 +22,7 @@ public class PostKitClientBatchResponseTests
             .Build();
 
         var postmark = new RecordingPostmarkClient([
-                new()
+                new EmailResponse
                 {
                     MessageId = messageId.ToString("D"),
                     SubmittedAt = submittedAt,
@@ -30,7 +30,6 @@ public class PostKitClientBatchResponseTests
                     ErrorCode = 0,
                     Message = "OK",
                 },
-
             ]
         );
         var logger = new TestLogger();
@@ -63,7 +62,7 @@ public class PostKitClientBatchResponseTests
             .Build();
 
         var postmark = new RecordingPostmarkClient([
-                new()
+                new EmailResponse
                 {
                     MessageId = messageId.ToString("D"),
                     SubmittedAt = DateTimeOffset.UtcNow,
@@ -71,7 +70,6 @@ public class PostKitClientBatchResponseTests
                     ErrorCode = 0,
                     Message = "OK",
                 },
-
             ]
         );
         var logger = new TestLogger();
@@ -96,8 +94,7 @@ public class PostKitClientBatchResponseTests
             .Build();
 
         var postmark = new RecordingPostmarkClient([
-                new() { ErrorCode = 300, Message = "Invalid email request.", },
-
+                new EmailResponse { ErrorCode = 300, Message = "Invalid email request." },
             ]
         );
         var logger = new TestLogger();
@@ -109,7 +106,7 @@ public class PostKitClientBatchResponseTests
         Assert.False(batchResponse.IsSuccessful);
 
         var itemResult = Assert.Single(batchResponse.Results);
-        Assert.True(itemResult.IsFailure(out var error, out EmailSubmission? _), itemResult.ToString());
+        Assert.True(itemResult.IsFailure(out var error, out var _), itemResult.ToString());
         var postmarkError = Assert.IsType<PostmarkError>(error);
         Assert.Equal(PostmarkErrorCode.InvalidEmailRequest, postmarkError.ErrorCode);
         Assert.Equal("Invalid email request.", postmarkError.Message);
@@ -126,8 +123,7 @@ public class PostKitClientBatchResponseTests
             .Build();
 
         var postmark = new RecordingPostmarkClient([
-                new() { ErrorCode = 999999, Message = "Brand new Postmark error.", },
-
+                new EmailResponse { ErrorCode = 999999, Message = "Brand new Postmark error." },
             ]
         );
         var logger = new TestLogger();
@@ -139,7 +135,7 @@ public class PostKitClientBatchResponseTests
         Assert.False(batchResponse.IsSuccessful);
 
         var itemResult = Assert.Single(batchResponse.Results);
-        Assert.True(itemResult.IsFailure(out var error, out EmailSubmission? _), itemResult.ToString());
+        Assert.True(itemResult.IsFailure(out var error, out var _), itemResult.ToString());
         var postmarkError = Assert.IsType<PostmarkError>(error);
         Assert.Equal((PostmarkErrorCode)999999, postmarkError.ErrorCode);
         Assert.Equal("Brand new Postmark error.", postmarkError.Message);

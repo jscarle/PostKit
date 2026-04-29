@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 using MimeKit;
 
-namespace PostKit.Postmark.Common;
+namespace PostKit.Common;
 
 internal static class BuilderSnapshotExtensions
 {

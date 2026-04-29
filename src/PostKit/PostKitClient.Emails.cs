@@ -1,6 +1,7 @@
 using LightResults;
 using Microsoft.Extensions.Logging;
 using MimeKit;
+using PostKit.Common;
 using PostKit.Emails;
 using PostKit.Errors;
 using PostKit.Postmark.Common;
@@ -66,7 +67,7 @@ internal sealed partial class PostKitClient
         if (emailResponse.SubmittedAt is null)
             return Result.Failure<EmailSubmission>("SubmittedAt was not returned from the Postmark API.");
 
-        var internetMessageId = EmailSubmission.ResolveInternetMessageId(parsedMessageId, email.Headers, requireKeepId: true);
+        var internetMessageId = EmailSubmission.ResolveInternetMessageId(parsedMessageId, email.Headers, true);
         var sendEmailResponse = new EmailSubmission(parsedMessageId, emailResponse.To, emailResponse.SubmittedAt.Value, internetMessageId);
 
         return Result.Success(sendEmailResponse);
@@ -102,7 +103,7 @@ internal sealed partial class PostKitClient
             }
             catch (Exception ex)
             {
-                LogBatchRequestSerializationException(index: requests.Count, ex);
+                LogBatchRequestSerializationException(requests.Count, ex);
                 return Result.Failure<EmailBatchSubmission>(ex);
             }
         }
@@ -173,7 +174,7 @@ internal sealed partial class PostKitClient
                 else if (email.Bcc is not null)
                     LogEmailSent(email.Bcc, emailResponse);
 
-                var internetMessageId = EmailSubmission.ResolveInternetMessageId(parsedMessageId, email.Headers, requireKeepId: true);
+                var internetMessageId = EmailSubmission.ResolveInternetMessageId(parsedMessageId, email.Headers, true);
                 var sendEmailResponse = new EmailSubmission(parsedMessageId, emailResponse.To, emailResponse.SubmittedAt.Value, internetMessageId);
                 batchResults.Add(Result.Success(sendEmailResponse));
             }

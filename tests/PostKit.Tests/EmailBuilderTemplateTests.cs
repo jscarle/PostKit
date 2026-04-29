@@ -55,7 +55,8 @@ public class EmailBuilderTemplateTests
         var templateModel = CyclicTemplateModel.Create();
 
         var exception = Assert.Throws<ArgumentException>(() => Email.FromTemplate(7)
-            .WithModel(templateModel));
+            .WithModel(templateModel)
+        );
 
         Assert.Equal("The template model could not be serialized. (Parameter 'templateModel')", exception.Message);
         Assert.NotNull(exception.InnerException);
@@ -65,7 +66,8 @@ public class EmailBuilderTemplateTests
     public void WithTemplateModel_WithScalarModel_ThrowsArgumentException()
     {
         var exception = Assert.Throws<ArgumentException>(() => Email.FromTemplate(7)
-            .WithModel("Alice"));
+            .WithModel("Alice")
+        );
 
         Assert.Equal("The template model must serialize to a JSON object. (Parameter 'templateModel')", exception.Message);
     }
@@ -77,11 +79,7 @@ public class EmailBuilderTemplateTests
 
         try
         {
-            PostKitTemplateModelSerialization.DefaultSerializerOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = null,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            };
+            PostKitTemplateModelSerialization.DefaultSerializerOptions = new JsonSerializerOptions { PropertyNamingPolicy = null, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
 
             var email = Email.FromTemplate(7)
                 .From("sender@postkit.com")
@@ -108,23 +106,15 @@ public class EmailBuilderTemplateTests
 
         try
         {
-            PostKitTemplateModelSerialization.DefaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
-            {
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            };
+            PostKitTemplateModelSerialization.DefaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
 
             var builder = Email.FromTemplate(7)
                 .From("sender@postkit.com")
                 .To("recipient@postkit.com");
 
-            var serializerOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = null,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            };
+            var serializerOptions = new JsonSerializerOptions { PropertyNamingPolicy = null, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
 
-            var email = builder
-                .WithModel(new { FirstName = "Alice" }, serializerOptions)
+            var email = builder.WithModel(new { FirstName = "Alice" }, serializerOptions)
                 .Build();
 
             var request = email.ToEmailRequest();
@@ -173,13 +163,14 @@ public class EmailBuilderTemplateTests
             .Build();
 
         var postmark = new RecordingPostmarkClient(new EmailResponse
-        {
-            MessageId = messageId.ToString("D"),
-            To = "recipient@postkit.com",
-            SubmittedAt = submittedAt,
-            ErrorCode = 0,
-            Message = "OK",
-        });
+            {
+                MessageId = messageId.ToString("D"),
+                To = "recipient@postkit.com",
+                SubmittedAt = submittedAt,
+                ErrorCode = 0,
+                Message = "OK",
+            }
+        );
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
@@ -206,13 +197,14 @@ public class EmailBuilderTemplateTests
             .Build();
 
         var postmark = new RecordingPostmarkClient(new EmailResponse
-        {
-            MessageId = messageId.ToString("D"),
-            To = "recipient@postkit.com",
-            SubmittedAt = DateTimeOffset.UtcNow,
-            ErrorCode = 0,
-            Message = "OK",
-        });
+            {
+                MessageId = messageId.ToString("D"),
+                To = "recipient@postkit.com",
+                SubmittedAt = DateTimeOffset.UtcNow,
+                ErrorCode = 0,
+                Message = "OK",
+            }
+        );
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
@@ -235,13 +227,14 @@ public class EmailBuilderTemplateTests
             .Build();
 
         var postmark = new RecordingPostmarkClient(new EmailResponse
-        {
-            MessageId = messageId.ToString("D"),
-            To = "recipient@postkit.com",
-            SubmittedAt = DateTimeOffset.UtcNow,
-            ErrorCode = 0,
-            Message = "OK",
-        });
+            {
+                MessageId = messageId.ToString("D"),
+                To = "recipient@postkit.com",
+                SubmittedAt = DateTimeOffset.UtcNow,
+                ErrorCode = 0,
+                Message = "OK",
+            }
+        );
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
@@ -255,12 +248,9 @@ public class EmailBuilderTemplateTests
     public void ResolveInternetMessageId_WithoutKeepIdRequirement_UsesMessageIdHeader()
     {
         var messageId = Guid.Parse("0b261aa1-6726-4d7f-8ead-13ba17bc8283");
-        IReadOnlyDictionary<string, string> headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["Message-ID"] = "<custom@example.com>",
-        };
+        IReadOnlyDictionary<string, string> headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Message-ID"] = "<custom@example.com>" };
 
-        var internetMessageId = EmailSubmission.ResolveInternetMessageId(messageId, headers, requireKeepId: false);
+        var internetMessageId = EmailSubmission.ResolveInternetMessageId(messageId, headers, false);
 
         Assert.Equal("<custom@example.com>", internetMessageId);
     }
@@ -275,12 +265,13 @@ public class EmailBuilderTemplateTests
             .Build();
 
         var postmark = new RecordingPostmarkClient(new EmailResponse
-        {
-            MessageId = Guid.NewGuid()
-                .ToString("D"),
-            ErrorCode = 0,
-            Message = "OK",
-        });
+            {
+                MessageId = Guid.NewGuid()
+                    .ToString("D"),
+                ErrorCode = 0,
+                Message = "OK",
+            }
+        );
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
@@ -292,21 +283,22 @@ public class EmailBuilderTemplateTests
 
     private sealed class RecordingPostmarkClient(EmailResponse response) : IPostmarkClient
     {
-        public RecordingPostmarkClient()
-            : this(new EmailResponse
-            {
-                MessageId = Guid.NewGuid()
-                    .ToString(),
-                SubmittedAt = DateTimeOffset.UtcNow,
-                ErrorCode = 0,
-                Message = "",
-            })
-        {
-        }
-
         public string? LastEndpoint { get; private set; }
 
         public object? LastRequest { get; private set; }
+
+        public RecordingPostmarkClient()
+            : this(new EmailResponse
+                {
+                    MessageId = Guid.NewGuid()
+                        .ToString(),
+                    SubmittedAt = DateTimeOffset.UtcNow,
+                    ErrorCode = 0,
+                    Message = "",
+                }
+            )
+        {
+        }
 
         public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {

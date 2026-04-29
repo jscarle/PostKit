@@ -27,10 +27,7 @@ public class PostKitClientResponseModelConstructorTests
         foreach (var responseModelType in responseModelTypes)
         {
             Assert.Empty(responseModelType.GetConstructors(BindingFlags.Instance | BindingFlags.Public));
-            Assert.Contains(
-                responseModelType.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic),
-                static constructor => constructor.IsAssembly
-            );
+            Assert.Contains(responseModelType.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic), static constructor => constructor.IsAssembly);
         }
     }
 

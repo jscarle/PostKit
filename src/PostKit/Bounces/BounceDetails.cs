@@ -27,25 +27,8 @@ public sealed record BounceDetails : Bounce
         bool canActivate,
         string subject,
         string content
-    ) : base(
-        recordType,
-        id,
-        type,
-        name,
-        tag,
-        messageId,
-        serverId,
-        messageStream,
-        description,
-        details,
-        email,
-        from,
-        bouncedAt,
-        dumpAvailable,
-        inactive,
-        canActivate,
-        subject
     )
+        : base(recordType, id, type, name, tag, messageId, serverId, messageStream, description, details, email, from, bouncedAt, dumpAvailable, inactive, canActivate, subject)
     {
         Content = content;
     }

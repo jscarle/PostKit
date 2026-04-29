@@ -2,6 +2,7 @@ using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.Emails;
 using PostKit.Postmark;
+using PostKit.Postmark.Email;
 
 namespace PostKit.Tests;
 
@@ -22,7 +23,8 @@ public class PostKitClientBatchSizeLimitTests
                 .Subject("Batch size check")
                 .TextBody(textBody)
                 .HtmlBody(htmlBody)
-                .Build())
+                .Build()
+            )
             .ToList();
 
         var postmark = new RecordingPostmarkClient();
@@ -47,7 +49,8 @@ public class PostKitClientBatchSizeLimitTests
                 .Subject("Batch size check")
                 .TextBody(textBody)
                 .AddHeader("X-Large-Header", largeHeaderValue)
-                .Build())
+                .Build()
+            )
             .ToList();
 
         var postmark = new RecordingPostmarkClient();
@@ -69,7 +72,8 @@ public class PostKitClientBatchSizeLimitTests
                 .From("sender@postkit.com")
                 .To($"recipient{index}@postkit.com")
                 .WithModel(new { Data = new string('x', 5 * 1024 * 1024) })
-                .Build())
+                .Build()
+            )
             .ToList();
 
         var postmark = new RecordingPostmarkClient();
@@ -83,7 +87,7 @@ public class PostKitClientBatchSizeLimitTests
         Assert.Contains("Estimated batch payload size exceeds", result.ToString(), StringComparison.Ordinal);
     }
 
-    private sealed class RecordingPostmarkClient(List<PostKit.Postmark.Email.EmailResponse>? responses = null) : IPostmarkClient
+    private sealed class RecordingPostmarkClient(List<EmailResponse>? responses = null) : IPostmarkClient
     {
         public int CallCount { get; private set; }
 
@@ -91,7 +95,7 @@ public class PostKitClientBatchSizeLimitTests
         {
             CallCount++;
 
-            if (typeof(TResponse) == typeof(List<PostKit.Postmark.Email.EmailResponse>) && responses is not null)
+            if (typeof(TResponse) == typeof(List<EmailResponse>) && responses is not null)
                 return Task.FromResult(Result.Success((TResponse)(object)responses));
 
             throw new InvalidOperationException("Postmark should not be called for oversized batches.");
