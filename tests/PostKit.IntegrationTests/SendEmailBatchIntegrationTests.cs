@@ -1,3 +1,7 @@
+using LightResults;
+using PostKit.Common;
+using PostKit.Emails;
+
 namespace PostKit.IntegrationTests;
 
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
@@ -10,18 +14,18 @@ public class SendEmailBatchIntegrationTests
     public async Task SendEmailBatchAsync_WithTwoEmails_Succeeds()
     {
         // Arrange
-        var email1 = Email.CreateBuilder()
+        var email1 = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Batch Email 1")
-            .WithTextBody("This is the first email in the batch.")
+            .Subject("Batch Email 1")
+            .TextBody("This is the first email in the batch.")
             .Build();
 
-        var email2 = Email.CreateBuilder()
+        var email2 = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
-            .To("another@example.com")
-            .WithSubject("Batch Email 2")
-            .WithTextBody("This is the second email in the batch.")
+            .To("another@postkit.com")
+            .Subject("Batch Email 2")
+            .TextBody("This is the second email in the batch.")
             .Build();
 
         var emails = new[] { email1, email2 };
@@ -31,14 +35,9 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
@@ -48,11 +47,11 @@ public class SendEmailBatchIntegrationTests
         var emails = new List<Email>();
         for (var i = 1; i <= 5; i++)
         {
-            var email = Email.CreateBuilder()
+            var email = Email.Compose()
                 .From(TestConfiguration.TestFromEmail)
-                .To($"recipient{i}@example.com")
-                .WithSubject($"Batch Email {i}")
-                .WithTextBody($"This is email number {i} in the batch.")
+                .To($"recipient{i}@postkit.com")
+                .Subject($"Batch Email {i}")
+                .TextBody($"This is email number {i} in the batch.")
                 .WithTag($"batch-{i}")
                 .Build();
             emails.Add(email);
@@ -63,40 +62,35 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(5, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
     public async Task SendEmailBatchAsync_WithDifferentEmailTypes_Succeeds()
     {
         // Arrange
-        var textEmail = Email.CreateBuilder()
+        var textEmail = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Text Email in Batch")
-            .WithTextBody("This is a text email.")
+            .Subject("Text Email in Batch")
+            .TextBody("This is a text email.")
             .Build();
 
-        var htmlEmail = Email.CreateBuilder()
+        var htmlEmail = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
-            .To("recipient2@example.com")
-            .WithSubject("HTML Email in Batch")
-            .WithHtmlBody("<html><body><h1>HTML Email</h1></body></html>")
+            .To("recipient2@postkit.com")
+            .Subject("HTML Email in Batch")
+            .HtmlBody("<html><body><h1>HTML Email</h1></body></html>")
             .Build();
 
-        var multipartEmail = Email.CreateBuilder()
+        var multipartEmail = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
-            .To("recipient3@example.com")
-            .WithSubject("Multipart Email in Batch")
-            .WithTextBody("Text version")
-            .WithHtmlBody("<html><body><p>HTML version</p></body></html>")
+            .To("recipient3@postkit.com")
+            .Subject("Multipart Email in Batch")
+            .TextBody("Text version")
+            .HtmlBody("<html><body><p>HTML version</p></body></html>")
             .Build();
 
         var emails = new[] { textEmail, htmlEmail, multipartEmail };
@@ -106,14 +100,9 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(3, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
@@ -123,20 +112,20 @@ public class SendEmailBatchIntegrationTests
         var attachment1 = Attachment.Create("doc1.txt", "text/plain", "Document 1 content"u8.ToArray());
         var attachment2 = Attachment.Create("doc2.txt", "text/plain", "Document 2 content"u8.ToArray());
 
-        var email1 = Email.CreateBuilder()
+        var email1 = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Batch Email with Attachment 1")
-            .WithTextBody("This email has attachment 1.")
-            .WithAttachment(attachment1)
+            .Subject("Batch Email with Attachment 1")
+            .TextBody("This email has attachment 1.")
+            .AddAttachment(attachment1)
             .Build();
 
-        var email2 = Email.CreateBuilder()
+        var email2 = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
-            .To("another@example.com")
-            .WithSubject("Batch Email with Attachment 2")
-            .WithTextBody("This email has attachment 2.")
-            .WithAttachment(attachment2)
+            .To("another@postkit.com")
+            .Subject("Batch Email with Attachment 2")
+            .TextBody("This email has attachment 2.")
+            .AddAttachment(attachment2)
             .Build();
 
         var emails = new[] { email1, email2 };
@@ -146,37 +135,32 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
     public async Task SendEmailBatchAsync_WithMetadataAndTracking_Succeeds()
     {
         // Arrange
-        var email1 = Email.CreateBuilder()
+        var email1 = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Batch Email with Metadata 1")
-            .WithHtmlBody("<html><body><p>Email with tracking.</p></body></html>")
-            .WithMetadata("batch_id", "1")
-            .WithOpenTracking()
-            .WithLinkTracking(LinkTracking.HtmlOnly)
+            .Subject("Batch Email with Metadata 1")
+            .HtmlBody("<html><body><p>Email with tracking.</p></body></html>")
+            .AddMetadata("batch_id", "1")
+            .EnableOpenTracking()
+            .UseLinkTracking(LinkTracking.HtmlOnly)
             .Build();
 
-        var email2 = Email.CreateBuilder()
+        var email2 = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
-            .To("another@example.com")
-            .WithSubject("Batch Email with Metadata 2")
-            .WithHtmlBody("<html><body><p>Another email with tracking.</p></body></html>")
-            .WithMetadata("batch_id", "2")
-            .WithOpenTracking()
+            .To("another@postkit.com")
+            .Subject("Batch Email with Metadata 2")
+            .HtmlBody("<html><body><p>Another email with tracking.</p></body></html>")
+            .AddMetadata("batch_id", "2")
+            .EnableOpenTracking()
             .Build();
 
         var emails = new[] { email1, email2 };
@@ -186,34 +170,29 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
     public async Task SendEmailBatchAsync_WithDifferentMessageStreams_Succeeds()
     {
         // Arrange
-        var transactionalEmail = Email.CreateBuilder()
+        var transactionalEmail = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
             .To(TestConfiguration.TestToEmail)
-            .WithSubject("Transactional Email")
-            .WithTextBody("This is a transactional email.")
-            .UsingMessageStream(MessageStream.Transactional)
+            .Subject("Transactional Email")
+            .TextBody("This is a transactional email.")
+            .UseMessageStream(MessageStream.Transactional)
             .Build();
 
-        var broadcastEmail = Email.CreateBuilder()
+        var broadcastEmail = Email.Compose()
             .From(TestConfiguration.TestFromEmail)
-            .To("another@example.com")
-            .WithSubject("Broadcast Email")
-            .WithTextBody("This is a broadcast email.")
-            .UsingMessageStream(MessageStream.Broadcast)
+            .To("another@postkit.com")
+            .Subject("Broadcast Email")
+            .TextBody("This is a broadcast email.")
+            .UseMessageStream(MessageStream.Broadcast)
             .Build();
 
         var emails = new[] { transactionalEmail, broadcastEmail };
@@ -223,14 +202,9 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
@@ -240,11 +214,11 @@ public class SendEmailBatchIntegrationTests
         var emails = new List<Email>();
         for (var i = 1; i <= 500; i++)
         {
-            var email = Email.CreateBuilder()
+            var email = Email.Compose()
                 .From(TestConfiguration.TestFromEmail)
-                .To($"recipient{i}@example.com")
-                .WithSubject($"Batch Email {i}")
-                .WithTextBody($"Email {i} of 500.")
+                .To($"recipient{i}@postkit.com")
+                .Subject($"Batch Email {i}")
+                .TextBody($"Email {i} of 500.")
                 .Build();
             emails.Add(email);
         }
@@ -254,14 +228,9 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(500, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
     }
 
     [Fact]
@@ -270,31 +239,31 @@ public class SendEmailBatchIntegrationTests
         // Arrange
         var attachment = Attachment.Create("report.txt", "text/plain", "Report data"u8.ToArray());
 
-        var email1 = Email.CreateBuilder()
-            .From("Batch Sender", TestConfiguration.TestFromEmail)
-            .To("Recipient 1", TestConfiguration.TestToEmail)
+        var email1 = Email.Compose()
+            .From(TestConfiguration.TestFromEmail, "Batch Sender")
+            .To(TestConfiguration.TestToEmail, "Recipient 1")
             .Cc(TestConfiguration.TestCcEmail)
             .ReplyTo(TestConfiguration.TestReplyToEmail)
-            .WithSubject("Complex Batch Email 1")
-            .WithTextBody("Text version of complex email.")
-            .WithHtmlBody("<html><body><h1>Complex Email</h1></body></html>")
+            .Subject("Complex Batch Email 1")
+            .TextBody("Text version of complex email.")
+            .HtmlBody("<html><body><h1>Complex Email</h1></body></html>")
             .WithTag("complex-batch")
-            .WithHeader("X-Batch-Id", "batch-1")
-            .WithMetadata("email_type", "complex")
-            .WithOpenTracking()
-            .WithAttachment(attachment)
+            .AddHeader("X-Batch-Id", "batch-1")
+            .AddMetadata("email_type", "complex")
+            .EnableOpenTracking()
+            .AddAttachment(attachment)
             .Build();
 
-        var email2 = Email.CreateBuilder()
-            .From("Batch Sender", TestConfiguration.TestFromEmail)
-            .To("Recipient 2", "recipient2@example.com")
+        var email2 = Email.Compose()
+            .From(TestConfiguration.TestFromEmail, "Batch Sender")
+            .To("recipient2@postkit.com", "Recipient 2")
             .Bcc(TestConfiguration.TestBccEmail)
-            .WithSubject("Complex Batch Email 2")
-            .WithHtmlBody("<html><body><p>Another complex email with <a href='https://example.com'>link</a>.</p></body></html>")
+            .Subject("Complex Batch Email 2")
+            .HtmlBody("<html><body><p>Another complex email with <a href='https://example.com'>link</a>.</p></body></html>")
             .WithTag("complex-batch")
-            .WithMetadata("email_type", "complex")
-            .WithLinkTracking()
-            .UsingMessageStream(MessageStream.Broadcast)
+            .AddMetadata("email_type", "complex")
+            .UseLinkTracking()
+            .UseMessageStream(MessageStream.Broadcast)
             .Build();
 
         var emails = new[] { email1, email2 };
@@ -304,13 +273,15 @@ public class SendEmailBatchIntegrationTests
 
         // Assert
         Assert.True(result.IsSuccess(out var batchResponse), result.ToString());
+        Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
-        Assert.All(batchResponse.Results, r =>
-            {
-                Assert.NotNull(r.Response);
-                Assert.NotEmpty(r.Response.MessageId);
-                Assert.Equal("Test job accepted", r.Message);
-            }
-        );
+        Assert.All(batchResponse.Results, AssertSuccessfulBatchResult);
+    }
+
+    private static void AssertSuccessfulBatchResult(Result<EmailSubmission> result)
+    {
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.NotEqual(Guid.Empty, response.MessageId);
+        Assert.Equal($"<{response.MessageId:D}@mtasv.net>", response.InternetMessageId);
     }
 }

@@ -1,7 +1,9 @@
+using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PostKit.Configuration;
 using PostKit.Postmark;
 
@@ -10,148 +12,210 @@ namespace PostKit;
 /// <summary>Provides dependency injection helpers for registering PostKit services.</summary>
 public static class PostKitExtensions
 {
-    /// <summary>Registers the default (non-keyed) PostKit services.</summary>
-    /// <remarks>
-    ///     <para>
-    ///     This method:
-    ///     <list type="bullet">
-    ///         <item>
-    ///             <description>Ensures <see cref="IHttpClientFactory"/> is available by calling <c>AddHttpClient()</c>.</description>
-    ///         </item>
-    ///         <item>
-    ///             <description>Binds <see cref="PostKitOptions"/> from the root <c>PostKit</c> configuration section.</description>
-    ///         </item>
-    ///         <item>
-    ///             <description>Registers <see cref="IPostKitClient"/> and related Postmark services.</description>
-    ///         </item>
-    ///     </list>
-    ///     </para>
-    /// </remarks>
+    private const string ConfigurationSectionName = "PostKit";
+
+    /// <summary>Registers the default (non-keyed) PostKit services using configuration from the <c>PostKit</c> section.</summary>
     /// <param name="services">The service collection to configure.</param>
     /// <returns>The same <paramref name="services"/> instance so calls can be chained.</returns>
+    [UsedImplicitly]
     public static IServiceCollection AddPostKit(this IServiceCollection services)
     {
-        services.AddHttpClient("Postmark");
+        ArgumentNullException.ThrowIfNull(services);
 
-        services.AddOptions<PostKitOptions>()
-            .Configure<IConfiguration>((options, configuration) =>
-                {
-                    configuration.GetSection("PostKit")
-                        .Bind(options);
-                }
-            );
-
-        services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
-
-        services.TryAddTransient<IPostmarkClient>(sp => sp.GetRequiredService<IPostmarkClientFactory>()
-            .Create()
+        return AddDefaultPostKitRegistration(services, ConfigurationSectionName, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(ConfigurationSectionName)
+                .Bind(options)
+            )
         );
-
-        services.TryAddTransient<IPostKitClient, PostKitClient>();
-
-        return services;
     }
 
-    /// <summary>Registers PostKit services as either default (non-keyed) services or keyed services for the specified <paramref name="serviceKey"/>.</summary>
-    /// <remarks>
-    ///     <para>This method always calls <c>AddHttpClient()</c> to ensure <see cref="IHttpClientFactory"/> is available.</para>
-    ///     <para>This method binds options from exactly one configuration section (values are not merged with the root <c>PostKit</c> section).</para>
-    ///     <para>
-    ///     This method behaves as follows:
-    ///     <list type="bullet">
-    ///         <item>
-    ///             <description>If <paramref name="serviceKey"/> is <see langword="null"/> and <paramref name="configurationKey"/> is <see langword="null"/> or whitespace, this method calls <see cref="AddPostKit(IServiceCollection)"/>.</description>
-    ///         </item>
-    ///         <item>
-    ///             <description>
-    ///             If <paramref name="serviceKey"/> is <see langword="null"/> and <paramref name="configurationKey"/> is provided, this method registers default (non-keyed) services and binds the default (unnamed)
-    ///             <see cref="PostKitOptions"/> from <c>PostKit:{configurationKey}</c>.
-    ///             </description>
-    ///         </item>
-    ///         <item>
-    ///             <description>
-    ///             If <paramref name="serviceKey"/> is not <see langword="null"/>, this method registers keyed services and binds named options from <c>PostKit:{namedOptionsKey}</c>, where <c>namedOptionsKey</c> is
-    ///             <paramref name="configurationKey"/> when provided; otherwise <c>serviceKey.ToString()</c>.
-    ///             </description>
-    ///         </item>
-    ///     </list>
-    ///     </para>
-    /// </remarks>
+    /// <summary>Registers the default (non-keyed) PostKit services using configuration from the <c>PostKit</c> section of the provided configuration root.</summary>
     /// <param name="services">The service collection to configure.</param>
-    /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> used to resolve keyed services. If <see langword="null"/>, this method registers non-keyed services.</param>
-    /// <param name="configurationKey">The configuration key to bind options from (i.e. <c>PostKit:{configurationKey}</c>). For keyed registrations, if omitted, <c>serviceKey.ToString()</c> is used.</param>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="serviceKey"/> is not <see langword="null"/>, <paramref name="configurationKey"/> is <see langword="null"/>, and <c>serviceKey.ToString()</c> is <see langword="null"/>
-    /// or empty (so a configuration key cannot be determined).
-    /// </exception>
+    /// <param name="configuration">The configuration root that contains the <c>PostKit</c> section.</param>
     /// <returns>The same <paramref name="services"/> instance so calls can be chained.</returns>
+    [UsedImplicitly]
+    public static IServiceCollection AddPostKit(this IServiceCollection services, IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        return services.AddPostKit(configuration.GetRequiredSection(ConfigurationSectionName));
+    }
+
+    /// <summary>Registers the default (non-keyed) PostKit services using the provided configuration section.</summary>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="configurationSection">The configuration section to bind options from.</param>
+    /// <exception cref="InvalidOperationException">Thrown when the provided configuration section cannot be found.</exception>
+    /// <returns>The same <paramref name="services"/> instance so calls can be chained.</returns>
+    [UsedImplicitly]
+    public static IServiceCollection AddPostKit(this IServiceCollection services, IConfigurationSection configurationSection)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configurationSection);
+
+        EnsureConfigurationSectionExists(configurationSection);
+
+        return AddDefaultPostKitRegistration(services, GetOptionsName(configurationSection), optionsBuilder => optionsBuilder.Configure(configurationSection.Bind));
+    }
+
+    /// <summary>Registers PostKit services either as default (non-keyed) services or as keyed services.</summary>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="serviceKey">The key used to resolve keyed services. When <see langword="null"/>, the default service registrations are rebound.</param>
+    /// <param name="configurationKey">The configuration key to bind options from. When <paramref name="serviceKey"/> is provided and this value is omitted, the key is inferred from <paramref name="serviceKey"/>.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when a keyed registration cannot determine the configuration key.</exception>
+    /// <returns>The same <paramref name="services"/> instance so calls can be chained.</returns>
+    [UsedImplicitly]
     public static IServiceCollection AddKeyedPostKit(this IServiceCollection services, object? serviceKey = null, string? configurationKey = null)
     {
+        ArgumentNullException.ThrowIfNull(services);
+
         if (serviceKey is null)
         {
             if (string.IsNullOrWhiteSpace(configurationKey))
                 return services.AddPostKit();
 
-            services.AddHttpClient();
+            var sectionPath = GetSectionPath(configurationKey);
+            return AddDefaultPostKitRegistration(services, sectionPath, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(sectionPath)
+                    .Bind(options)
+                )
+            );
+        }
 
-            services.AddOptions<PostKitOptions>() // default (unnamed) options
-                .Configure<IConfiguration>((options, configuration) =>
-                    {
-                        configuration.GetSection("PostKit")
-                            .GetSection(configurationKey)
-                            .Bind(options);
-                    }
-                );
+        var resolvedConfigurationKey = ResolveConfigurationKey(serviceKey, configurationKey);
+        var resolvedSectionPath = GetSectionPath(resolvedConfigurationKey);
+        return AddKeyedPostKitRegistration(services, serviceKey, resolvedSectionPath, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(resolvedSectionPath)
+                .Bind(options)
+            )
+        );
+    }
 
-            services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
+    /// <summary>Registers keyed PostKit services using configuration from the <c>PostKit</c> section of the provided configuration root.</summary>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="serviceKey">The key used to resolve the keyed services.</param>
+    /// <param name="configuration">The configuration root that contains the <c>PostKit</c> section.</param>
+    /// <param name="configurationKey">The configuration key to bind options from. When omitted, the value is inferred from <paramref name="serviceKey"/>.</param>
+    /// <returns>The same <paramref name="services"/> instance so calls can be chained.</returns>
+    [UsedImplicitly]
+    public static IServiceCollection AddKeyedPostKit(this IServiceCollection services, object serviceKey, IConfiguration configuration, string? configurationKey = null)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(serviceKey);
+        ArgumentNullException.ThrowIfNull(configuration);
 
-            services.TryAddTransient<IPostmarkClient>(sp => sp.GetRequiredService<IPostmarkClientFactory>()
+        var resolvedConfigurationKey = ResolveConfigurationKey(serviceKey, configurationKey);
+        return services.AddKeyedPostKit(serviceKey, configuration.GetRequiredSection(ConfigurationSectionName)
+            .GetRequiredSection(resolvedConfigurationKey)
+        );
+    }
+
+    /// <summary>Registers keyed PostKit services using the provided configuration section.</summary>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="serviceKey">The key used to resolve the keyed services.</param>
+    /// <param name="configurationSection">The configuration section to bind options from.</param>
+    /// <exception cref="InvalidOperationException">Thrown when the provided configuration section cannot be found.</exception>
+    /// <returns>The same <paramref name="services"/> instance so calls can be chained.</returns>
+    [UsedImplicitly]
+    public static IServiceCollection AddKeyedPostKit(this IServiceCollection services, object serviceKey, IConfigurationSection configurationSection)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(serviceKey);
+        ArgumentNullException.ThrowIfNull(configurationSection);
+
+        EnsureConfigurationSectionExists(configurationSection);
+
+        return AddKeyedPostKitRegistration(services, serviceKey, GetOptionsName(configurationSection), optionsBuilder => optionsBuilder.Configure(configurationSection.Bind));
+    }
+
+    private static IServiceCollection AddDefaultPostKitRegistration(IServiceCollection services, string optionsName, Action<OptionsBuilder<PostKitOptions>> configureOptions)
+    {
+        RegisterCommonServices(services);
+
+        var optionsBuilder = AddValidatedOptions(services, optionsName);
+        configureOptions(optionsBuilder);
+
+        services.Replace(ServiceDescriptor.Singleton<IOptionsMonitor<PostKitOptions>>(sp => new RebasedOptionsMonitor<PostKitOptions>(sp.GetRequiredService<IOptionsFactory<PostKitOptions>>(),
+                    sp.GetServices<IOptionsChangeTokenSource<PostKitOptions>>(), sp.GetRequiredService<IOptionsMonitorCache<PostKitOptions>>(), optionsName
+                )
+            )
+        );
+
+        services.Replace(ServiceDescriptor.Singleton<IOptions<PostKitOptions>>(sp => new RebasedOptions<PostKitOptions>(sp.GetRequiredService<IOptionsMonitor<PostKitOptions>>())));
+
+        services.Replace(ServiceDescriptor.Scoped<IOptionsSnapshot<PostKitOptions>>(sp => new RebasedOptionsSnapshot<PostKitOptions>(sp.GetRequiredService<IOptionsFactory<PostKitOptions>>(), optionsName)));
+
+        services.Replace(ServiceDescriptor.Transient<IPostmarkClient>(sp => sp.GetRequiredService<IPostmarkClientFactory>()
                 .Create()
-            );
-
-            services.TryAddTransient<IPostKitClient, PostKitClient>();
-
-            return services;
-        }
-
-        services.AddHttpClient();
-
-        string namedOptionsKey;
-        if (configurationKey is not null)
-        {
-            namedOptionsKey = configurationKey;
-        }
-        else
-        {
-            var keyString = serviceKey.ToString();
-            if (string.IsNullOrEmpty(keyString))
-                throw new InvalidOperationException("Cannot determine the configuration key using the specified service key, please specify a configuration key to bind configuration values from.");
-            namedOptionsKey = keyString;
-        }
-
-        services.AddOptions<PostKitOptions>(namedOptionsKey)
-            .Configure<IConfiguration>((options, configuration) =>
-                {
-                    configuration.GetSection("PostKit")
-                        .GetSection(namedOptionsKey)
-                        .Bind(options);
-                }
-            );
-
-        services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
-
-        services.TryAddKeyedTransient<IPostmarkClient>(serviceKey, (sp, _) => sp.GetRequiredService<IPostmarkClientFactory>()
-            .Create(namedOptionsKey)
+            )
         );
 
-        services.TryAddKeyedTransient<IPostKitClient>(serviceKey, (sp, _) =>
-            {
-                var postmarkClient = sp.GetRequiredKeyedService<IPostmarkClient>(serviceKey);
-                var logger = sp.GetRequiredService<ILogger<PostKitClient>>();
-                return new PostKitClient(postmarkClient, logger);
-            }
-        );
+        services.Replace(ServiceDescriptor.Transient<IPostKitClient>(sp => new PostKitClient(sp.GetRequiredService<IPostmarkClient>(), sp.GetRequiredService<ILogger<PostKitClient>>())));
 
         return services;
+    }
+
+    private static IServiceCollection AddKeyedPostKitRegistration(IServiceCollection services, object serviceKey, string optionsName, Action<OptionsBuilder<PostKitOptions>> configureOptions)
+    {
+        RegisterCommonServices(services);
+
+        var optionsBuilder = AddValidatedOptions(services, optionsName);
+        configureOptions(optionsBuilder);
+
+        services.RemoveAllKeyed<IPostmarkClient>(serviceKey);
+        services.RemoveAllKeyed<IPostKitClient>(serviceKey);
+
+        services.AddKeyedTransient<IPostmarkClient>(serviceKey, (sp, _) => sp.GetRequiredService<IPostmarkClientFactory>()
+            .Create(optionsName)
+        );
+
+        services.AddKeyedTransient<IPostKitClient>(serviceKey, (sp, _) => new PostKitClient(sp.GetRequiredKeyedService<IPostmarkClient>(serviceKey), sp.GetRequiredService<ILogger<PostKitClient>>()));
+
+        return services;
+    }
+
+    private static void RegisterCommonServices(IServiceCollection services)
+    {
+        services.AddHttpClient("Postmark");
+        services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
+    }
+
+    private static OptionsBuilder<PostKitOptions> AddValidatedOptions(IServiceCollection services, string optionsName)
+    {
+        var optionsBuilder = services.AddOptions<PostKitOptions>(optionsName);
+        optionsBuilder.Validate(options => !string.IsNullOrWhiteSpace(options.ServerApiToken), $"The configuration section '{optionsName}' must define '{nameof(PostKitOptions.ServerApiToken)}'.")
+            .ValidateOnStart();
+
+        return optionsBuilder;
+    }
+
+    private static string ResolveConfigurationKey(object serviceKey, string? configurationKey)
+    {
+        var resolvedConfigurationKey = configurationKey;
+        if (string.IsNullOrWhiteSpace(resolvedConfigurationKey))
+            resolvedConfigurationKey = serviceKey as string ?? serviceKey.ToString();
+
+        if (string.IsNullOrWhiteSpace(resolvedConfigurationKey))
+            throw new InvalidOperationException("Cannot determine the configuration key using the specified service key. Please specify a configuration key.");
+
+        return resolvedConfigurationKey;
+    }
+
+    private static string GetSectionPath(string configurationKey)
+    {
+        return $"{ConfigurationSectionName}:{configurationKey}";
+    }
+
+    private static string GetOptionsName(IConfigurationSection configurationSection)
+    {
+        return string.IsNullOrWhiteSpace(configurationSection.Path) ? configurationSection.Key : configurationSection.Path;
+    }
+
+    private static void EnsureConfigurationSectionExists(IConfigurationSection configurationSection)
+    {
+        if (configurationSection.Exists())
+            return;
+
+        var sectionName = string.IsNullOrWhiteSpace(configurationSection.Path) ? configurationSection.Key : configurationSection.Path;
+
+        throw new InvalidOperationException($"The configuration section '{sectionName}' could not be found.");
     }
 }

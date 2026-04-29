@@ -7,15 +7,14 @@ namespace PostKit.IntegrationTests;
 internal static class TestHelper
 {
     /// <summary>Creates a PostKit client configured with the test API token.</summary>
-    public static IPostKitClient CreateClient(string? apiToken = TestConfiguration.ApiToken)
+    public static IPostKitClient CreateClient(string? apiToken = null)
     {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:ServerApiToken"] = apiToken })
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:ServerApiToken"] = apiToken ?? TestConfiguration.ApiToken })
             .Build();
 
         var services = new ServiceCollection();
-        services.AddSingleton<IConfiguration>(configuration);
         services.AddLogging();
-        services.AddPostKit();
+        services.AddPostKit(configuration);
 
         var serviceProvider = services.BuildServiceProvider();
         return serviceProvider.GetRequiredService<IPostKitClient>();
