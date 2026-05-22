@@ -17,6 +17,7 @@ internal sealed partial class DraftBulkEmail
 #endif
 
     private const int TemplateAliasMaxLength = 64;
+    private const string TemplateContentConflictGuidance = "Use either template fields (TemplateId or TemplateAlias) or content fields (Subject with TextBody or HtmlBody).";
 
     private MailboxAddress? _from;
     private IList<MailboxAddress>? _replyTo;
@@ -39,7 +40,7 @@ internal sealed partial class DraftBulkEmail
     {
         _from.EnsureNotSet(nameof(BulkEmail.From));
 
-        var mailboxAddress = MailboxAddress.Parse(address);
+        var mailboxAddress = address.ToMailboxAddress();
 
         ValidateFrom(mailboxAddress, nameof(address));
 
@@ -53,7 +54,7 @@ internal sealed partial class DraftBulkEmail
         _from.EnsureNotSet(nameof(BulkEmail.From));
         ValidationExtensions.EnsureAddressFirst(address, name);
 
-        var mailboxAddress = new MailboxAddress(name, address);
+        var mailboxAddress = (address, name).ToMailboxAddress();
 
         ValidateFrom(mailboxAddress, nameof(address));
 
@@ -64,7 +65,8 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail From(MailboxAddress mailboxAddress)
     {
-        ArgumentNullException.ThrowIfNull(mailboxAddress);
+        if (mailboxAddress is null)
+            throw new ArgumentNullException(nameof(mailboxAddress), "The from address cannot be null.");
 
         _from.EnsureNotSet(nameof(BulkEmail.From));
 
@@ -108,16 +110,17 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail Subject(string subject)
     {
-        ArgumentNullException.ThrowIfNull(subject);
+        if (subject is null)
+            throw new ArgumentNullException(nameof(subject), "The subject cannot be null.");
 
         _subject.EnsureNotSet(nameof(BulkEmail.Subject));
-        _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId));
-        _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias));
+        _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId), nameof(BulkEmail.Subject), TemplateContentConflictGuidance);
+        _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias), nameof(BulkEmail.Subject), TemplateContentConflictGuidance);
 
         var length = subject.AsSpan()
             .GetPostmarkCharacterCount();
         if (length > 2000)
-            throw new ArgumentException("The subject cannot be longer than 2000 characters.", nameof(subject));
+            throw new ArgumentException($"The subject cannot be longer than 2000 characters. Actual length: {length}.", nameof(subject));
 
         _subject = subject;
 
@@ -126,11 +129,12 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail HtmlBody(string htmlBody)
     {
-        ArgumentNullException.ThrowIfNull(htmlBody);
+        if (htmlBody is null)
+            throw new ArgumentNullException(nameof(htmlBody), "The HTML body cannot be null.");
 
-        _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId));
-        _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias));
-        _inlineCss.EnsureNotSet(nameof(BulkEmail.InlineCss));
+        _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId), nameof(BulkEmail.HtmlBody), TemplateContentConflictGuidance);
+        _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias), nameof(BulkEmail.HtmlBody), TemplateContentConflictGuidance);
+        _inlineCss.EnsureNotSet(nameof(BulkEmail.InlineCss), nameof(BulkEmail.HtmlBody), TemplateContentConflictGuidance);
         _htmlBody.EnsureNotSet(nameof(BulkEmail.HtmlBody));
 
         _htmlBody = htmlBody;
@@ -140,11 +144,12 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail TextBody(string textBody)
     {
-        ArgumentNullException.ThrowIfNull(textBody);
+        if (textBody is null)
+            throw new ArgumentNullException(nameof(textBody), "The text body cannot be null.");
 
-        _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId));
-        _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias));
-        _inlineCss.EnsureNotSet(nameof(BulkEmail.InlineCss));
+        _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId), nameof(BulkEmail.TextBody), TemplateContentConflictGuidance);
+        _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias), nameof(BulkEmail.TextBody), TemplateContentConflictGuidance);
+        _inlineCss.EnsureNotSet(nameof(BulkEmail.InlineCss), nameof(BulkEmail.TextBody), TemplateContentConflictGuidance);
         _textBody.EnsureNotSet(nameof(BulkEmail.TextBody));
 
         _textBody = textBody;
@@ -155,10 +160,11 @@ internal sealed partial class DraftBulkEmail
     public DraftBulkEmail WithTag(string tag)
     {
         _tag.EnsureNotSet(nameof(BulkEmail.Tag));
-        ArgumentNullException.ThrowIfNull(tag);
+        if (tag is null)
+            throw new ArgumentNullException(nameof(tag), "The tag cannot be null.");
 
         if (tag.Length > 1000)
-            throw new ArgumentException("The tag cannot be longer than 1000 characters.", nameof(tag));
+            throw new ArgumentException($"The tag cannot be longer than 1000 characters. Actual length: {tag.Length}.", nameof(tag));
 
         _tag = tag;
 
@@ -167,8 +173,8 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail AddHeader(string name, string value)
     {
-        ValidateHeaderName(name, nameof(name));
-        ValidateHeaderValue(value, nameof(value));
+        ValidationExtensions.ValidateHeaderName(name, nameof(name));
+        ValidationExtensions.ValidateHeaderValue(value, nameof(value));
 
         AddHeaderEntry(name, value, nameof(name));
 
@@ -177,7 +183,7 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail AddHeader(KeyValuePair<string, string> header)
     {
-        ValidateHeader(header.Key, header.Value, nameof(header));
+        ValidationExtensions.ValidateHeader(header.Key, header.Value, nameof(header));
 
         AddHeaderEntry(header.Key, header.Value, nameof(header));
 
@@ -186,47 +192,28 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail AddHeader(IEnumerable<KeyValuePair<string, string>> headers)
     {
-        ArgumentNullException.ThrowIfNull(headers);
-
-        var headerList = headers.ToList();
-        var uniqueKeys = headerList.Select(static header => header.Key)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Count();
-        if (uniqueKeys != headerList.Count)
-            throw new ArgumentException("There are duplicate header entries.", nameof(headers));
+        var headerList = ValidationExtensions.SnapshotValidatedHeaders(headers, nameof(headers), _headers);
 
         foreach (var header in headerList)
-        {
-            ValidateHeader(header.Key, header.Value, nameof(headers));
             AddHeaderEntry(header.Key, header.Value, nameof(headers));
-        }
 
         return this;
     }
 
     public DraftBulkEmail AddHeader(IDictionary<string, string> headers)
     {
-        ArgumentNullException.ThrowIfNull(headers);
+        var headerList = ValidationExtensions.SnapshotValidatedHeaders(headers, nameof(headers), _headers);
 
-        var uniqueKeys = headers.Keys
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Count();
-        if (uniqueKeys != headers.Keys.Count)
-            throw new ArgumentException("There are duplicate header entries.", nameof(headers));
-
-        foreach (var header in headers)
-        {
-            ValidateHeader(header.Key, header.Value, nameof(headers));
+        foreach (var header in headerList)
             AddHeaderEntry(header.Key, header.Value, nameof(headers));
-        }
 
         return this;
     }
 
     public DraftBulkEmail AddMetadata(string name, string value)
     {
-        ValidateMetadataName(name, nameof(name));
-        ValidateMetadataValue(value, nameof(value));
+        ValidationExtensions.ValidateMetadataName(name, nameof(name));
+        ValidationExtensions.ValidateMetadataValue(value, nameof(value));
 
         AddMetadataEntry(name, value, nameof(name));
 
@@ -235,7 +222,7 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail AddMetadata(KeyValuePair<string, string> entry)
     {
-        ValidateMetadata(entry.Key, entry.Value, nameof(entry));
+        ValidationExtensions.ValidateMetadata(entry.Key, entry.Value, nameof(entry));
 
         AddMetadataEntry(entry.Key, entry.Value, nameof(entry));
 
@@ -244,47 +231,20 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail AddMetadata(IEnumerable<KeyValuePair<string, string>> metadata)
     {
-        ArgumentNullException.ThrowIfNull(metadata);
-
-        var metadataList = metadata.ToList();
-        var uniqueKeys = metadataList.Select(static entry => entry.Key)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Count();
-        if (uniqueKeys != metadataList.Count)
-            throw new ArgumentException("There are duplicate metadata entries.", nameof(metadata));
-
-        var projectedCount = (_metadata?.Count ?? 0) + metadataList.Count;
-        if (projectedCount > 10)
-            throw new ArgumentException("Cannot set more than 10 metadata values.", nameof(metadata));
+        var metadataList = ValidationExtensions.SnapshotValidatedMetadata(metadata, nameof(metadata), _metadata);
 
         foreach (var entry in metadataList)
-        {
-            ValidateMetadata(entry.Key, entry.Value, nameof(metadata));
             AddMetadataEntry(entry.Key, entry.Value, nameof(metadata));
-        }
 
         return this;
     }
 
     public DraftBulkEmail AddMetadata(IDictionary<string, string> metadata)
     {
-        ArgumentNullException.ThrowIfNull(metadata);
+        var metadataList = ValidationExtensions.SnapshotValidatedMetadata(metadata, nameof(metadata), _metadata);
 
-        var uniqueKeys = metadata.Keys
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Count();
-        if (uniqueKeys != metadata.Keys.Count)
-            throw new ArgumentException("There are duplicate metadata entries.", nameof(metadata));
-
-        var projectedCount = (_metadata?.Count ?? 0) + metadata.Count;
-        if (projectedCount > 10)
-            throw new ArgumentException("Cannot set more than 10 metadata values.", nameof(metadata));
-
-        foreach (var entry in metadata)
-        {
-            ValidateMetadata(entry.Key, entry.Value, nameof(metadata));
+        foreach (var entry in metadataList)
             AddMetadataEntry(entry.Key, entry.Value, nameof(metadata));
-        }
 
         return this;
     }
@@ -314,7 +274,7 @@ internal sealed partial class DraftBulkEmail
         _messageStream = messageStream switch
         {
             MessageStream.Broadcast => "broadcast",
-            MessageStream.Transactional => throw new ArgumentException("The Bulk API only supports broadcast message streams.", nameof(messageStream)),
+            MessageStream.Transactional => throw new ArgumentException("Bulk sends require a broadcast message stream. Received MessageStream.Transactional; use MessageStream.Broadcast or a broadcast stream ID.", nameof(messageStream)),
             _ => throw new UnreachableException($"Enum value of '{nameof(MessageStream)}.{messageStream}' has not been handled."),
         };
 
@@ -324,14 +284,11 @@ internal sealed partial class DraftBulkEmail
     public DraftBulkEmail UseMessageStream(string messageStreamId)
     {
         _messageStream.EnsureNotSet(nameof(BulkEmail.MessageStream));
-        ArgumentNullException.ThrowIfNull(messageStreamId);
-
-        if (!messageStreamId.AsSpan()
-                .IsValidMessageStreamId())
-            throw new ArgumentException("The message stream ID is invalid.", nameof(messageStreamId));
 
         if (string.Equals(messageStreamId, "outbound", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("The Bulk API only supports broadcast message streams.", nameof(messageStreamId));
+            throw new ArgumentException($"Bulk sends require a broadcast message stream. Received '{messageStreamId}'; use MessageStream.Broadcast or a broadcast stream ID.", nameof(messageStreamId));
+
+        ValidationExtensions.ValidateMessageStreamId(messageStreamId, nameof(messageStreamId));
 
         _messageStream = messageStreamId;
 
@@ -340,7 +297,8 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail AddAttachment(Attachment attachment)
     {
-        ArgumentNullException.ThrowIfNull(attachment);
+        if (attachment is null)
+            throw new ArgumentNullException(nameof(attachment), "The attachment cannot be null.");
 
         var estimatedSize = PostmarkSizeEstimator.EstimateBase64SizeLowerBound(attachment.Content);
         EnsureAttachmentsWithinLimit(estimatedSize);
@@ -352,17 +310,22 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail AddAttachment(IEnumerable<Attachment> attachments)
     {
-        ArgumentNullException.ThrowIfNull(attachments);
+        if (attachments is null)
+            throw new ArgumentNullException(nameof(attachments), "The attachments collection cannot be null.");
 
         var buffer = attachments as ICollection<Attachment> ?? attachments.ToList();
         if (buffer.Count == 0)
             return this;
 
         long additionalBytes = 0;
+        var index = 0;
         foreach (var attachment in buffer)
         {
-            ArgumentNullException.ThrowIfNull(attachment);
+            if (attachment is null)
+                throw new ArgumentException($"The attachment at index {index} cannot be null.", nameof(attachments));
+
             additionalBytes += PostmarkSizeEstimator.EstimateBase64SizeLowerBound(attachment.Content);
+            index++;
         }
 
         EnsureAttachmentsWithinLimit(additionalBytes);
@@ -374,7 +337,8 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail AddMessage(BulkEmailMessage message)
     {
-        ArgumentNullException.ThrowIfNull(message);
+        if (message is null)
+            throw new ArgumentNullException(nameof(message), "The bulk email message cannot be null.");
 
         _messages.Add(message);
 
@@ -383,28 +347,38 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail AddMessage(IEnumerable<BulkEmailMessage> messages)
     {
-        ArgumentNullException.ThrowIfNull(messages);
+        if (messages is null)
+            throw new ArgumentNullException(nameof(messages), "The bulk email message collection cannot be null.");
 
-        foreach (var message in messages)
+        var buffer = messages as ICollection<BulkEmailMessage> ?? messages.ToList();
+        if (buffer.Count == 0)
+            return this;
+
+        var index = 0;
+        foreach (var message in buffer)
         {
-            ArgumentNullException.ThrowIfNull(message);
-            _messages.Add(message);
+            if (message is null)
+                throw new ArgumentException($"The bulk email message at index {index} cannot be null.", nameof(messages));
+
+            index++;
         }
+
+        _messages.AddRange(buffer);
 
         return this;
     }
 
     public DraftBulkEmail SetTemplate(int templateId, bool? inlineCss = null)
     {
-        _subject.EnsureNotSet(nameof(BulkEmail.Subject));
-        _htmlBody.EnsureNotSet(nameof(BulkEmail.HtmlBody));
-        _textBody.EnsureNotSet(nameof(BulkEmail.TextBody));
+        _subject.EnsureNotSet(nameof(BulkEmail.Subject), nameof(BulkEmail.TemplateId), TemplateContentConflictGuidance);
+        _htmlBody.EnsureNotSet(nameof(BulkEmail.HtmlBody), nameof(BulkEmail.TemplateId), TemplateContentConflictGuidance);
+        _textBody.EnsureNotSet(nameof(BulkEmail.TextBody), nameof(BulkEmail.TemplateId), TemplateContentConflictGuidance);
         _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId));
-        _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias));
-        _inlineCss.EnsureNotSet(nameof(BulkEmail.InlineCss));
+        _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias), nameof(BulkEmail.TemplateId), "Only one template identifier can be set.");
+        _inlineCss.EnsureNotSet(nameof(BulkEmail.InlineCss), nameof(BulkEmail.TemplateId));
 
         if (templateId <= 0)
-            throw new ArgumentException("The template ID must be greater than zero.", nameof(templateId));
+            throw new ArgumentException($"The template ID must be greater than zero. Received {templateId}.", nameof(templateId));
 
         _templateId = templateId;
         _inlineCss = inlineCss;
@@ -414,24 +388,27 @@ internal sealed partial class DraftBulkEmail
 
     public DraftBulkEmail SetTemplate(string templateAlias, bool? inlineCss = null)
     {
-        _subject.EnsureNotSet(nameof(BulkEmail.Subject));
-        _htmlBody.EnsureNotSet(nameof(BulkEmail.HtmlBody));
-        _textBody.EnsureNotSet(nameof(BulkEmail.TextBody));
-        _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId));
+        _subject.EnsureNotSet(nameof(BulkEmail.Subject), nameof(BulkEmail.TemplateAlias), TemplateContentConflictGuidance);
+        _htmlBody.EnsureNotSet(nameof(BulkEmail.HtmlBody), nameof(BulkEmail.TemplateAlias), TemplateContentConflictGuidance);
+        _textBody.EnsureNotSet(nameof(BulkEmail.TextBody), nameof(BulkEmail.TemplateAlias), TemplateContentConflictGuidance);
+        _templateId.EnsureNotSet(nameof(BulkEmail.TemplateId), nameof(BulkEmail.TemplateAlias), "Only one template identifier can be set.");
         _templateAlias.EnsureNotSet(nameof(BulkEmail.TemplateAlias));
-        _inlineCss.EnsureNotSet(nameof(BulkEmail.InlineCss));
+        _inlineCss.EnsureNotSet(nameof(BulkEmail.InlineCss), nameof(BulkEmail.TemplateAlias));
+
+        if (templateAlias is null)
+            throw new ArgumentNullException(nameof(templateAlias), "The template alias cannot be null.");
 
         if (string.IsNullOrWhiteSpace(templateAlias))
             throw new ArgumentException("The template alias is required.", nameof(templateAlias));
 
         if (templateAlias.Length > TemplateAliasMaxLength)
-            throw new ArgumentException($"The template alias must not exceed {TemplateAliasMaxLength} characters.", nameof(templateAlias));
+            throw new ArgumentException($"The template alias must not exceed {TemplateAliasMaxLength} characters. Actual length: {templateAlias.Length}.", nameof(templateAlias));
 #if NET9_0_OR_GREATER
         if (!TemplateAliasRegex.IsMatch(templateAlias))
 #else
         if (!TemplateAliasRegex().IsMatch(templateAlias))
 #endif
-            throw new ArgumentException("The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters.", nameof(templateAlias));
+            throw new ArgumentException($"The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters. {GetTemplateAliasValidationDetail(templateAlias)}", nameof(templateAlias));
 
         _templateAlias = templateAlias;
         _inlineCss = inlineCss;
@@ -442,29 +419,29 @@ internal sealed partial class DraftBulkEmail
     public BulkEmail Build()
     {
         if (_from is null)
-            throw new InvalidOperationException("From address is required.");
+            throw new InvalidOperationException("From address is required before building the bulk email. Call From(...).");
 
         if (_messages.Count == 0)
-            throw new InvalidOperationException("At least one message is required.");
+            throw new InvalidOperationException("At least one message is required before building the bulk email. Call AddMessage(...).");
+
+        if (_subject is null && !_templateId.HasValue && _templateAlias is null)
+            throw new InvalidOperationException("Subject is required before building the bulk email. Call Subject(...).");
+
+        if (_textBody is null && _htmlBody is null && !_templateId.HasValue && _templateAlias is null)
+            throw new InvalidOperationException("Message content is required before building the bulk email. Call TextBody(...) or HtmlBody(...).");
+
+        if ((_htmlBody is not null || _textBody is not null || _subject is not null) && (_templateId.HasValue || _templateAlias is not null))
+            throw new InvalidOperationException("Bulk template emails cannot also set Subject, TextBody, or HtmlBody. Use either template fields (TemplateId or TemplateAlias) or content fields (Subject with TextBody or HtmlBody).");
 
         EnsureMergedMetadataWithinLimit();
 
-        if (_subject is null && !_templateId.HasValue && _templateAlias is null)
-            throw new InvalidOperationException("Either a subject, or a template ID or alias, is required.");
-
-        if (_textBody is null && _htmlBody is null && !_templateId.HasValue && _templateAlias is null)
-            throw new InvalidOperationException("Either a text or HTML body, or a template ID or alias, is required.");
-
-        if ((_htmlBody is not null || _textBody is not null || _subject is not null) && (_templateId.HasValue || _templateAlias is not null))
-            throw new InvalidOperationException("Neither a text or HTML body, nor a subject may be specified when using a template.");
-
         var textBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_textBody);
         if (textBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
-            throw new InvalidOperationException("Text body exceeds Postmark's 5 MB limit.");
+            throw new InvalidOperationException(PostmarkSizeEstimator.FormatActualSizeLimitMessage("Text body exceeds Postmark's 5 MB limit.", textBodySize, PostmarkSizeEstimator.BodySizeLimitInBytes));
 
         var htmlBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_htmlBody);
         if (htmlBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
-            throw new InvalidOperationException("HTML body exceeds Postmark's 5 MB limit.");
+            throw new InvalidOperationException(PostmarkSizeEstimator.FormatActualSizeLimitMessage("HTML body exceeds Postmark's 5 MB limit.", htmlBodySize, PostmarkSizeEstimator.BodySizeLimitInBytes));
 
         EnsureMessageContentWithinLimit();
 
@@ -492,7 +469,7 @@ internal sealed partial class DraftBulkEmail
 
         var estimatedTotal = PostmarkSizeEstimator.EstimateBulkEmailPayloadSizeLowerBound(bulkEmail);
         if (estimatedTotal > PostmarkSizeEstimator.BulkPayloadSizeLimitInBytes)
-            throw new InvalidOperationException("Estimated bulk request size exceeds Postmark's 50 MB limit.");
+            throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage("Estimated bulk request size exceeds Postmark's 50 MB limit.", estimatedTotal, PostmarkSizeEstimator.BulkPayloadSizeLimitInBytes));
 
         return bulkEmail;
     }
@@ -503,7 +480,25 @@ internal sealed partial class DraftBulkEmail
         var length = fromString.AsSpan()
             .GetPostmarkCharacterCount();
         if (length > 255)
-            throw new ArgumentException($"The {nameof(BulkEmail.From)} address cannot exceed 255 characters.", paramName);
+            throw new ArgumentException($"The {nameof(BulkEmail.From)} address cannot exceed 255 characters. Actual length: {length}.", paramName);
+    }
+
+    private static string GetTemplateAliasValidationDetail(string templateAlias)
+    {
+        if (templateAlias[0] is not ((>= 'A' and <= 'Z') or (>= 'a' and <= 'z')))
+            return $"First character must be a letter. Received {ValidationExtensions.FormatCharacter(templateAlias[0])} at index 0.";
+
+        for (var index = 1; index < templateAlias.Length; index++)
+        {
+            var current = templateAlias[index];
+            var isLetter = current is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z');
+            var isDigit = current is >= '0' and <= '9';
+            var isAllowedPunctuation = current is '-' or '_' or '.';
+            if (!isLetter && !isDigit && !isAllowedPunctuation)
+                return $"Invalid character {ValidationExtensions.FormatCharacter(current)} at index {index}.";
+        }
+
+        return "The value is invalid.";
     }
 
     private DraftBulkEmail AddReplyTo(IEnumerable<MailboxAddress> replyTo)
@@ -520,73 +515,22 @@ internal sealed partial class DraftBulkEmail
 
     private void AddHeaderEntry(string name, string value, string paramName)
     {
-        if (_headers?.ContainsKey(name) == true)
-            throw new ArgumentException("There are duplicate header entries.", paramName);
+        if (_headers is not null && ValidationExtensions.TryGetExistingKey(_headers, name, out var existingName))
+            throw new ArgumentException(ValidationExtensions.FormatDuplicateExistingHeaderMessage(name, existingName), paramName);
 
         (_headers ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)).Add(name, value);
     }
 
-    private static void ValidateHeader(ReadOnlySpan<char> name, ReadOnlySpan<char> value, string paramName)
-    {
-        ValidateHeaderName(name, paramName);
-        ValidateHeaderValue(value, paramName);
-    }
-
-    private static void ValidateHeaderName(ReadOnlySpan<char> name, string paramName)
-    {
-        if (!name.IsValidHeaderName())
-            throw new ArgumentException("The header name is invalid.", paramName);
-    }
-
-    private static void ValidateHeaderValue(ReadOnlySpan<char> value, string paramName)
-    {
-        if (!value.IsValidHeaderValue())
-            throw new ArgumentException("The header value is invalid.", paramName);
-    }
-
     private void AddMetadataEntry(string name, string value, string paramName)
     {
-        if (_metadata?.Count >= 10)
-            throw new InvalidOperationException("Cannot add more than 10 metadata values.");
+        if (_metadata is not null && ValidationExtensions.TryGetExistingKey(_metadata, name, out var existingName))
+            throw new ArgumentException(ValidationExtensions.FormatDuplicateExistingMetadataMessage(name, existingName), paramName);
 
-        if (_metadata?.ContainsKey(name) == true)
-            throw new ArgumentException("There are duplicate metadata entries.", paramName);
+        var existingCount = _metadata?.Count ?? 0;
+        if (existingCount >= 10)
+            throw new InvalidOperationException($"Cannot set more than 10 metadata fields for a message. Adding 1 metadata field to the existing {existingCount} would produce {existingCount + 1}.");
 
         (_metadata ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)).Add(name, value);
-    }
-
-    private static void ValidateMetadata(ReadOnlySpan<char> name, ReadOnlySpan<char> value, string paramName)
-    {
-        ValidateMetadataName(name, paramName);
-        ValidateMetadataValue(value, paramName);
-    }
-
-    private static void ValidateMetadataName(ReadOnlySpan<char> name, string paramName)
-    {
-        if (!IsValidMetadataName(name))
-            throw new ArgumentException("The metadata name is invalid.", paramName);
-    }
-
-    private static void ValidateMetadataValue(ReadOnlySpan<char> value, string paramName)
-    {
-        if (!IsValidMetadataValue(value))
-            throw new ArgumentException("The metadata value is invalid.", paramName);
-    }
-
-    private static bool IsValidMetadataName(ReadOnlySpan<char> name)
-    {
-        if (name.Length is 0 or > 20)
-            return false;
-
-        if (char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[^1]))
-            return false;
-
-        return true;
-    }
-
-    private static bool IsValidMetadataValue(ReadOnlySpan<char> value)
-    {
-        return value.Length <= 80;
     }
 
     private void EnsureAttachmentsWithinLimit(long additionalBytes)
@@ -595,20 +539,21 @@ internal sealed partial class DraftBulkEmail
 
         var projectedTotal = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, 0, _attachments, _headers) + additionalBytes;
         if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException("Estimated message content exceeds Postmark's 10 MB limit.");
+            throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage("Estimated message content exceeds Postmark's 10 MB limit.", projectedTotal, PostmarkSizeEstimator.MessageSizeLimitInBytes));
     }
 
     private void EnsureMessageContentWithinLimit()
     {
         var sharedContentSize = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, 0, _attachments, _headers);
         if (sharedContentSize > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException("Estimated message content exceeds Postmark's 10 MB limit.");
+            throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage("Estimated message content exceeds Postmark's 10 MB limit.", sharedContentSize, PostmarkSizeEstimator.MessageSizeLimitInBytes));
 
-        foreach (var message in _messages)
+        for (var index = 0; index < _messages.Count; index++)
         {
+            var message = _messages[index];
             var projectedTotal = sharedContentSize + message.TemplateModelSizeInBytes + PostmarkSizeEstimator.EstimateHeaderSizeLowerBound(message.Headers);
             if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-                throw new InvalidOperationException("Estimated message content exceeds Postmark's 10 MB limit.");
+                throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage($"Estimated message content for bulk message at index {index} exceeds Postmark's 10 MB limit.", projectedTotal, PostmarkSizeEstimator.MessageSizeLimitInBytes));
         }
     }
 
@@ -617,19 +562,21 @@ internal sealed partial class DraftBulkEmail
         if (_metadata is null || _metadata.Count == 0)
             return;
 
-        foreach (var message in _messages)
+        for (var messageIndex = 0; messageIndex < _messages.Count; messageIndex++)
         {
-            var mergedMetadataCount = _metadata.Count;
+            var message = _messages[messageIndex];
             if (message.Metadata is not null)
+            {
                 foreach (var entry in message.Metadata)
                 {
-                    if (_metadata.ContainsKey(entry.Key))
-                        continue;
-
-                    mergedMetadataCount++;
-                    if (mergedMetadataCount > 10)
-                        throw new InvalidOperationException("Cannot set more than 10 metadata values per message after combining request-level and message-level metadata.");
+                    if (ValidationExtensions.TryGetExistingKey(_metadata, entry.Key, out var existingName))
+                        throw new InvalidOperationException($"Cannot use duplicate metadata names for bulk message at index {messageIndex} after combining request-level and message-level metadata. Metadata name '{entry.Key}' duplicates request-level metadata name '{existingName}'. Metadata names are compared case-insensitively.");
                 }
+
+                var mergedMetadataCount = _metadata.Count + message.Metadata.Count;
+                if (mergedMetadataCount > 10)
+                    throw new InvalidOperationException($"Cannot set more than 10 metadata fields for bulk message at index {messageIndex} after combining request-level and message-level metadata. Request-level count: {_metadata.Count}; message-level count: {message.Metadata.Count}; combined count: {mergedMetadataCount}.");
+            }
         }
     }
 }

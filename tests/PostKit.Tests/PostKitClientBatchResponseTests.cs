@@ -10,6 +10,57 @@ namespace PostKit.Tests;
 public class PostKitClientBatchResponseTests
 {
     [Fact]
+    public async Task SendEmailBatchAsync_WithNullEmailInSequence_ThrowsHelpfulExceptionWithIndex()
+    {
+        var email = Email.Compose()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .Subject("Batch validation")
+            .TextBody("validation")
+            .Build();
+        IEnumerable<Email> emails = [email, null!];
+        var client = new PostKitClient(new RecordingPostmarkClient([]), new TestLogger());
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(async () => await client.SendEmailBatchAsync(emails, CancellationToken.None));
+
+        Assert.Equal("emails", exception.ParamName);
+        Assert.Equal("The email at index 1 cannot be null. (Parameter 'emails')", exception.Message);
+    }
+
+    [Fact]
+    public async Task SendEmailBatchAsync_WithMixedTemplateAndNonTemplateEmails_ReturnsHelpfulFailure()
+    {
+        var templatedEmail = Email.FromTemplate(42)
+            .From("sender@postkit.com")
+            .To("templated@postkit.com")
+            .WithModel(new { Name = "Alice" })
+            .Build();
+        var composedEmail = Email.Compose()
+            .From("sender@postkit.com")
+            .To("composed@postkit.com")
+            .Subject("Composed")
+            .TextBody("Composed")
+            .Build();
+        var client = new PostKitClient(new RecordingPostmarkClient([]), new TestLogger());
+
+        var result = await client.SendEmailBatchAsync([templatedEmail, composedEmail], CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("Each email in a batch must either use a template or none may use a template. Found 1 templated and 1 non-templated emails; first templated item index: 0, first non-templated item index: 1.", error.Message);
+    }
+
+    [Fact]
+    public async Task SendEmailBatchAsync_WithSerializationFailure_ReturnsHelpfulFailureWithIndex()
+    {
+        var client = new PostKitClient(new RecordingPostmarkClient([]), new TestLogger());
+
+        var result = await client.SendEmailBatchAsync([new Email()], CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("Batch item 0 could not be prepared for sending: From is unexpectedly null.", error.Message);
+    }
+
+    [Fact]
     public async Task SendEmailBatchAsync_MapsSuccessfulItemsToSuccessfulResults()
     {
         var messageId = Guid.Parse("53ee8d49-dd20-4f1a-b65e-8ef299b7a504");
@@ -139,6 +190,23 @@ public class PostKitClientBatchResponseTests
         var postmarkError = Assert.IsType<PostmarkError>(error);
         Assert.Equal((PostmarkErrorCode)999999, postmarkError.ErrorCode);
         Assert.Equal("Brand new Postmark error.", postmarkError.Message);
+    }
+
+    [Fact]
+    public async Task SendEmailBatchAsync_WithUnexpectedResponseCount_ReturnsHelpfulFailure()
+    {
+        var email = Email.Compose()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .Subject("Batch count")
+            .TextBody("count")
+            .Build();
+        var client = new PostKitClient(new RecordingPostmarkClient([]), new TestLogger());
+
+        var result = await client.SendEmailBatchAsync([email], CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("Postmark returned an unexpected number of results for the batch request. Expected 1, received 0.", error.Message);
     }
 
     private sealed class RecordingPostmarkClient(List<EmailResponse> response) : IPostmarkClient

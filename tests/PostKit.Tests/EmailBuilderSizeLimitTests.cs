@@ -16,7 +16,10 @@ public class EmailBuilderSizeLimitTests
             .Subject("Oversized text body")
             .TextBody(oversizedText);
 
-        Assert.Throws<InvalidOperationException>(builder.Build);
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
+
+        Assert.StartsWith("Text body exceeds Postmark's 5 MB limit. Actual size: ", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Limit: 5,242,880 bytes.", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -30,7 +33,10 @@ public class EmailBuilderSizeLimitTests
             .Subject("Oversized HTML body")
             .HtmlBody(oversizedHtml);
 
-        Assert.Throws<InvalidOperationException>(builder.Build);
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
+
+        Assert.StartsWith("HTML body exceeds Postmark's 5 MB limit. Actual size: ", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Limit: 5,242,880 bytes.", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -44,7 +50,10 @@ public class EmailBuilderSizeLimitTests
             .Subject("Oversized UTF-8 text body")
             .TextBody(oversizedText);
 
-        Assert.Throws<InvalidOperationException>(builder.Build);
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
+
+        Assert.StartsWith("Text body exceeds Postmark's 5 MB limit. Actual size: ", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Limit: 5,242,880 bytes.", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -61,7 +70,7 @@ public class EmailBuilderSizeLimitTests
 
         var exception = Assert.Throws<InvalidOperationException>(() => builder.AddAttachment(attachment));
 
-        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
+        AssertEstimatedMessageSizeMessage(exception);
     }
 
     [Fact]
@@ -78,7 +87,7 @@ public class EmailBuilderSizeLimitTests
 
         var exception = Assert.Throws<InvalidOperationException>(() => builder.AddAttachment(attachment));
 
-        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
+        AssertEstimatedMessageSizeMessage(exception);
     }
 
     [Fact]
@@ -96,7 +105,7 @@ public class EmailBuilderSizeLimitTests
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
-        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
+        AssertEstimatedMessageSizeMessage(exception);
     }
 
     [Fact]
@@ -116,7 +125,7 @@ public class EmailBuilderSizeLimitTests
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
-        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
+        AssertEstimatedMessageSizeMessage(exception);
     }
 
     [Fact]
@@ -131,6 +140,12 @@ public class EmailBuilderSizeLimitTests
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
-        Assert.Equal("Estimated message content exceeds Postmark's 10 MB limit.", exception.Message);
+        AssertEstimatedMessageSizeMessage(exception);
+    }
+
+    private static void AssertEstimatedMessageSizeMessage(InvalidOperationException exception)
+    {
+        Assert.StartsWith("Estimated message content exceeds Postmark's 10 MB limit. Estimated size: ", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Limit: 10,485,760 bytes.", exception.Message, StringComparison.Ordinal);
     }
 }

@@ -50,6 +50,15 @@ public class EmailBuilderTemplateTests
     }
 
     [Fact]
+    public void FromTemplate_WithInvalidTemplateId_ThrowsHelpfulExceptionWithActualValue()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Email.FromTemplate(0));
+
+        Assert.Equal("templateId", exception.ParamName);
+        Assert.Equal("The template ID must be greater than zero. Received 0. (Parameter 'templateId')", exception.Message);
+    }
+
+    [Fact]
     public void WithTemplateModel_WithUnserializableModel_ThrowsArgumentException()
     {
         var templateModel = CyclicTemplateModel.Create();
@@ -58,7 +67,7 @@ public class EmailBuilderTemplateTests
             .WithModel(templateModel)
         );
 
-        Assert.Equal("The template model could not be serialized. (Parameter 'templateModel')", exception.Message);
+        Assert.Equal("The template model could not be serialized to a JSON object. Ensure it does not contain cycles or members unsupported by System.Text.Json. (Parameter 'templateModel')", exception.Message);
         Assert.NotNull(exception.InnerException);
     }
 
@@ -97,6 +106,15 @@ public class EmailBuilderTemplateTests
         {
             PostKitTemplateModelSerialization.DefaultSerializerOptions = previousOptions;
         }
+    }
+
+    [Fact]
+    public void DefaultSerializerOptions_WithNullValue_ThrowsHelpfulException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => PostKitTemplateModelSerialization.DefaultSerializerOptions = null!);
+
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal("Default serializer options cannot be null. (Parameter 'value')", exception.Message);
     }
 
     [Fact]

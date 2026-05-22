@@ -1,5 +1,7 @@
 using LightResults;
 using Microsoft.Extensions.Logging;
+using PostKit.BulkEmails;
+using PostKit.Emails;
 using PostKit.Postmark;
 
 namespace PostKit.Tests;
@@ -12,7 +14,74 @@ public class PostKitClientFailureHandlingTests
         var postmark = new RecordingPostmarkClient();
         var client = new PostKitClient(postmark, new TestLogger<PostKitClient>());
 
-        await Assert.ThrowsAsync<ArgumentNullException>(() => client.SendEmailAsync(null!, CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => client.SendEmailAsync(null!, CancellationToken.None));
+
+        Assert.Equal("email", exception.ParamName);
+        Assert.Equal("The email cannot be null. (Parameter 'email')", exception.Message);
+        Assert.False(postmark.PostWasCalled);
+    }
+
+    [Fact]
+    public async Task SendEmailBatchAsync_WithNullEmails_ThrowsArgumentNullException()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger<PostKitClient>());
+
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => client.SendEmailBatchAsync(null!, CancellationToken.None));
+
+        Assert.Equal("emails", exception.ParamName);
+        Assert.Equal("The email batch cannot be null. (Parameter 'emails')", exception.Message);
+        Assert.False(postmark.PostWasCalled);
+    }
+
+    [Fact]
+    public async Task SendBulkEmailAsync_WithNullEmail_ThrowsArgumentNullException()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger<PostKitClient>());
+
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => client.SendBulkEmailAsync(null!, CancellationToken.None));
+
+        Assert.Equal("email", exception.ParamName);
+        Assert.Equal("The bulk email cannot be null. (Parameter 'email')", exception.Message);
+        Assert.False(postmark.PostWasCalled);
+    }
+
+    [Fact]
+    public async Task GetBouncesAsync_WithNullQuery_ThrowsArgumentNullException()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger<PostKitClient>());
+
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetBouncesAsync(null!, CancellationToken.None));
+
+        Assert.Equal("query", exception.ParamName);
+        Assert.Equal("The bounce query cannot be null. (Parameter 'query')", exception.Message);
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_WhenEmailCannotBePrepared_ReturnsHelpfulFailure()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger<PostKitClient>());
+
+        var result = await client.SendEmailAsync(new Email(), CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("The email could not be prepared for sending: From is unexpectedly null.", error.Message);
+        Assert.False(postmark.PostWasCalled);
+    }
+
+    [Fact]
+    public async Task SendBulkEmailAsync_WhenBulkEmailCannotBePrepared_ReturnsHelpfulFailure()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger<PostKitClient>());
+
+        var result = await client.SendBulkEmailAsync(new BulkEmail(), CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("The bulk email could not be prepared for sending: From is unexpectedly null.", error.Message);
         Assert.False(postmark.PostWasCalled);
     }
 

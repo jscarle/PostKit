@@ -14,7 +14,8 @@ internal sealed partial class PostKitClient
 {
     public async Task<Result<BulkEmailJob>> SendBulkEmailAsync(BulkEmail email, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(email);
+        if (email is null)
+            throw new ArgumentNullException(nameof(email), "The bulk email cannot be null.");
 
         BulkEmailRequest request;
         try
@@ -24,7 +25,7 @@ internal sealed partial class PostKitClient
         catch (Exception ex)
         {
             LogBulkRequestSerializationException(ex);
-            return Result.Failure<BulkEmailJob>(ex);
+            return Result.Failure<BulkEmailJob>($"The bulk email could not be prepared for sending: {ex.Message}");
         }
 
         Result<SendBulkEmailModel> response;

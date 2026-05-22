@@ -80,6 +80,40 @@ public class PostmarkClientErrorHandlingTests
     }
 
     [Fact]
+    public async Task PostAsync_WithMalformedSuccessfulJson_ReturnsFailure()
+    {
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"MessageID":""", Encoding.UTF8, MediaTypeNames.Application.Json),
+                }
+            )
+        );
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>());
+
+        var result = await client.PostAsync<object, EmailResponse>("/email", new { Name = "Alice" }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("The response from the '/email' endpoint of the Postmark API could not be deserialized because the response JSON was invalid.", error.Message);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithMalformedStrictErrorJson_ReturnsHelpfulFailure()
+    {
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.UnprocessableEntity)
+                {
+                    Content = new StringContent("""{"ErrorCode":""", Encoding.UTF8, MediaTypeNames.Application.Json),
+                }
+            )
+        );
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>());
+
+        var result = await client.PostAsync<object, EmailResponse>("/email", new { Name = "Alice" }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("The error response from the '/email' endpoint of the Postmark API could not be deserialized because the response JSON was invalid.", error.Message);
+    }
+
+    [Fact]
     public async Task PutAsync_SendsEmptyJsonPayloadWithApplicationJsonContentType()
     {
         using var handler = new RecordingHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"ErrorCode":0,"Message":"OK"}""", Encoding.UTF8, MediaTypeNames.Application.Json) });

@@ -15,7 +15,8 @@ internal sealed partial class PostKitClient
 
     public async Task<Result<EmailSubmission>> SendEmailAsync(Email email, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(email);
+        if (email is null)
+            throw new ArgumentNullException(nameof(email), "The email cannot be null.");
 
         EmailRequest request;
         try
@@ -25,7 +26,7 @@ internal sealed partial class PostKitClient
         catch (Exception ex)
         {
             LogRequestSerializationException(ex);
-            return Result.Failure<EmailSubmission>(ex);
+            return Result.Failure<EmailSubmission>($"The email could not be prepared for sending: {ex.Message}");
         }
 
         var endpoint = email.TemplateId.HasValue || email.TemplateAlias is not null ? "/email/withTemplate" : "/email";
@@ -75,7 +76,8 @@ internal sealed partial class PostKitClient
 
     public async Task<Result<EmailBatchSubmission>> SendEmailBatchAsync(IEnumerable<Email> emails, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(emails);
+        if (emails is null)
+            throw new ArgumentNullException(nameof(emails), "The email batch cannot be null.");
 
         var emailList = emails.ToList();
 
@@ -83,18 +85,30 @@ internal sealed partial class PostKitClient
             return Result.Failure<EmailBatchSubmission>("At least one email must be provided to send a batch.");
 
         if (emailList.Count > MaxBatchSize)
-            return Result.Failure<EmailBatchSubmission>($"Postmark only accepts {MaxBatchSize} emails per batch request.");
+            return Result.Failure<EmailBatchSubmission>($"Postmark only accepts {MaxBatchSize} emails per batch request. Received {emailList.Count}.");
 
         var requests = new List<EmailRequest>(emailList.Count);
         var templateCount = 0;
+        int? firstTemplatedIndex = null;
+        int? firstNonTemplatedIndex = null;
         long estimatedBatchSize = 0;
 
-        foreach (var email in emailList)
+        for (var index = 0; index < emailList.Count; index++)
         {
-            ArgumentNullException.ThrowIfNull(email);
+            var email = emailList[index];
+            if (email is null)
+                throw new ArgumentException($"The email at index {index} cannot be null.", nameof(emails));
 
-            if (email.TemplateId.HasValue || email.TemplateAlias is not null)
+            var usesTemplate = email.TemplateId.HasValue || email.TemplateAlias is not null;
+            if (usesTemplate)
+            {
                 templateCount++;
+                firstTemplatedIndex ??= index;
+            }
+            else
+            {
+                firstNonTemplatedIndex ??= index;
+            }
 
             estimatedBatchSize += PostmarkSizeEstimator.EstimateMessagePayloadSizeLowerBound(email);
             try
@@ -103,19 +117,19 @@ internal sealed partial class PostKitClient
             }
             catch (Exception ex)
             {
-                LogBatchRequestSerializationException(requests.Count, ex);
-                return Result.Failure<EmailBatchSubmission>(ex);
+                LogBatchRequestSerializationException(index, ex);
+                return Result.Failure<EmailBatchSubmission>($"Batch item {index} could not be prepared for sending: {ex.Message}");
             }
         }
 
         if (templateCount > 0 && templateCount < emailList.Count)
-            return Result.Failure<EmailBatchSubmission>("Each email in a batch must either use a template or none may use a template.");
+            return Result.Failure<EmailBatchSubmission>($"Each email in a batch must either use a template or none may use a template. Found {templateCount} templated and {emailList.Count - templateCount} non-templated emails; first templated item index: {firstTemplatedIndex}, first non-templated item index: {firstNonTemplatedIndex}.");
 
         var sendWithTemplates = templateCount > 0;
         var endpoint = sendWithTemplates ? "/email/batchWithTemplates" : "/email/batch";
 
         if (estimatedBatchSize > PostmarkSizeEstimator.BatchPayloadSizeLimitInBytes)
-            return Result.Failure<EmailBatchSubmission>("Estimated batch payload size exceeds Postmark's 50 MB limit.");
+            return Result.Failure<EmailBatchSubmission>(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage("Estimated batch payload size exceeds Postmark's 50 MB limit.", estimatedBatchSize, PostmarkSizeEstimator.BatchPayloadSizeLimitInBytes));
 
         Result<List<EmailResponse>> response;
         try
@@ -147,7 +161,7 @@ internal sealed partial class PostKitClient
         }
 
         if (emailResponses.Count != emailList.Count)
-            return Result.Failure<EmailBatchSubmission>("Postmark returned an unexpected number of results for the batch request.");
+            return Result.Failure<EmailBatchSubmission>($"Postmark returned an unexpected number of results for the batch request. Expected {emailList.Count}, received {emailResponses.Count}.");
 
         var batchResults = new List<Result<EmailSubmission>>(emailResponses.Count);
 

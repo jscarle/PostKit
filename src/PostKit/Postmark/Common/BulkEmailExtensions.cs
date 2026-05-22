@@ -10,6 +10,9 @@ internal static class BulkEmailExtensions
 {
     public static BulkEmailRequest ToBulkEmailRequest(this BulkEmail bulkEmail)
     {
+        if (bulkEmail.From is null)
+            throw new UnreachableException($"{nameof(bulkEmail.From)} is unexpectedly null.");
+
         var replyTo = bulkEmail.ReplyTo is not null ? string.Join(",", bulkEmail.ReplyTo.Select(static x => x.ToString(true))) : null;
         IReadOnlyList<EmailRequestAttachment>? attachments = bulkEmail.Attachments
             ?.Select(static attachment => new EmailRequestAttachment

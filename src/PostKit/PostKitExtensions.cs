@@ -20,9 +20,10 @@ public static class PostKitExtensions
     [UsedImplicitly]
     public static IServiceCollection AddPostKit(this IServiceCollection services)
     {
-        ArgumentNullException.ThrowIfNull(services);
+        if (services is null)
+            throw new ArgumentNullException(nameof(services), "The service collection cannot be null.");
 
-        return AddDefaultPostKitRegistration(services, ConfigurationSectionName, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(ConfigurationSectionName)
+        return AddDefaultPostKitRegistration(services, ConfigurationSectionName, true, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(ConfigurationSectionName)
                 .Bind(options)
             )
         );
@@ -35,10 +36,16 @@ public static class PostKitExtensions
     [UsedImplicitly]
     public static IServiceCollection AddPostKit(this IServiceCollection services, IConfiguration configuration)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configuration);
+        if (services is null)
+            throw new ArgumentNullException(nameof(services), "The service collection cannot be null.");
 
-        return services.AddPostKit(configuration.GetRequiredSection(ConfigurationSectionName));
+        if (configuration is null)
+            throw new ArgumentNullException(nameof(configuration), "The configuration root cannot be null.");
+
+        var configurationSection = configuration.GetSection(ConfigurationSectionName);
+        EnsureConfigurationSectionExists(configurationSection);
+
+        return services.AddPostKit(configurationSection);
     }
 
     /// <summary>Registers the default (non-keyed) PostKit services using the provided configuration section.</summary>
@@ -49,12 +56,15 @@ public static class PostKitExtensions
     [UsedImplicitly]
     public static IServiceCollection AddPostKit(this IServiceCollection services, IConfigurationSection configurationSection)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configurationSection);
+        if (services is null)
+            throw new ArgumentNullException(nameof(services), "The service collection cannot be null.");
+
+        if (configurationSection is null)
+            throw new ArgumentNullException(nameof(configurationSection), "The configuration section cannot be null.");
 
         EnsureConfigurationSectionExists(configurationSection);
 
-        return AddDefaultPostKitRegistration(services, GetOptionsName(configurationSection), optionsBuilder => optionsBuilder.Configure(configurationSection.Bind));
+        return AddDefaultPostKitRegistration(services, GetOptionsName(configurationSection), false, optionsBuilder => optionsBuilder.Configure(configurationSection.Bind));
     }
 
     /// <summary>Registers PostKit services either as default (non-keyed) services or as keyed services.</summary>
@@ -67,15 +77,16 @@ public static class PostKitExtensions
     [UsedImplicitly]
     public static IServiceCollection AddKeyedPostKit(this IServiceCollection services, object? serviceKey = null, string? configurationKey = null)
     {
-        ArgumentNullException.ThrowIfNull(services);
+        if (services is null)
+            throw new ArgumentNullException(nameof(services), "The service collection cannot be null.");
 
         if (serviceKey is null)
         {
             if (string.IsNullOrWhiteSpace(configurationKey))
                 return services.AddPostKit();
 
-            var sectionPath = GetSectionPath(configurationKey);
-            return AddDefaultPostKitRegistration(services, sectionPath, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(sectionPath)
+            var sectionPath = GetSectionPath(NormalizeConfigurationKey(configurationKey));
+            return AddDefaultPostKitRegistration(services, sectionPath, true, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(sectionPath)
                     .Bind(options)
                 )
             );
@@ -83,7 +94,7 @@ public static class PostKitExtensions
 
         var resolvedConfigurationKey = ResolveConfigurationKey(serviceKey, configurationKey);
         var resolvedSectionPath = GetSectionPath(resolvedConfigurationKey);
-        return AddKeyedPostKitRegistration(services, serviceKey, resolvedSectionPath, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(resolvedSectionPath)
+        return AddKeyedPostKitRegistration(services, serviceKey, resolvedSectionPath, true, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(resolvedSectionPath)
                 .Bind(options)
             )
         );
@@ -98,14 +109,23 @@ public static class PostKitExtensions
     [UsedImplicitly]
     public static IServiceCollection AddKeyedPostKit(this IServiceCollection services, object serviceKey, IConfiguration configuration, string? configurationKey = null)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(serviceKey);
-        ArgumentNullException.ThrowIfNull(configuration);
+        if (services is null)
+            throw new ArgumentNullException(nameof(services), "The service collection cannot be null.");
+
+        if (serviceKey is null)
+            throw new ArgumentNullException(nameof(serviceKey), "The service key cannot be null.");
+
+        if (configuration is null)
+            throw new ArgumentNullException(nameof(configuration), "The configuration root cannot be null.");
 
         var resolvedConfigurationKey = ResolveConfigurationKey(serviceKey, configurationKey);
-        return services.AddKeyedPostKit(serviceKey, configuration.GetRequiredSection(ConfigurationSectionName)
-            .GetRequiredSection(resolvedConfigurationKey)
-        );
+        var rootSection = configuration.GetSection(ConfigurationSectionName);
+        EnsureConfigurationSectionExists(rootSection);
+
+        var configurationSection = rootSection.GetSection(resolvedConfigurationKey);
+        EnsureConfigurationSectionExists(configurationSection);
+
+        return services.AddKeyedPostKit(serviceKey, configurationSection);
     }
 
     /// <summary>Registers keyed PostKit services using the provided configuration section.</summary>
@@ -117,20 +137,25 @@ public static class PostKitExtensions
     [UsedImplicitly]
     public static IServiceCollection AddKeyedPostKit(this IServiceCollection services, object serviceKey, IConfigurationSection configurationSection)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(serviceKey);
-        ArgumentNullException.ThrowIfNull(configurationSection);
+        if (services is null)
+            throw new ArgumentNullException(nameof(services), "The service collection cannot be null.");
+
+        if (serviceKey is null)
+            throw new ArgumentNullException(nameof(serviceKey), "The service key cannot be null.");
+
+        if (configurationSection is null)
+            throw new ArgumentNullException(nameof(configurationSection), "The configuration section cannot be null.");
 
         EnsureConfigurationSectionExists(configurationSection);
 
-        return AddKeyedPostKitRegistration(services, serviceKey, GetOptionsName(configurationSection), optionsBuilder => optionsBuilder.Configure(configurationSection.Bind));
+        return AddKeyedPostKitRegistration(services, serviceKey, GetOptionsName(configurationSection), false, optionsBuilder => optionsBuilder.Configure(configurationSection.Bind));
     }
 
-    private static IServiceCollection AddDefaultPostKitRegistration(IServiceCollection services, string optionsName, Action<OptionsBuilder<PostKitOptions>> configureOptions)
+    private static IServiceCollection AddDefaultPostKitRegistration(IServiceCollection services, string optionsName, bool validateConfigurationSectionFromServices, Action<OptionsBuilder<PostKitOptions>> configureOptions)
     {
         RegisterCommonServices(services);
 
-        var optionsBuilder = AddValidatedOptions(services, optionsName);
+        var optionsBuilder = AddValidatedOptions(services, optionsName, validateConfigurationSectionFromServices);
         configureOptions(optionsBuilder);
 
         services.Replace(ServiceDescriptor.Singleton<IOptionsMonitor<PostKitOptions>>(sp => new RebasedOptionsMonitor<PostKitOptions>(sp.GetRequiredService<IOptionsFactory<PostKitOptions>>(),
@@ -153,11 +178,11 @@ public static class PostKitExtensions
         return services;
     }
 
-    private static IServiceCollection AddKeyedPostKitRegistration(IServiceCollection services, object serviceKey, string optionsName, Action<OptionsBuilder<PostKitOptions>> configureOptions)
+    private static IServiceCollection AddKeyedPostKitRegistration(IServiceCollection services, object serviceKey, string optionsName, bool validateConfigurationSectionFromServices, Action<OptionsBuilder<PostKitOptions>> configureOptions)
     {
         RegisterCommonServices(services);
 
-        var optionsBuilder = AddValidatedOptions(services, optionsName);
+        var optionsBuilder = AddValidatedOptions(services, optionsName, validateConfigurationSectionFromServices);
         configureOptions(optionsBuilder);
 
         services.RemoveAllKeyed<IPostmarkClient>(serviceKey);
@@ -178,11 +203,32 @@ public static class PostKitExtensions
         services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
     }
 
-    private static OptionsBuilder<PostKitOptions> AddValidatedOptions(IServiceCollection services, string optionsName)
+    private static OptionsBuilder<PostKitOptions> AddValidatedOptions(IServiceCollection services, string optionsName, bool validateConfigurationSectionFromServices)
     {
         var optionsBuilder = services.AddOptions<PostKitOptions>(optionsName);
-        optionsBuilder.Validate(options => !string.IsNullOrWhiteSpace(options.ServerApiToken), $"The configuration section '{optionsName}' must define '{nameof(PostKitOptions.ServerApiToken)}'.")
-            .ValidateOnStart();
+
+        if (validateConfigurationSectionFromServices)
+        {
+            optionsBuilder.Validate<IConfiguration>(
+                (_, configuration) => configuration.GetSection(optionsName)
+                    .Exists(),
+                $"The configuration section '{optionsName}' could not be found."
+            );
+            optionsBuilder.Validate<IConfiguration>(
+                (options, configuration) =>
+                {
+                    var section = configuration.GetSection(optionsName);
+                    return !section.Exists() || !string.IsNullOrWhiteSpace(options.ServerApiToken);
+                },
+                $"The configuration section '{optionsName}' must define '{nameof(PostKitOptions.ServerApiToken)}'."
+            );
+        }
+        else
+        {
+            optionsBuilder.Validate(options => !string.IsNullOrWhiteSpace(options.ServerApiToken), $"The configuration section '{optionsName}' must define '{nameof(PostKitOptions.ServerApiToken)}'.");
+        }
+
+        optionsBuilder.ValidateOnStart();
 
         return optionsBuilder;
     }
@@ -196,7 +242,12 @@ public static class PostKitExtensions
         if (string.IsNullOrWhiteSpace(resolvedConfigurationKey))
             throw new InvalidOperationException("Cannot determine the configuration key using the specified service key. Please specify a configuration key.");
 
-        return resolvedConfigurationKey;
+        return NormalizeConfigurationKey(resolvedConfigurationKey);
+    }
+
+    private static string NormalizeConfigurationKey(string configurationKey)
+    {
+        return configurationKey.Trim();
     }
 
     private static string GetSectionPath(string configurationKey)
