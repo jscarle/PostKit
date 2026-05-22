@@ -146,7 +146,22 @@ public class PostKitClientBounceResponseTests
         var result = await client.GetBouncesAsync(new BounceQuery { Count = 10, FromDate = invalidLocalTime }, CancellationToken.None);
 
         Assert.True(result.IsFailure(out var error, out var _), result.ToString());
-        Assert.Equal("The bounce query from-date is an invalid local time.", error.Message);
+        Assert.Equal("The bounce query from-date is an invalid local time because it falls within a daylight-saving time transition. Use UTC or choose an unambiguous local time.", error.Message);
+        Assert.Null(postmark.LastEndpoint);
+    }
+
+    [Fact]
+    public async Task GetBouncesAsync_WithFromDateAfterToDate_FailsWithActualValues()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+        var query = new BounceQuery { Count = 10, FromDate = new DateTime(2026, 3, 12), ToDate = new DateTime(2026, 3, 11) };
+
+        var result = await client.GetBouncesAsync(query, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("The bounce query from-date must not be later than the to-date. FromDate: 2026-03-12T00:00:00.0000000; ToDate: 2026-03-11T00:00:00.0000000.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
 
@@ -374,6 +389,69 @@ public class PostKitClientBounceResponseTests
     }
 
     [Fact]
+    public async Task GetBouncesAsync_WhenTotalCountIsNegative_ReturnsHelpfulFailureWithValue()
+    {
+        const string responseJson = """
+                                    {
+                                      "TotalCount": -1,
+                                      "Bounces": []
+                                    }
+                                    """;
+
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/bounces?count=10&offset=0"] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 10 }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("TotalCount returned from the Postmark Bounces API was invalid. Received -1.", error.Message);
+    }
+
+    [Fact]
+    public async Task GetBounceAsync_WhenIdIsNotPositive_ReturnsHelpfulFailureWithValue()
+    {
+        const string responseJson = """
+                                    {
+                                      "ID": 0
+                                    }
+                                    """;
+
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/bounces/1599950051"] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBounceAsync(1599950051, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("ID returned from the Postmark Bounces API was invalid. Received 0.", error.Message);
+    }
+
+    [Fact]
+    public async Task GetBounceAsync_WhenServerIdIsNotPositive_ReturnsHelpfulFailureWithValue()
+    {
+        const string responseJson = """
+                                    {
+                                      "ID": 1599950051,
+                                      "Type": "HardBounce",
+                                      "Name": "Hard bounce",
+                                      "Tag": "",
+                                      "MessageID": "69ce4784-c202-41c6-a1a9-91757022b25e",
+                                      "ServerID": 0
+                                    }
+                                    """;
+
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/bounces/1599950051"] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBounceAsync(1599950051, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("ServerID returned from the Postmark Bounces API was invalid. Received 0.", error.Message);
+    }
+
+    [Fact]
     public async Task GetDeliveryStatsAsync_UsesDeliveryStatsEndpointAndMapsResponse()
     {
         const string responseJson = """
@@ -436,6 +514,51 @@ public class PostKitClientBounceResponseTests
         Assert.Equal(BounceType.ChallengeVerification, Assert.Single(response.Bounces)
             .Type
         );
+    }
+
+    [Fact]
+    public async Task GetDeliveryStatsAsync_WhenInactiveMailsIsNegative_ReturnsHelpfulFailureWithValue()
+    {
+        const string responseJson = """
+                                    {
+                                      "InactiveMails": -2,
+                                      "Bounces": []
+                                    }
+                                    """;
+
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/deliverystats"] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetDeliveryStatsAsync(CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("InactiveMails returned from the Postmark Bounces API was invalid. Received -2.", error.Message);
+    }
+
+    [Fact]
+    public async Task GetDeliveryStatsAsync_WhenBounceCountIsNegative_ReturnsHelpfulFailureWithValueAndIndex()
+    {
+        const string responseJson = """
+                                    {
+                                      "InactiveMails": 0,
+                                      "Bounces": [
+                                        {
+                                          "Name": "All",
+                                          "Count": -3
+                                        }
+                                      ]
+                                    }
+                                    """;
+
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/deliverystats"] = responseJson });
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetDeliveryStatsAsync(CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("Delivery stats bounce item 0 could not be mapped: Count returned from the Postmark Bounces API was invalid. Received -3.", error.Message);
     }
 
     [Fact]
@@ -649,7 +772,22 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.GetBouncesAsync(new BounceQuery { Count = 0 }, CancellationToken.None);
 
-        Assert.True(result.IsFailure());
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("The bounce query count must be between 1 and 500. Received 0.", error.Message);
+        Assert.Null(postmark.LastEndpoint);
+    }
+
+    [Fact]
+    public async Task GetBouncesAsync_WithInvalidOffset_FailsWithActualValue()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 10, Offset = -1 }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("The bounce query offset must be zero or greater. Received -1.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
 
@@ -662,7 +800,56 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.GetBouncesAsync(new BounceQuery { Count = 500, Offset = 9800 }, CancellationToken.None);
 
-        Assert.True(result.IsFailure());
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("The bounce query count and offset cannot exceed 10000 when combined. Count: 500; offset: 9800; combined: 10300.", error.Message);
+        Assert.Null(postmark.LastEndpoint);
+    }
+
+    [Fact]
+    public async Task GetBouncesAsync_WithWhitespaceTagFilter_FailsWithOmitGuidance()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 10, Tag = "\t " }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("The bounce query tag filter cannot be empty or whitespace. Set Tag to null to omit this filter. Actual length: 2.", error.Message);
+        Assert.Null(postmark.LastEndpoint);
+    }
+
+    [Fact]
+    public async Task GetBouncesAsync_WithWhitespaceMessageStreamFilter_FailsWithOmitGuidance()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var result = await client.GetBouncesAsync(new BounceQuery { Count = 10, MessageStream = "  " }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("The bounce query message stream filter cannot be empty or whitespace. Set MessageStream to null to omit this filter. Actual length: 2.", error.Message);
+        Assert.Null(postmark.LastEndpoint);
+    }
+
+    [Fact]
+    public async Task BounceOperations_WithInvalidId_FailWithActualValue()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var logger = new TestLogger();
+        var client = new PostKitClient(postmark, logger);
+
+        var bounce = await client.GetBounceAsync(0, CancellationToken.None);
+        var dump = await client.GetBounceDumpAsync(-1, CancellationToken.None);
+        var activation = await client.ActivateBounceAsync(0, CancellationToken.None);
+
+        Assert.True(bounce.IsFailure(out var bounceError, out var _), bounce.ToString());
+        Assert.Equal("The bounce ID must be greater than zero. Received 0.", bounceError.Message);
+        Assert.True(dump.IsFailure(out var dumpError, out var _), dump.ToString());
+        Assert.Equal("The bounce ID must be greater than zero. Received -1.", dumpError.Message);
+        Assert.True(activation.IsFailure(out var activationError, out var _), activation.ToString());
+        Assert.Equal("The bounce ID must be greater than zero. Received 0.", activationError.Message);
         Assert.Null(postmark.LastEndpoint);
     }
 
@@ -675,7 +862,8 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.GetBouncesAsync(new BounceQuery { Count = 10, MessageStream = "_invalid" }, CancellationToken.None);
 
-        Assert.True(result.IsFailure());
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.Equal("The bounce query message stream filter must be 1-30 characters, start with a lowercase letter, contain only lowercase letters, numbers, '-', or '_', cannot contain consecutive hyphens, and cannot be 'all' or start with 'pm-'. First character must be a lowercase letter. Received '_' at index 0.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
 

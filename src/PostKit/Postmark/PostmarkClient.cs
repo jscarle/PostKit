@@ -66,9 +66,18 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         {
             var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
             LogApiResponse(endpoint, Encoding.UTF8.GetByteCount(receivedContent));
-            var response = JsonSerializer.Deserialize<TResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
-            if (response == null)
-                return Result.Failure<TResponse>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
+            TResponse? response;
+            try
+            {
+                response = JsonSerializer.Deserialize<TResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
+            }
+            catch (JsonException)
+            {
+                return Result.Failure<TResponse>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized because the response JSON was invalid.");
+            }
+
+            if (response is null)
+                return Result.Failure<TResponse>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized because the response JSON was empty or did not match the expected shape.");
 
             return response;
         }
@@ -140,7 +149,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         {
             var response = JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
             if (response is null && strict)
-                return Result.Failure<PostmarkResponse?>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
+                return Result.Failure<PostmarkResponse?>($"The error response from the '{endpoint}' endpoint of the Postmark API could not be deserialized because the response JSON was empty or did not match the expected shape.");
 
             return Result.Success(response);
         }
@@ -150,7 +159,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         }
         catch (JsonException)
         {
-            return Result.Failure<PostmarkResponse?>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized.");
+            return Result.Failure<PostmarkResponse?>($"The error response from the '{endpoint}' endpoint of the Postmark API could not be deserialized because the response JSON was invalid.");
         }
     }
 

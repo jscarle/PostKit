@@ -5,6 +5,8 @@ namespace PostKit.Tests;
 
 public class EmailBuilderMessageStreamTests
 {
+    private const string MessageStreamRuleMessage = "The message stream ID must be 1-30 characters, start with a lowercase letter, contain only lowercase letters, numbers, '-', or '_', cannot contain consecutive hyphens, and cannot be 'all' or start with 'pm-'.";
+
     [Fact]
     public void UsingMessageStream_WithString_SetsMessageStreamOnEmailRequest()
     {
@@ -48,7 +50,7 @@ public class EmailBuilderMessageStreamTests
             .UseMessageStream("_marketing")
         );
 
-        Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
+        Assert.Equal($"{MessageStreamRuleMessage} First character must be a lowercase letter. Received '_' at index 0. (Parameter 'messageStreamId')", exception.Message);
     }
 
     [Fact]
@@ -58,7 +60,7 @@ public class EmailBuilderMessageStreamTests
             .UseMessageStream("pm-marketing")
         );
 
-        Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
+        Assert.Equal($"{MessageStreamRuleMessage} The prefix 'pm-' is reserved. (Parameter 'messageStreamId')", exception.Message);
     }
 
     [Fact]
@@ -68,7 +70,17 @@ public class EmailBuilderMessageStreamTests
             .UseMessageStream("all")
         );
 
-        Assert.Equal("The message stream ID is invalid. (Parameter 'messageStreamId')", exception.Message);
+        Assert.Equal($"{MessageStreamRuleMessage} 'all' is reserved. (Parameter 'messageStreamId')", exception.Message);
+    }
+
+    [Fact]
+    public void UsingMessageStream_WithTooLongId_ThrowsArgumentExceptionWithActualLength()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .UseMessageStream(new string('a', 31))
+        );
+
+        Assert.Equal($"{MessageStreamRuleMessage} Actual length: 31. (Parameter 'messageStreamId')", exception.Message);
     }
 
     [Fact]

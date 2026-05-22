@@ -12,7 +12,9 @@ public static class PostKitTemplateModelSerialization
         get => new(_defaultSerializerOptions);
         set
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+                throw new ArgumentNullException(nameof(value), "Default serializer options cannot be null.");
+
             _defaultSerializerOptions = new JsonSerializerOptions(value);
         }
     }

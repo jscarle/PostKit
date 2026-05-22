@@ -1,5 +1,6 @@
 using MimeKit;
 using PostKit.BulkEmails;
+using PostKit.Common;
 using PostKit.Emails;
 
 namespace PostKit.Tests;
@@ -14,6 +15,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("subject", exception.ParamName);
+        Assert.Equal("The subject cannot be null. (Parameter 'subject')", exception.Message);
     }
 
     [Fact]
@@ -24,6 +26,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("html", exception.ParamName);
+        Assert.Equal("The HTML body cannot be null. (Parameter 'html')", exception.Message);
     }
 
     [Fact]
@@ -34,6 +37,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("text", exception.ParamName);
+        Assert.Equal("The text body cannot be null. (Parameter 'text')", exception.Message);
     }
 
     [Fact]
@@ -44,6 +48,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("subject", exception.ParamName);
+        Assert.Equal("The subject cannot be null. (Parameter 'subject')", exception.Message);
     }
 
     [Fact]
@@ -54,6 +59,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("htmlBody", exception.ParamName);
+        Assert.Equal("The HTML body cannot be null. (Parameter 'htmlBody')", exception.Message);
     }
 
     [Fact]
@@ -64,6 +70,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("textBody", exception.ParamName);
+        Assert.Equal("The text body cannot be null. (Parameter 'textBody')", exception.Message);
     }
 
     [Fact]
@@ -74,6 +81,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("headers", exception.ParamName);
+        Assert.Equal("The header collection cannot be null. (Parameter 'headers')", exception.Message);
     }
 
     [Fact]
@@ -84,6 +92,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("metadata", exception.ParamName);
+        Assert.Equal("The metadata collection cannot be null. (Parameter 'metadata')", exception.Message);
     }
 
     [Fact]
@@ -94,6 +103,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("mailboxAddresses", exception.ParamName);
+        Assert.Equal("The email address collection cannot be null. (Parameter 'mailboxAddresses')", exception.Message);
     }
 
     [Fact]
@@ -104,6 +114,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("mailboxAddress", exception.ParamName);
+        Assert.Equal("The from address cannot be null. (Parameter 'mailboxAddress')", exception.Message);
     }
 
     [Fact]
@@ -116,7 +127,8 @@ public class BuilderNullValidationTests
 
         var exception = Assert.Throws<ArgumentNullException>(() => builder.ReplyTo((IEnumerable<MailboxAddress>)replyTo));
 
-        Assert.Equal("mailboxAddress", exception.ParamName);
+        Assert.Equal("mailboxAddresses", exception.ParamName);
+        Assert.Equal("The email address at index 0 cannot be null. (Parameter 'mailboxAddresses')", exception.Message);
     }
 
     [Fact]
@@ -127,6 +139,73 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("mailboxAddress", exception.ParamName);
+        Assert.Equal("The from address cannot be null. (Parameter 'mailboxAddress')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithNullAttachment_ThrowsHelpfulArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => Email.Compose()
+            .AddAttachment((Attachment)null!)
+        );
+
+        Assert.Equal("attachment", exception.ParamName);
+        Assert.Equal("The attachment cannot be null. (Parameter 'attachment')", exception.Message);
+    }
+
+    [Fact]
+    public void BulkEmailBuilder_WithNullAttachment_ThrowsHelpfulArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => BulkEmail.Compose()
+            .AddAttachment((Attachment)null!)
+        );
+
+        Assert.Equal("attachment", exception.ParamName);
+        Assert.Equal("The attachment cannot be null. (Parameter 'attachment')", exception.Message);
+    }
+
+    [Fact]
+    public void BulkEmailBuilder_WithNullMessage_ThrowsHelpfulArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => BulkEmail.Compose()
+            .AddMessage((BulkEmailMessage)null!)
+        );
+
+        Assert.Equal("message", exception.ParamName);
+        Assert.Equal("The bulk email message cannot be null. (Parameter 'message')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithNullAttachmentCollection_ThrowsHelpfulArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => Email.Compose()
+            .AddAttachment((IEnumerable<Attachment>)null!)
+        );
+
+        Assert.Equal("attachments", exception.ParamName);
+        Assert.Equal("The attachments collection cannot be null. (Parameter 'attachments')", exception.Message);
+    }
+
+    [Fact]
+    public void BulkEmailBuilder_WithNullAttachmentCollection_ThrowsHelpfulArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => BulkEmail.Compose()
+            .AddAttachment((IEnumerable<Attachment>)null!)
+        );
+
+        Assert.Equal("attachments", exception.ParamName);
+        Assert.Equal("The attachments collection cannot be null. (Parameter 'attachments')", exception.Message);
+    }
+
+    [Fact]
+    public void BulkEmailBuilder_WithNullMessageCollection_ThrowsHelpfulArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => BulkEmail.Compose()
+            .AddMessage((IEnumerable<BulkEmailMessage>)null!)
+        );
+
+        Assert.Equal("messages", exception.ParamName);
+        Assert.Equal("The bulk email message collection cannot be null. (Parameter 'messages')", exception.Message);
     }
 
     [Fact]
@@ -137,6 +216,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("mailboxAddresses", exception.ParamName);
+        Assert.Equal("The email address collection cannot be null. (Parameter 'mailboxAddresses')", exception.Message);
     }
 
     [Fact]
@@ -149,7 +229,8 @@ public class BuilderNullValidationTests
 
         var exception = Assert.Throws<ArgumentNullException>(() => builder.To((IEnumerable<MailboxAddress>)recipients));
 
-        Assert.Equal("mailboxAddress", exception.ParamName);
+        Assert.Equal("mailboxAddresses", exception.ParamName);
+        Assert.Equal("The email address at index 0 cannot be null. (Parameter 'mailboxAddresses')", exception.Message);
     }
 
     [Fact]
@@ -160,6 +241,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("headers", exception.ParamName);
+        Assert.Equal("The header collection cannot be null. (Parameter 'headers')", exception.Message);
     }
 
     [Fact]
@@ -170,6 +252,7 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("metadata", exception.ParamName);
+        Assert.Equal("The metadata collection cannot be null. (Parameter 'metadata')", exception.Message);
     }
 
     [Fact]
@@ -180,5 +263,28 @@ public class BuilderNullValidationTests
         );
 
         Assert.Equal("mailboxAddresses", exception.ParamName);
+        Assert.Equal("The email address collection cannot be null. (Parameter 'mailboxAddresses')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithNullSerializerOptions_ThrowsHelpfulArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => Email.FromTemplate(42)
+            .WithModel(new { Name = "Alice" }, null!)
+        );
+
+        Assert.Equal("serializerOptions", exception.ParamName);
+        Assert.Equal("The serializer options cannot be null. (Parameter 'serializerOptions')", exception.Message);
+    }
+
+    [Fact]
+    public void BulkEmailMessageBuilder_WithNullSerializerOptions_ThrowsHelpfulArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => BulkEmailMessage.FromTemplate()
+            .WithModel(new { Name = "Alice" }, null!)
+        );
+
+        Assert.Equal("serializerOptions", exception.ParamName);
+        Assert.Equal("The serializer options cannot be null. (Parameter 'serializerOptions')", exception.Message);
     }
 }

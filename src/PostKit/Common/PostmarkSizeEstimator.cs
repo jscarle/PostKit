@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using PostKit.BulkEmails;
 using PostKit.Emails;
@@ -10,6 +11,16 @@ internal static class PostmarkSizeEstimator
     internal const long MessageSizeLimitInBytes = 10L * 1024 * 1024;
     internal const long BulkPayloadSizeLimitInBytes = 50L * 1024 * 1024;
     internal const long BatchPayloadSizeLimitInBytes = 50L * 1024 * 1024;
+
+    internal static string FormatActualSizeLimitMessage(string message, long actualSizeInBytes, long limitInBytes)
+    {
+        return $"{message} Actual size: {FormatByteCount(actualSizeInBytes)}. Limit: {FormatByteCount(limitInBytes)}.";
+    }
+
+    internal static string FormatEstimatedSizeLimitMessage(string message, long estimatedSizeInBytes, long limitInBytes)
+    {
+        return $"{message} Estimated size: {FormatByteCount(estimatedSizeInBytes)}. Limit: {FormatByteCount(limitInBytes)}.";
+    }
 
     internal static long EstimateBodySizeLowerBound(string? body)
     {
@@ -57,10 +68,14 @@ internal static class PostmarkSizeEstimator
         ArgumentNullException.ThrowIfNull(emails);
 
         long total = 0;
+        var index = 0;
         foreach (var email in emails)
         {
-            ArgumentNullException.ThrowIfNull(email);
+            if (email is null)
+                throw new ArgumentException($"The email at index {index} cannot be null.", nameof(emails));
+
             total += EstimateMessagePayloadSizeLowerBound(email);
+            index++;
         }
 
         return total;
@@ -112,5 +127,10 @@ internal static class PostmarkSizeEstimator
     private static long EstimateStringSizeLowerBound(string? value)
     {
         return value is null ? 0 : Encoding.UTF8.GetByteCount(value);
+    }
+
+    private static string FormatByteCount(long value)
+    {
+        return $"{value.ToString("N0", CultureInfo.InvariantCulture)} bytes";
     }
 }

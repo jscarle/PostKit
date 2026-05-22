@@ -23,7 +23,8 @@ internal sealed partial class PostKitClient
 
     public async Task<Result<BouncePage>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(query);
+        if (query is null)
+            throw new ArgumentNullException(nameof(query), "The bounce query cannot be null.");
 
         var validationError = ValidateBounceQuery(query);
         if (validationError is not null)
@@ -64,7 +65,7 @@ internal sealed partial class PostKitClient
     public async Task<Result<BounceDetails>> GetBounceAsync(long id, CancellationToken cancellationToken = default)
     {
         if (id <= 0)
-            return Result.Failure<BounceDetails>("The bounce ID must be greater than zero.");
+            return Result.Failure<BounceDetails>($"The bounce ID must be greater than zero. Received {id}.");
 
         Result<BounceModel> response;
         try
@@ -133,7 +134,7 @@ internal sealed partial class PostKitClient
     public async Task<Result<BounceDump>> GetBounceDumpAsync(long id, CancellationToken cancellationToken = default)
     {
         if (id <= 0)
-            return Result.Failure<BounceDump>("The bounce ID must be greater than zero.");
+            return Result.Failure<BounceDump>($"The bounce ID must be greater than zero. Received {id}.");
 
         Result<GetBounceDumpModel> response;
         try
@@ -166,7 +167,7 @@ internal sealed partial class PostKitClient
     public async Task<Result<BounceActivation>> ActivateBounceAsync(long id, CancellationToken cancellationToken = default)
     {
         if (id <= 0)
-            return Result.Failure<BounceActivation>("The bounce ID must be greater than zero.");
+            return Result.Failure<BounceActivation>($"The bounce ID must be greater than zero. Received {id}.");
 
         Result<ActivateBounceModel> response;
         try
@@ -302,39 +303,45 @@ internal sealed partial class PostKitClient
     private static string? ValidateBounceQuery(BounceQuery query)
     {
         if (query.Count is < 1 or > MaxBounceCount)
-            return $"The bounce query count must be between 1 and {MaxBounceCount}.";
+            return $"The bounce query count must be between 1 and {MaxBounceCount}. Received {query.Count}.";
 
         if (query.Offset < 0)
-            return "The bounce query offset must be zero or greater.";
+            return $"The bounce query offset must be zero or greater. Received {query.Offset}.";
 
-        if ((long)query.Count + query.Offset > MaxBounceSearchWindow)
-            return $"The bounce query count and offset cannot exceed {MaxBounceSearchWindow} when combined.";
+        var searchWindow = (long)query.Count + query.Offset;
+        if (searchWindow > MaxBounceSearchWindow)
+            return $"The bounce query count and offset cannot exceed {MaxBounceSearchWindow} when combined. Count: {query.Count}; offset: {query.Offset}; combined: {searchWindow}.";
 
         if (query.EmailFilter is not null && string.IsNullOrWhiteSpace(query.EmailFilter.Address))
-            return "The bounce query email filter must not be empty.";
+            return FormatEmptyBounceQueryFilterMessage("The bounce query email filter", nameof(BounceQuery.EmailFilter), query.EmailFilter.Address);
 
         if (query.Tag is not null && string.IsNullOrWhiteSpace(query.Tag))
-            return "The bounce query tag filter must not be empty.";
+            return FormatEmptyBounceQueryFilterMessage("The bounce query tag filter", nameof(BounceQuery.Tag), query.Tag);
 
         if (query.MessageStream is not null && string.IsNullOrWhiteSpace(query.MessageStream))
-            return "The bounce query message stream filter must not be empty.";
+            return FormatEmptyBounceQueryFilterMessage("The bounce query message stream filter", nameof(BounceQuery.MessageStream), query.MessageStream);
 
         if (query.MessageStream is not null
             && !query.MessageStream
                 .AsSpan()
                 .IsValidMessageStreamId())
-            return "The bounce query message stream filter is invalid.";
+            return ValidationExtensions.FormatMessageStreamIdValidationMessage(query.MessageStream, "The bounce query message stream filter");
 
         if (query is { FromDate: not null, ToDate: not null } && query.FromDate.Value > query.ToDate.Value)
-            return "The bounce query from-date must not be later than the to-date.";
+            return $"The bounce query from-date must not be later than the to-date. FromDate: {FormatDateTimeForMessage(query.FromDate.Value)}; ToDate: {FormatDateTimeForMessage(query.ToDate.Value)}.";
 
         if (query.FromDate.HasValue && IsInvalidLocalBounceQueryDate(query.FromDate.Value))
-            return "The bounce query from-date is an invalid local time.";
+            return "The bounce query from-date is an invalid local time because it falls within a daylight-saving time transition. Use UTC or choose an unambiguous local time.";
 
         if (query.ToDate.HasValue && IsInvalidLocalBounceQueryDate(query.ToDate.Value))
-            return "The bounce query to-date is an invalid local time.";
+            return "The bounce query to-date is an invalid local time because it falls within a daylight-saving time transition. Use UTC or choose an unambiguous local time.";
 
         return null;
+    }
+
+    private static string FormatEmptyBounceQueryFilterMessage(string subject, string propertyName, string? value)
+    {
+        return $"{subject} cannot be empty or whitespace. Set {propertyName} to null to omit this filter. Actual length: {value?.Length ?? 0}.";
     }
 
     private static string BuildBounceSearchEndpoint(BounceQuery query)
@@ -382,6 +389,11 @@ internal sealed partial class PostKitClient
         return normalizedValue.ToString(useDateOnlyFormat ? "yyyy-MM-dd" : "yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
     }
 
+    private static string FormatDateTimeForMessage(DateTime value)
+    {
+        return value.ToString("O", CultureInfo.InvariantCulture);
+    }
+
     private static bool IsInvalidLocalBounceQueryDate(DateTime value)
     {
         return value.Kind == DateTimeKind.Local && TimeZoneInfo.Local.IsInvalidTime(value);
@@ -412,7 +424,7 @@ internal sealed partial class PostKitClient
             return Result.Failure<BouncePage>("TotalCount was not returned from the Postmark Bounces API.");
 
         if (response.TotalCount.Value < 0)
-            return Result.Failure<BouncePage>("TotalCount returned from the Postmark Bounces API was invalid.");
+            return Result.Failure<BouncePage>($"TotalCount returned from the Postmark Bounces API was invalid. Received {response.TotalCount.Value}.");
 
         if (response.Bounces is null)
             return Result.Failure<BouncePage>("Bounces were not returned from the Postmark Bounces API.");
@@ -464,7 +476,7 @@ internal sealed partial class PostKitClient
             return Result.Failure<DeliveryStats>("InactiveMails was not returned from the Postmark Bounces API.");
 
         if (response.InactiveMails.Value < 0)
-            return Result.Failure<DeliveryStats>("InactiveMails returned from the Postmark Bounces API was invalid.");
+            return Result.Failure<DeliveryStats>($"InactiveMails returned from the Postmark Bounces API was invalid. Received {response.InactiveMails.Value}.");
 
         if (response.Bounces is null)
             return Result.Failure<DeliveryStats>("Bounces were not returned from the Postmark Bounces API.");
@@ -488,8 +500,11 @@ internal sealed partial class PostKitClient
         if (string.IsNullOrWhiteSpace(response.Name))
             return Result.Failure<BounceSummary>("Name was not returned from the Postmark Bounces API.");
 
-        if (response.Count is null or < 0)
-            return Result.Failure<BounceSummary>("Count returned from the Postmark Bounces API was invalid.");
+        if (response.Count is null)
+            return Result.Failure<BounceSummary>("Count was not returned from the Postmark Bounces API.");
+
+        if (response.Count.Value < 0)
+            return Result.Failure<BounceSummary>($"Count returned from the Postmark Bounces API was invalid. Received {response.Count.Value}.");
 
         BounceType? type = null;
         if (!string.IsNullOrWhiteSpace(response.Type))
@@ -509,8 +524,11 @@ internal sealed partial class PostKitClient
     {
         var recordType = string.IsNullOrWhiteSpace(response.RecordType) ? "Bounce" : response.RecordType;
 
-        if (response.Id is null or <= 0)
-            return Result.Failure<BounceCore>("ID returned from the Postmark Bounces API was invalid.");
+        if (response.Id is null)
+            return Result.Failure<BounceCore>("ID was not returned from the Postmark Bounces API.");
+
+        if (response.Id.Value <= 0)
+            return Result.Failure<BounceCore>($"ID returned from the Postmark Bounces API was invalid. Received {response.Id.Value}.");
 
         if (string.IsNullOrWhiteSpace(response.Type))
             return Result.Failure<BounceCore>("Type was not returned from the Postmark Bounces API.");
@@ -531,8 +549,11 @@ internal sealed partial class PostKitClient
         if (!Guid.TryParse(response.MessageId, out var messageId))
             return Result.Failure<BounceCore>("MessageID returned from the Postmark Bounces API was not a valid GUID.");
 
-        if (response.ServerId is null or <= 0)
-            return Result.Failure<BounceCore>("ServerID returned from the Postmark Bounces API was invalid.");
+        if (response.ServerId is null)
+            return Result.Failure<BounceCore>("ServerID was not returned from the Postmark Bounces API.");
+
+        if (response.ServerId.Value <= 0)
+            return Result.Failure<BounceCore>($"ServerID returned from the Postmark Bounces API was invalid. Received {response.ServerId.Value}.");
 
         if (string.IsNullOrWhiteSpace(response.MessageStream))
             return Result.Failure<BounceCore>("MessageStream was not returned from the Postmark Bounces API.");

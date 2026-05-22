@@ -56,7 +56,56 @@ public class PostKitExtensionsTests
 
         var exception = Assert.Throws<InvalidOperationException>(() => services.AddPostKit(configuration));
 
-        Assert.Contains("PostKit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal("The configuration section 'PostKit' could not be found.", exception.Message);
+    }
+
+    [Fact]
+    public void AddPostKit_WithNullServices_ThrowsHelpfulException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => PostKitExtensions.AddPostKit(null!));
+
+        Assert.Equal("services", exception.ParamName);
+        Assert.Equal("The service collection cannot be null. (Parameter 'services')", exception.Message);
+    }
+
+    [Fact]
+    public void AddPostKit_WithNullConfiguration_ThrowsHelpfulException()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => services.AddPostKit((IConfiguration)null!));
+
+        Assert.Equal("configuration", exception.ParamName);
+        Assert.Equal("The configuration root cannot be null. (Parameter 'configuration')", exception.Message);
+    }
+
+    [Fact]
+    public void AddPostKit_WithNullConfigurationSection_ThrowsHelpfulException()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => services.AddPostKit(null!));
+
+        Assert.Equal("configurationSection", exception.ParamName);
+        Assert.Equal("The configuration section cannot be null. (Parameter 'configurationSection')", exception.Message);
+    }
+
+    [Fact]
+    public void AddPostKit_DefaultRegistration_ThrowsValidationExceptionWhenPostKitSectionIsMissing()
+    {
+        var configuration = new ConfigurationBuilder().Build();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging();
+        services.AddPostKit();
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var exception = Assert.Throws<OptionsValidationException>(serviceProvider.GetRequiredService<IPostKitClient>);
+
+        Assert.Contains("The configuration section 'PostKit' could not be found.", exception.Failures);
+        Assert.DoesNotContain("The configuration section 'PostKit' must define 'ServerApiToken'.", exception.Failures);
     }
 
     [Fact]
@@ -87,6 +136,66 @@ public class PostKitExtensionsTests
     }
 
     [Fact]
+    public void AddKeyedPostKit_WithConfiguration_ThrowsWhenPostKitSectionIsMissing()
+    {
+        var configuration = new ConfigurationBuilder().Build();
+
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => services.AddKeyedPostKit("Marketing", configuration));
+
+        Assert.Equal("The configuration section 'PostKit' could not be found.", exception.Message);
+    }
+
+    [Fact]
+    public void AddKeyedPostKit_WithConfiguration_ThrowsWhenKeyedSectionIsMissing()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:Other:ServerApiToken"] = "other-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => services.AddKeyedPostKit("Marketing", configuration));
+
+        Assert.Equal("The configuration section 'PostKit:Marketing' could not be found.", exception.Message);
+    }
+
+    [Fact]
+    public void AddKeyedPostKit_WithNullServiceKey_ThrowsHelpfulException()
+    {
+        var configuration = new ConfigurationBuilder().Build();
+
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => services.AddKeyedPostKit(null!, configuration));
+
+        Assert.Equal("serviceKey", exception.ParamName);
+        Assert.Equal("The service key cannot be null. (Parameter 'serviceKey')", exception.Message);
+    }
+
+    [Fact]
+    public void AddKeyedPostKit_WithNullConfiguration_ThrowsHelpfulException()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => services.AddKeyedPostKit("Marketing", (IConfiguration)null!));
+
+        Assert.Equal("configuration", exception.ParamName);
+        Assert.Equal("The configuration root cannot be null. (Parameter 'configuration')", exception.Message);
+    }
+
+    [Fact]
+    public void AddKeyedPostKit_WithNullConfigurationSection_ThrowsHelpfulException()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => services.AddKeyedPostKit("Marketing", (IConfigurationSection)null!));
+
+        Assert.Equal("configurationSection", exception.ParamName);
+        Assert.Equal("The configuration section cannot be null. (Parameter 'configurationSection')", exception.Message);
+    }
+
+    [Fact]
     public void AddKeyedPostKit_WithConfigurationSection_BindsProvidedSectionWithoutIConfigurationRegistration()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Tenants:Marketing:ServerApiToken"] = "marketing-token" })
@@ -99,6 +208,25 @@ public class PostKitExtensionsTests
         using var serviceProvider = services.BuildServiceProvider();
 
         Assert.NotNull(serviceProvider.GetRequiredKeyedService<IPostKitClient>("Marketing"));
+    }
+
+    [Fact]
+    public void AddKeyedPostKit_DefaultRegistration_TrimsConfigurationKey()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:Marketing:ServerApiToken"] = "marketing-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging();
+        services.AddKeyedPostKit(configurationKey: " Marketing ");
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>()
+            .Value;
+
+        Assert.Equal("marketing-token", options.ServerApiToken);
     }
 
     [Fact]
@@ -193,6 +321,25 @@ public class PostKitExtensionsTests
         var exception = Assert.Throws<OptionsValidationException>(serviceProvider.GetRequiredService<IPostKitClient>);
 
         Assert.Contains("The configuration section 'PostKit:Secondary' must define 'ServerApiToken'.", exception.Failures);
+    }
+
+    [Fact]
+    public void AddKeyedPostKit_KeyedRegistration_ThrowsValidationExceptionWhenRequestedSectionIsMissing()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:Other:ServerApiToken"] = "other-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging();
+        services.AddKeyedPostKit("Marketing");
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var exception = Assert.Throws<OptionsValidationException>(() => serviceProvider.GetRequiredKeyedService<IPostKitClient>("Marketing"));
+
+        Assert.Contains("The configuration section 'PostKit:Marketing' could not be found.", exception.Failures);
+        Assert.DoesNotContain("The configuration section 'PostKit:Marketing' must define 'ServerApiToken'.", exception.Failures);
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using MimeKit;
 using PostKit.Common;
 using PostKit.Emails;
 
@@ -11,7 +12,7 @@ namespace PostKit.Tests;
 public class EmailBuilderValidationTests
 {
     [Fact]
-    public void SendEmailAsync_WithInvalidApiToken_Fails()
+    public void SendEmailAsync_WithMissingPostKitSection_Fails()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -25,7 +26,7 @@ public class EmailBuilderValidationTests
         var exception = Assert.Throws<OptionsValidationException>(() => { serviceProvider.GetRequiredService<IPostKitClient>(); });
 
         // Assert
-        Assert.Contains("The configuration section 'PostKit' must define 'ServerApiToken'.", exception.Failures);
+        Assert.Contains("The configuration section 'PostKit' could not be found.", exception.Failures);
     }
 
     [Fact]
@@ -42,7 +43,7 @@ public class EmailBuilderValidationTests
             }
         );
 
-        Assert.Equal("From address is required.", exception.Message);
+        Assert.Equal("From address is required before building the email. Call From(...).", exception.Message);
     }
 
     [Fact]
@@ -59,7 +60,7 @@ public class EmailBuilderValidationTests
             }
         );
 
-        Assert.Equal("At least one recipient is required.", exception.Message);
+        Assert.Equal("At least one recipient is required before building the email. Call To(...), Cc(...), or Bcc(...).", exception.Message);
     }
 
     [Fact]
@@ -83,6 +84,23 @@ public class EmailBuilderValidationTests
         );
 
         Assert.Contains("too many recipients", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Actual recipient count: 51.", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithTooLongFromAddress_ThrowsHelpfulExceptionWithActualLength()
+    {
+        var displayName = new string('a', 260);
+        var mailboxAddress = new MailboxAddress(displayName, "sender@postkit.com");
+        var expectedLength = mailboxAddress.ToString(true)
+            .Length;
+
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .From("sender@postkit.com", displayName)
+        );
+
+        Assert.Equal("address", exception.ParamName);
+        Assert.Equal($"The From address cannot exceed 255 characters. Actual length: {expectedLength}. (Parameter 'address')", exception.Message);
     }
 
     [Fact]
@@ -99,7 +117,7 @@ public class EmailBuilderValidationTests
             }
         );
 
-        Assert.Contains("subject", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Subject is required before building the email. Call Subject(...).", exception.Message);
     }
 
     [Fact]
@@ -116,7 +134,7 @@ public class EmailBuilderValidationTests
             }
         );
 
-        Assert.Contains("body", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Message content is required before building the email. Call TextBody(...) or HtmlBody(...).", exception.Message);
     }
 
     [Fact]
@@ -133,7 +151,7 @@ public class EmailBuilderValidationTests
             }
         );
 
-        Assert.Contains("already been set", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Cannot set Subject because it has already been set.", exception.Message);
     }
 
     [Fact]
@@ -150,7 +168,7 @@ public class EmailBuilderValidationTests
             }
         );
 
-        Assert.Contains("already been set", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Cannot set TextBody because it has already been set.", exception.Message);
     }
 
     [Fact]
@@ -167,7 +185,7 @@ public class EmailBuilderValidationTests
             }
         );
 
-        Assert.Contains("already been set", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Cannot set HtmlBody because it has already been set.", exception.Message);
     }
 
     [Fact]
@@ -191,7 +209,7 @@ public class EmailBuilderValidationTests
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
-        Assert.Equal("Neither a text or HTML body, nor a subject may be specified when using a template.", exception.Message);
+        Assert.Equal("Template emails cannot also set Subject, TextBody, or HtmlBody. Use either template fields (TemplateId or TemplateAlias with TemplateModel) or content fields (Subject with TextBody or HtmlBody).", exception.Message);
     }
 
     [Fact]
@@ -263,23 +281,51 @@ public class EmailBuilderValidationTests
     }
 
     [Fact]
-    public void EmailBuilder_WithInvalidEmailAddress_IsAcceptedByBuilder()
+    public void EmailBuilder_WithLocalOnlyStringEmailAddress_ThrowsHelpfulException()
     {
-        // Note: The builder accepts the email format as-is and lets Postmark validate it.
-        // This test verifies the builder doesn't reject malformed emails at build time.
-
-        // Arrange & Act
-        var email = Email.Compose()
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
             .From("invalid-email")
-            .To("also-invalid")
-            .Subject("Invalid Email Format")
-            .TextBody("Testing invalid email addresses.")
+        );
+
+        Assert.Equal("address", exception.ParamName);
+        Assert.Equal("The email address is invalid. Use a valid mailbox address such as 'recipient@example.com'. (Parameter 'address')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithLocalOnlyMailboxAddress_IsAcceptedByBuilder()
+    {
+        var email = Email.Compose()
+            .From(new MailboxAddress(null, "invalid-email"))
+            .To(new MailboxAddress(null, "also-invalid"))
+            .Subject("Advanced mailbox address")
+            .TextBody("Testing advanced mailbox address input.")
             .Build();
 
-        // Assert - Build succeeds, but send would fail
         Assert.NotNull(email);
         Assert.NotNull(email.From);
         Assert.Equal("invalid-email", email.From.Address);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithMalformedEmailAddress_ThrowsHelpfulException()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .To("\r\n")
+        );
+
+        Assert.Equal("address", exception.ParamName);
+        Assert.Equal("The email address is invalid. Use a valid mailbox address such as 'recipient@example.com'. (Parameter 'address')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithMalformedEmailAddressInSequence_ThrowsHelpfulExceptionWithIndex()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .To(["valid@example.com", "\r\n"])
+        );
+
+        Assert.Equal("addresses", exception.ParamName);
+        Assert.Equal("The email address at index 1 is invalid. Use a valid mailbox address such as 'recipient@example.com'. (Parameter 'addresses')", exception.Message);
     }
 
     [Theory]
@@ -320,13 +366,14 @@ public class EmailBuilderValidationTests
     }
 
     [Fact]
-    public void EmailBuilder_DisplayNameOverloadWithInvalidAddressAndName_DoesNotThrowDefensiveOrderException()
+    public void EmailBuilder_DisplayNameOverloadWithInvalidAddressAndName_ThrowsAddressValidationException()
     {
-        var exception = Record.Exception(() => Email.Compose()
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
             .To("invalid-email", "Recipient @ Company")
         );
 
-        Assert.Null(exception);
+        Assert.Equal("address", exception.ParamName);
+        Assert.Equal("The email address is invalid. Use a valid mailbox address such as 'recipient@example.com'. (Parameter 'address')", exception.Message);
     }
 
     [Fact]
@@ -362,6 +409,165 @@ public class EmailBuilderValidationTests
     }
 
     [Fact]
+    public void EmailBuilder_WithNullMetadataValue_ThrowsHelpfulException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => Email.Compose()
+            .AddMetadata("metadata_key", null!)
+        );
+
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal("The metadata value cannot be null. (Parameter 'value')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithInvalidMetadataName_ThrowsHelpfulException()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .AddMetadata(new string('a', 21), "value")
+        );
+
+        Assert.Equal("The metadata name must not exceed 20 characters. Actual length: 21. (Parameter 'name')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithMetadataNameStartingWithWhitespace_ThrowsHelpfulExceptionWithIndex()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .AddMetadata(" campaign", "value")
+        );
+
+        Assert.Equal("name", exception.ParamName);
+        Assert.Equal("The metadata name is required, must not exceed 20 characters, and cannot start or end with whitespace. Invalid leading whitespace space at index 0. (Parameter 'name')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithMetadataNameEndingWithWhitespaceInSequence_ThrowsHelpfulExceptionWithIndex()
+    {
+        IEnumerable<KeyValuePair<string, string>> metadata =
+        [
+            new("campaign", "spring"),
+            new("segment\t", "beta"),
+        ];
+
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .AddMetadata(metadata)
+        );
+
+        Assert.Equal("metadata", exception.ParamName);
+        Assert.Equal("The metadata name at index 1 is invalid. The metadata name is required, must not exceed 20 characters, and cannot start or end with whitespace. Invalid trailing whitespace tab at index 7. (Parameter 'metadata')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithTooLongMetadataValue_ThrowsHelpfulException()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .AddMetadata("metadata_key", new string('a', 81))
+        );
+
+        Assert.Equal("The metadata value must not exceed 80 characters. Actual length: 81. (Parameter 'value')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithTooLongMetadataValueInSequence_ThrowsHelpfulExceptionWithActualLengthAndIndex()
+    {
+        var builder = Email.Compose();
+        IEnumerable<KeyValuePair<string, string>> metadata =
+        [
+            new("first", "value"),
+            new("second", new string('a', 81)),
+        ];
+
+        var exception = Assert.Throws<ArgumentException>(() => builder.AddMetadata(metadata));
+
+        Assert.Equal("metadata", exception.ParamName);
+        Assert.Equal("The metadata value at index 1 must not exceed 80 characters. Actual length: 81. (Parameter 'metadata')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithDuplicateMetadataName_ThrowsHelpfulExceptionWithName()
+    {
+        var builder = Email.Compose()
+            .AddMetadata("campaign", "spring");
+
+        var exception = Assert.Throws<ArgumentException>(() => builder.AddMetadata("CAMPAIGN", "summer"));
+
+        Assert.Equal("name", exception.ParamName);
+        Assert.Equal("Metadata names must be unique and are compared case-insensitively. Metadata name 'CAMPAIGN' duplicates existing metadata name 'campaign'. (Parameter 'name')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_AddingEleventhMetadataField_ThrowsHelpfulExceptionWithCounts()
+    {
+        var builder = Email.Compose();
+        for (var index = 0; index < 10; index++)
+            builder.AddMetadata($"key{index}", "value");
+
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.AddMetadata("extra", "value"));
+
+        Assert.Equal("Cannot set more than 10 metadata fields for a message. Adding 1 metadata field to the existing 10 would produce 11.", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_AddingDuplicateMetadataWhenAtLimit_ThrowsDuplicateNameException()
+    {
+        var builder = Email.Compose();
+        for (var index = 0; index < 10; index++)
+            builder.AddMetadata($"key{index}", "value");
+
+        var exception = Assert.Throws<ArgumentException>(() => builder.AddMetadata("KEY0", "duplicate"));
+
+        Assert.Equal("name", exception.ParamName);
+        Assert.Equal("Metadata names must be unique and are compared case-insensitively. Metadata name 'KEY0' duplicates existing metadata name 'key0'. (Parameter 'name')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithNullMetadataValueInSequence_ThrowsHelpfulExceptionWithIndexAndDoesNotMutate()
+    {
+        var builder = Email.Compose()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .Subject("Metadata validation")
+            .TextBody("Metadata validation");
+        IEnumerable<KeyValuePair<string, string>> metadata =
+        [
+            new("first", "value"),
+            new("second", null!),
+        ];
+
+        var exception = Assert.Throws<ArgumentNullException>(() => builder.AddMetadata(metadata));
+
+        Assert.Equal("metadata", exception.ParamName);
+        Assert.Equal("The metadata value at index 1 cannot be null. (Parameter 'metadata')", exception.Message);
+        Assert.Null(builder.Build()
+            .Metadata
+        );
+    }
+
+    [Fact]
+    public void EmailBuilder_WithMetadataSequenceExceedingLimit_ThrowsHelpfulExceptionAndDoesNotPartiallyMutate()
+    {
+        var builder = Email.Compose()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .Subject("Metadata validation")
+            .TextBody("Metadata validation")
+            .AddMetadata("existing", "value");
+        var metadata = Enumerable.Range(0, 10)
+            .Select(static index => new KeyValuePair<string, string>($"key{index}", "value"));
+
+        var exception = Assert.Throws<ArgumentException>(() => builder.AddMetadata(metadata));
+
+        Assert.Equal("metadata", exception.ParamName);
+        Assert.Equal("Cannot set more than 10 metadata fields for a message. Adding 10 metadata fields to the existing 1 would produce 11. (Parameter 'metadata')", exception.Message);
+
+        var email = builder.Build();
+        Assert.NotNull(email.Metadata);
+        Assert.Single(email.Metadata);
+        Assert.True(email.Metadata.ContainsKey("existing"));
+        Assert.False(email.Metadata.ContainsKey("key0"));
+    }
+
+    [Fact]
     public void EmailBuilder_WithNullTag_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => Email.Compose()
@@ -369,13 +575,68 @@ public class EmailBuilderValidationTests
         );
 
         Assert.Equal("tag", exception.ParamName);
+        Assert.Equal("The tag cannot be null. (Parameter 'tag')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithTooLongTag_ThrowsHelpfulExceptionWithActualLength()
+    {
+        var tag = new string('a', 1001);
+
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .WithTag(tag)
+        );
+
+        Assert.Equal("The tag cannot be longer than 1000 characters. Actual length: 1001. (Parameter 'tag')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_FromTemplateWithNullTemplateAlias_ThrowsHelpfulException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => Email.FromTemplate(null!));
+
+        Assert.Equal("templateAlias", exception.ParamName);
+        Assert.Equal("The template alias cannot be null. (Parameter 'templateAlias')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_FromTemplateWithTooLongTemplateAlias_ThrowsHelpfulExceptionWithActualLength()
+    {
+        var templateAlias = new string('a', 65);
+
+        var exception = Assert.Throws<ArgumentException>(() => Email.FromTemplate(templateAlias));
+
+        Assert.Equal("templateAlias", exception.ParamName);
+        Assert.Equal("The template alias must not exceed 64 characters. Actual length: 65. (Parameter 'templateAlias')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_FromTemplateWithTemplateAliasContainingInvalidCharacter_ThrowsHelpfulExceptionWithIndex()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Email.FromTemplate("welcome email"));
+
+        Assert.Equal("templateAlias", exception.ParamName);
+        Assert.Equal("The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters. Invalid character space at index 7. (Parameter 'templateAlias')", exception.Message);
+    }
+
+    [Fact]
+    public void EmailBuilder_WithNullAttachmentInSequence_ThrowsHelpfulExceptionWithIndex()
+    {
+        var attachment = Attachment.Create("test.txt", "text/plain", "content"u8.ToArray());
+        IEnumerable<Attachment> attachments = [attachment, null!];
+
+        var exception = Assert.Throws<ArgumentException>(() => Email.Compose()
+            .AddAttachment(attachments)
+        );
+
+        Assert.Equal("attachments", exception.ParamName);
+        Assert.Equal("The attachment at index 1 cannot be null. (Parameter 'attachments')", exception.Message);
     }
 
     [Fact]
     public void EmailBuilder_WithNullTemplateModel_ThrowsException()
     {
-        // Arrange & Act & Assert
-        Assert.Throws<ArgumentNullException>(() =>
+        var exception = Assert.Throws<ArgumentNullException>(() =>
             {
                 Email.FromTemplate(41813873)
                     .From("sender@postkit.com")
@@ -383,6 +644,9 @@ public class EmailBuilderValidationTests
                     .WithModel(null!);
             }
         );
+
+        Assert.Equal("templateModel", exception.ParamName);
+        Assert.Equal("The template model cannot be null. (Parameter 'templateModel')", exception.Message);
     }
 
     [Fact]
@@ -397,7 +661,7 @@ public class EmailBuilderValidationTests
             }
         );
 
-        Assert.Equal("A template model is required when using a template.", exception.Message);
+        Assert.Equal("TemplateModel is required when TemplateId or TemplateAlias is set. Call WithModel(...).", exception.Message);
     }
 
     [Fact]
@@ -412,7 +676,7 @@ public class EmailBuilderValidationTests
             }
         );
 
-        Assert.Contains("already been set", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Cannot set From because it has already been set.", exception.Message);
     }
 
     [Fact]
@@ -424,6 +688,6 @@ public class EmailBuilderValidationTests
             .Subject(subject)
         );
 
-        Assert.Equal("The subject cannot be longer than 2000 characters. (Parameter 'subject')", exception.Message);
+        Assert.Equal("The subject cannot be longer than 2000 characters. Actual length: 2002. (Parameter 'subject')", exception.Message);
     }
 }

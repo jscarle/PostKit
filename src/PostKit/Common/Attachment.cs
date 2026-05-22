@@ -69,20 +69,26 @@ public sealed class Attachment
     /// <exception cref="ArgumentException">Thrown when any parameter is invalid.</exception>
     public static Attachment Create(string name, string contentType, ReadOnlySpan<byte> content, string? contentId = null)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Attachment name must be specified.", nameof(name));
+        if (name is null)
+            throw new ArgumentNullException(nameof(name), "Attachment name cannot be null.");
 
-        if (ContainsInvalidNameCharacter(name))
-            throw new ArgumentException("Attachment name contains invalid characters.", nameof(name));
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Attachment name is required.", nameof(name));
+
+        if (TryGetInvalidNameCharacter(name, out var invalidCharacter, out var invalidCharacterIndex))
+            throw new ArgumentException($"Attachment name cannot contain control characters, '/' or '\\'. Invalid character {ValidationExtensions.FormatCharacter(invalidCharacter)} at index {invalidCharacterIndex}.", nameof(name));
 
         var trimmedName = name.TrimEnd();
         ValidateFileType(trimmedName);
 
+        if (contentType is null)
+            throw new ArgumentNullException(nameof(contentType), "Attachment content type cannot be null.");
+
         if (string.IsNullOrWhiteSpace(contentType))
-            throw new ArgumentException("Content type must be specified.", nameof(contentType));
+            throw new ArgumentException("Attachment content type is required.", nameof(contentType));
 
         if (!MimeKit.ContentType.TryParse(contentType, out var parsedContentType))
-            throw new ArgumentException("Content type is not a valid MIME type.", nameof(contentType));
+            throw new ArgumentException("Attachment content type must be a valid MIME type, for example 'application/pdf' or 'image/png'.", nameof(contentType));
 
         if (content.IsEmpty)
             throw new ArgumentException("Attachment content cannot be empty.", nameof(content));
@@ -92,37 +98,57 @@ public sealed class Attachment
         if (contentId is null)
             return new Attachment(name, parsedContentType.MimeType, encodedContent, contentId);
 
-        var trimmedContentId = contentId.Trim();
-        if (trimmedContentId.Length == 0)
+        var contentIdStartIndex = 0;
+        var contentIdEndIndex = contentId.Length;
+
+        while (contentIdStartIndex < contentIdEndIndex && char.IsWhiteSpace(contentId[contentIdStartIndex]))
+            contentIdStartIndex++;
+
+        while (contentIdEndIndex > contentIdStartIndex && char.IsWhiteSpace(contentId[contentIdEndIndex - 1]))
+            contentIdEndIndex--;
+
+        if (contentIdStartIndex == contentIdEndIndex)
             throw new ArgumentException("Content ID cannot be empty or whitespace.", nameof(contentId));
 
-        var contentIdValue = trimmedContentId.StartsWith("cid:", StringComparison.OrdinalIgnoreCase) ? trimmedContentId["cid:".Length..] : trimmedContentId;
+        const string contentIdPrefix = "cid:";
+        var trimmedContentId = contentId.AsSpan(contentIdStartIndex, contentIdEndIndex - contentIdStartIndex);
+        if (trimmedContentId.StartsWith(contentIdPrefix, StringComparison.OrdinalIgnoreCase))
+            contentIdStartIndex += contentIdPrefix.Length;
 
-        if (contentIdValue.Length == 0)
+        if (contentIdStartIndex == contentIdEndIndex)
             throw new ArgumentException("Content ID cannot be empty or whitespace.", nameof(contentId));
 
-        if (contentIdValue.Contains('<', StringComparison.Ordinal) || contentIdValue.Contains('>', StringComparison.Ordinal))
-            throw new ArgumentException("Content ID should not contain angle brackets.", nameof(contentId));
-
-        foreach (var ch in contentIdValue)
+        for (var index = contentIdStartIndex; index < contentIdEndIndex; index++)
         {
+            var ch = contentId[index];
+            if (ch is '<' or '>')
+                throw new ArgumentException($"Content ID cannot contain angle brackets. Invalid character {ValidationExtensions.FormatCharacter(ch)} at index {index}.", nameof(contentId));
+
             if (ch is < (char)0x21 or > (char)0x7E)
-                throw new ArgumentException("Content ID must contain only visible ASCII characters and no spaces.", nameof(contentId));
+                throw new ArgumentException($"Content ID must contain only visible ASCII characters; spaces and control characters are not allowed. Invalid character {ValidationExtensions.FormatCharacter(ch)} at index {index}.", nameof(contentId));
         }
 
+        var contentIdValue = contentId[contentIdStartIndex..contentIdEndIndex];
         var normalizedContentId = $"cid:{contentIdValue}";
 
         return new Attachment(name, parsedContentType.MimeType, encodedContent, normalizedContentId);
     }
 
-    private static bool ContainsInvalidNameCharacter(string name)
+    private static bool TryGetInvalidNameCharacter(string name, out char invalidCharacter, out int invalidCharacterIndex)
     {
-        foreach (var ch in name)
+        for (var index = 0; index < name.Length; index++)
         {
+            var ch = name[index];
             if (char.IsControl(ch) || ch is '/' or '\\')
+            {
+                invalidCharacter = ch;
+                invalidCharacterIndex = index;
                 return true;
+            }
         }
 
+        invalidCharacter = default;
+        invalidCharacterIndex = -1;
         return false;
     }
 
@@ -134,6 +160,6 @@ public sealed class Attachment
 
         var fileType = name[(lastDotIndex + 1)..];
         if (ForbiddenFileTypes.Contains(fileType))
-            throw new ArgumentException("Attachment file type is not accepted by Postmark.", nameof(name));
+            throw new ArgumentException($"Attachment file type '.{fileType}' is not accepted by Postmark.", nameof(name));
     }
 }
