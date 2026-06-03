@@ -433,6 +433,7 @@ internal sealed partial class DraftBulkEmail
         if ((_htmlBody is not null || _textBody is not null || _subject is not null) && (_templateId.HasValue || _templateAlias is not null))
             throw new InvalidOperationException("Bulk template emails cannot also set Subject, TextBody, or HtmlBody. Use either template fields (TemplateId or TemplateAlias) or content fields (Subject with TextBody or HtmlBody).");
 
+        EnsureMergedHeadersDoNotDuplicate();
         EnsureMergedMetadataWithinLimit();
 
         var textBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_textBody);
@@ -576,6 +577,25 @@ internal sealed partial class DraftBulkEmail
                 var mergedMetadataCount = _metadata.Count + message.Metadata.Count;
                 if (mergedMetadataCount > 10)
                     throw new InvalidOperationException($"Cannot set more than 10 metadata fields for bulk message at index {messageIndex} after combining request-level and message-level metadata. Request-level count: {_metadata.Count}; message-level count: {message.Metadata.Count}; combined count: {mergedMetadataCount}.");
+            }
+        }
+    }
+
+    private void EnsureMergedHeadersDoNotDuplicate()
+    {
+        if (_headers is null || _headers.Count == 0)
+            return;
+
+        for (var messageIndex = 0; messageIndex < _messages.Count; messageIndex++)
+        {
+            var message = _messages[messageIndex];
+            if (message.Headers is null)
+                continue;
+
+            foreach (var entry in message.Headers)
+            {
+                if (ValidationExtensions.TryGetExistingKey(_headers, entry.Key, out var existingName))
+                    throw new InvalidOperationException($"Cannot use duplicate header names for bulk message at index {messageIndex} after combining request-level and message-level headers. Header name '{entry.Key}' duplicates request-level header name '{existingName}'. Header names are compared case-insensitively.");
             }
         }
     }
