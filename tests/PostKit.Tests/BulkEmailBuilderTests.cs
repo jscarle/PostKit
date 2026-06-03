@@ -698,6 +698,47 @@ public class BulkEmailBuilderTests
     }
 
     [Fact]
+    public void Build_WithMessageHeaderDuplicatingRequestHeaderCaseInsensitive_Throws()
+    {
+        var builder = BulkEmail.Compose()
+            .From("sender@postkit.com")
+            .Subject("Hello")
+            .TextBody("Hello world")
+            .AddHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
+            .AddMessage(BulkEmailMessage.Compose()
+                .To("recipient@postkit.com")
+                .AddHeader("list-unsubscribe-post", "List-Unsubscribe=One-Click")
+                .Build()
+            );
+
+        var exception = Assert.Throws<InvalidOperationException>(builder.Build);
+
+        Assert.Equal("Cannot use duplicate header names for bulk message at index 0 after combining request-level and message-level headers. Header name 'list-unsubscribe-post' duplicates request-level header name 'List-Unsubscribe-Post'. Header names are compared case-insensitively.", exception.Message);
+    }
+
+    [Fact]
+    public void Build_WithDifferentRequestAndMessageHeaders_Succeeds()
+    {
+        var bulkEmail = BulkEmail.Compose()
+            .From("sender@postkit.com")
+            .Subject("Hello")
+            .TextBody("Hello world")
+            .AddHeader("X-Campaign", "launch")
+            .AddMessage(BulkEmailMessage.Compose()
+                .To("recipient@postkit.com")
+                .AddHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
+                .Build()
+            )
+            .Build();
+
+        Assert.NotNull(bulkEmail.Headers);
+        Assert.Equal("launch", bulkEmail.Headers["X-Campaign"]);
+        var messageHeaders = bulkEmail.Messages[0].Headers;
+        Assert.NotNull(messageHeaders);
+        Assert.Equal("List-Unsubscribe=One-Click", messageHeaders["List-Unsubscribe-Post"]);
+    }
+
+    [Fact]
     public void Build_WithMissingSubjectAndMergedMetadataDuplicate_ReportsMissingSubjectFirst()
     {
         var builder = BulkEmail.Compose()
