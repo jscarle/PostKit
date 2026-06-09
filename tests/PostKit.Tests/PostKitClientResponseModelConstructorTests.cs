@@ -2,6 +2,7 @@ using System.Reflection;
 using PostKit.Bounces;
 using PostKit.BulkEmails;
 using PostKit.Emails;
+using PostKit.Suppressions;
 
 namespace PostKit.Tests;
 
@@ -22,6 +23,10 @@ public class PostKitClientResponseModelConstructorTests
             typeof(BounceDump),
             typeof(BounceActivation),
             typeof(BulkEmailJob),
+            typeof(SuppressionDump),
+            typeof(Suppression),
+            typeof(SuppressionBatch),
+            typeof(SuppressionResult),
         ];
 
         foreach (var responseModelType in responseModelTypes)

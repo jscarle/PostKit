@@ -60,6 +60,33 @@ public class PostKitClientFailureHandlingTests
     }
 
     [Fact]
+    public async Task GetSuppressionsAsync_WithNullMessageStream_ThrowsArgumentNullException()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger<PostKitClient>());
+
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetSuppressionsAsync(null!, cancellationToken: CancellationToken.None));
+
+        Assert.Equal("messageStream", exception.ParamName);
+        Assert.Equal("The message stream ID cannot be null. (Parameter 'messageStream')", exception.Message);
+    }
+
+    [Fact]
+    public async Task SuppressionBatchOperations_WithNullArguments_ThrowArgumentNullException()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger<PostKitClient>());
+
+        var nullMessageStream = await Assert.ThrowsAsync<ArgumentNullException>(() => client.CreateSuppressionsAsync(null!, ["user@example.com"], CancellationToken.None));
+        var nullEmails = await Assert.ThrowsAsync<ArgumentNullException>(() => client.DeleteSuppressionsAsync("broadcast", (IEnumerable<string>)null!, CancellationToken.None));
+
+        Assert.Equal("messageStream", nullMessageStream.ParamName);
+        Assert.Equal("The message stream ID cannot be null. (Parameter 'messageStream')", nullMessageStream.Message);
+        Assert.Equal("emailAddresses", nullEmails.ParamName);
+        Assert.Equal("The suppression email address collection cannot be null. (Parameter 'emailAddresses')", nullEmails.Message);
+    }
+
+    [Fact]
     public async Task SendEmailAsync_WhenEmailCannotBePrepared_ReturnsHelpfulFailure()
     {
         var postmark = new RecordingPostmarkClient();
