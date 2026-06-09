@@ -330,10 +330,10 @@ internal sealed partial class PostKitClient
         if (query is { FromDate: not null, ToDate: not null } && query.FromDate.Value > query.ToDate.Value)
             return $"The bounce query from-date must not be later than the to-date. FromDate: {FormatDateTimeForMessage(query.FromDate.Value)}; ToDate: {FormatDateTimeForMessage(query.ToDate.Value)}.";
 
-        if (query.FromDate.HasValue && IsInvalidLocalBounceQueryDate(query.FromDate.Value))
+        if (query.FromDate.HasValue && IsInvalidLocalPostmarkQueryDate(query.FromDate.Value))
             return "The bounce query from-date is an invalid local time because it falls within a daylight-saving time transition. Use UTC or choose an unambiguous local time.";
 
-        if (query.ToDate.HasValue && IsInvalidLocalBounceQueryDate(query.ToDate.Value))
+        if (query.ToDate.HasValue && IsInvalidLocalPostmarkQueryDate(query.ToDate.Value))
             return "The bounce query to-date is an invalid local time because it falls within a daylight-saving time transition. Use UTC or choose an unambiguous local time.";
 
         return null;
@@ -364,10 +364,10 @@ internal sealed partial class PostKitClient
             parameters.Add($"tag={Uri.EscapeDataString(query.Tag)}");
 
         if (query.ToDate.HasValue)
-            parameters.Add($"todate={Uri.EscapeDataString(FormatBounceQueryDate(query.ToDate.Value))}");
+            parameters.Add($"todate={Uri.EscapeDataString(FormatPostmarkDateQueryValue(query.ToDate.Value))}");
 
         if (query.FromDate.HasValue)
-            parameters.Add($"fromdate={Uri.EscapeDataString(FormatBounceQueryDate(query.FromDate.Value))}");
+            parameters.Add($"fromdate={Uri.EscapeDataString(FormatPostmarkDateQueryValue(query.FromDate.Value))}");
 
         if (query.MessageStream is not null)
             parameters.Add($"messagestream={Uri.EscapeDataString(query.MessageStream)}");
@@ -375,7 +375,7 @@ internal sealed partial class PostKitClient
         return $"/bounces?{string.Join("&", parameters)}";
     }
 
-    private static string FormatBounceQueryDate(DateTime value)
+    private static string FormatPostmarkDateQueryValue(DateTime value)
     {
         var useDateOnlyFormat = value.TimeOfDay == TimeSpan.Zero;
 
@@ -394,7 +394,7 @@ internal sealed partial class PostKitClient
         return value.ToString("O", CultureInfo.InvariantCulture);
     }
 
-    private static bool IsInvalidLocalBounceQueryDate(DateTime value)
+    private static bool IsInvalidLocalPostmarkQueryDate(DateTime value)
     {
         return value.Kind == DateTimeKind.Local && TimeZoneInfo.Local.IsInvalidTime(value);
     }

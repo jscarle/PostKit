@@ -20,7 +20,7 @@ using PostKit.Common;
 using PostKit.Emails;
 ```
 
-Add `using PostKit.BulkEmails;` for bulk email work and `using PostKit.Bounces;` for bounce queries and responses.
+Add `using PostKit.BulkEmails;` for bulk email work, `using PostKit.Bounces;` for bounce queries and responses, and `using PostKit.Suppressions;` for message stream suppression management.
 
 ### Namespace Changes
 
@@ -87,8 +87,8 @@ Built emails also snapshot addresses, headers, metadata, attachments, and templa
 
 ### Interface And DI Changes
 
-`IPostKitClient` now includes Bulk Email and Bounce API methods. Code that implements `IPostKitClient` directly, including hand-written test doubles, must implement `SendBulkEmailAsync`, `GetBulkEmailStatusAsync`, `GetBouncesAsync`,
-`GetBounceAsync`, `GetDeliveryStatsAsync`, `GetBounceDumpAsync`, and `ActivateBounceAsync`.
+`IPostKitClient` now includes Bulk Email, Bounce, and Suppressions API methods. Code that implements `IPostKitClient` directly, including hand-written test doubles, must implement `SendBulkEmailAsync`, `GetBulkEmailStatusAsync`,
+`GetBouncesAsync`, `GetBounceAsync`, `GetDeliveryStatsAsync`, `GetBounceDumpAsync`, `ActivateBounceAsync`, `GetSuppressionsAsync`, `CreateSuppressionsAsync`, and `DeleteSuppressionsAsync`.
 
 PostKit service registration now validates `ServerApiToken`. `AddPostKit()` and `AddKeyedPostKit()` still exist, but missing tokens can fail during startup or first resolution, and the explicit configuration overloads throw immediately
 when a required configuration section is missing. Default and keyed registrations also replace existing PostKit client/options registrations for the same service/key, so register custom replacements after calling PostKit's registration
@@ -211,7 +211,7 @@ using PostKit.Common;
 using PostKit.Emails;
 ```
 
-Add `using PostKit.BulkEmails;` when working with the Bulk Email API, and `using PostKit.Bounces;` when working with bounce queries and responses.
+Add `using PostKit.BulkEmails;` when working with the Bulk Email API, `using PostKit.Bounces;` when working with bounce queries and responses, and `using PostKit.Suppressions;` when working with message stream suppressions.
 
 PostKit uses a fluent builder pattern with the following capabilities:
 
@@ -220,6 +220,7 @@ PostKit uses a fluent builder pattern with the following capabilities:
 - **Multiple Recipients**: Repeat `To()`, `Cc()`, `Bcc()`, or `ReplyTo()` to add additional recipients
 - **Templates**: Send templated emails by template ID or alias, including in batches
 - **Bulk Email API**: Submit broadcast bulk email jobs and poll their processing status
+- **Suppressions API**: Query, create, and delete message stream suppressions
 - **Validation**: Builder validation covers required fields, recipient counts, headers, metadata, message streams, template/body exclusivity, and size limits. Postmark still performs final sender and recipient validation
 
 #### Simple Email
@@ -467,6 +468,34 @@ if (pageResult.IsSuccess(out var page))
 
 The bounce client also supports `GetBounceAsync`, `GetBounceDumpAsync`, `GetDeliveryStatsAsync`, and `ActivateBounceAsync`. Bounce date filters are sent using Postmark's US Eastern time interpretation; UTC `DateTime` values are converted
 before the request is made.
+
+### Suppressions
+
+```csharp
+using PostKit.Common;
+using PostKit.Suppressions;
+
+var suppressionsResult = await _postKitClient.GetSuppressionsAsync(
+    MessageStream.Broadcast,
+    new SuppressionQuery
+    {
+        Reason = SuppressionReason.ManualSuppression,
+        FromDate = new DateOnly(2026, 3, 1),
+        ToDate = new DateOnly(2026, 3, 31),
+    });
+
+if (suppressionsResult.IsSuccess(out var dump))
+{
+    foreach (var suppression in dump.Suppressions)
+        Console.WriteLine($"{suppression.EmailAddress}: {suppression.Reason}");
+}
+
+var created = await _postKitClient.CreateSuppressionsAsync(MessageStream.Broadcast, "user@example.com");
+var deleted = await _postKitClient.DeleteSuppressionsAsync(MessageStream.Broadcast, "user@example.com");
+```
+
+`GetSuppressionsAsync` maps the stream-scoped Postmark suppression dump, including `HardBounce`, `SpamComplaint`, and `ManualSuppression` reasons. Create and delete calls return per-address statuses from Postmark; deleting a
+`HardBounce` suppression reactivates that address, while Postmark does not allow deleting `SpamComplaint` suppressions.
 
 ### Template Model Serialization
 
@@ -807,11 +836,11 @@ The following tables track development progress and map the different Postmark A
 
 ## Suppressions API
 
-|    | Endpoint                                                                                            | Implementation |
-|----|-----------------------------------------------------------------------------------------------------|----------------|
-| ✏️ | [Suppression dump](https://postmarkapp.com/developer/api/suppressions-api#suppression-dump)         |                |
-| ✏️ | [Create a Suppression](https://postmarkapp.com/developer/api/suppressions-api#create-a-suppression) |                |
-| ✏️ | [Delete a Suppression](https://postmarkapp.com/developer/api/suppressions-api#delete-a-suppression) |                |
+|   | Endpoint                                                                                            | Implementation                                |
+|---|-----------------------------------------------------------------------------------------------------|-----------------------------------------------|
+| ✅ | [Suppression dump](https://postmarkapp.com/developer/api/suppressions-api#suppression-dump)         | `IPostKitClient.GetSuppressionsAsync`         |
+| ✅ | [Create a Suppression](https://postmarkapp.com/developer/api/suppressions-api#create-a-suppression) | `IPostKitClient.CreateSuppressionsAsync`      |
+| ✅ | [Delete a Suppression](https://postmarkapp.com/developer/api/suppressions-api#delete-a-suppression) | `IPostKitClient.DeleteSuppressionsAsync`      |
 
 ---
 

@@ -1,7 +1,9 @@
 using LightResults;
 using PostKit.Bounces;
 using PostKit.BulkEmails;
+using PostKit.Common;
 using PostKit.Emails;
+using PostKit.Suppressions;
 
 namespace PostKit;
 
@@ -60,4 +62,86 @@ public interface IPostKitClient
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the activation response or error information.</returns>
     Task<Result<BounceActivation>> ActivateBounceAsync(long id, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets suppressions for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream whose suppressions should be queried.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the suppression dump or error information.</returns>
+    Task<Result<SuppressionDump>> GetSuppressionsAsync(MessageStream messageStream, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets suppressions for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream ID whose suppressions should be queried.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the suppression dump or error information.</returns>
+    Task<Result<SuppressionDump>> GetSuppressionsAsync(string messageStream, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets suppressions for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream whose suppressions should be queried.</param>
+    /// <param name="query">The optional suppression filters to apply.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the suppression dump or error information.</returns>
+    Task<Result<SuppressionDump>> GetSuppressionsAsync(MessageStream messageStream, SuppressionQuery? query, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets suppressions for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream ID whose suppressions should be queried.</param>
+    /// <param name="query">The optional suppression filters to apply.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the suppression dump or error information.</returns>
+    Task<Result<SuppressionDump>> GetSuppressionsAsync(string messageStream, SuppressionQuery? query, CancellationToken cancellationToken = default);
+
+    /// <summary>Creates a suppression for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream whose suppression list should be updated.</param>
+    /// <param name="emailAddress">The email address to suppress.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the per-address suppression result or error information.</returns>
+    Task<Result<SuppressionBatch>> CreateSuppressionsAsync(MessageStream messageStream, string emailAddress, CancellationToken cancellationToken = default);
+
+    /// <summary>Creates a suppression for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream ID whose suppression list should be updated.</param>
+    /// <param name="emailAddress">The email address to suppress.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the per-address suppression result or error information.</returns>
+    Task<Result<SuppressionBatch>> CreateSuppressionsAsync(string messageStream, string emailAddress, CancellationToken cancellationToken = default);
+
+    /// <summary>Creates suppressions for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream whose suppression list should be updated.</param>
+    /// <param name="emailAddresses">The email addresses to suppress.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the per-address suppression results or error information.</returns>
+    Task<Result<SuppressionBatch>> CreateSuppressionsAsync(MessageStream messageStream, IEnumerable<string> emailAddresses, CancellationToken cancellationToken = default);
+
+    /// <summary>Creates suppressions for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream ID whose suppression list should be updated.</param>
+    /// <param name="emailAddresses">The email addresses to suppress.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the per-address suppression results or error information.</returns>
+    Task<Result<SuppressionBatch>> CreateSuppressionsAsync(string messageStream, IEnumerable<string> emailAddresses, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes a suppression for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream whose suppression list should be updated.</param>
+    /// <param name="emailAddress">The email address to reactivate or remove from the suppression list.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the per-address suppression result or error information.</returns>
+    Task<Result<SuppressionBatch>> DeleteSuppressionsAsync(MessageStream messageStream, string emailAddress, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes a suppression for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream ID whose suppression list should be updated.</param>
+    /// <param name="emailAddress">The email address to reactivate or remove from the suppression list.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the per-address suppression result or error information.</returns>
+    Task<Result<SuppressionBatch>> DeleteSuppressionsAsync(string messageStream, string emailAddress, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes suppressions for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream whose suppression list should be updated.</param>
+    /// <param name="emailAddresses">The email addresses to reactivate or remove from the suppression list.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the per-address suppression results or error information.</returns>
+    Task<Result<SuppressionBatch>> DeleteSuppressionsAsync(MessageStream messageStream, IEnumerable<string> emailAddresses, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes suppressions for a message stream asynchronously.</summary>
+    /// <param name="messageStream">The message stream ID whose suppression list should be updated.</param>
+    /// <param name="emailAddresses">The email addresses to reactivate or remove from the suppression list.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the per-address suppression results or error information.</returns>
+    Task<Result<SuppressionBatch>> DeleteSuppressionsAsync(string messageStream, IEnumerable<string> emailAddresses, CancellationToken cancellationToken = default);
 }

@@ -82,6 +82,39 @@ public class PostKitClientCancellationTests
     }
 
     [Fact]
+    public async Task GetSuppressionsAsync_WithCanceledToken_PropagatesCancellation()
+    {
+        var client = new PostKitClient(new CancelingPostmarkClient(), new TestLogger());
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetSuppressionsAsync("broadcast", cancellationToken: cts.Token));
+    }
+
+    [Fact]
+    public async Task CreateSuppressionsAsync_WithCanceledToken_PropagatesCancellation()
+    {
+        var client = new PostKitClient(new CancelingPostmarkClient(), new TestLogger());
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => client.CreateSuppressionsAsync("broadcast", ["user@example.com"], cts.Token));
+    }
+
+    [Fact]
+    public async Task DeleteSuppressionsAsync_WithCanceledToken_PropagatesCancellation()
+    {
+        var client = new PostKitClient(new CancelingPostmarkClient(), new TestLogger());
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => client.DeleteSuppressionsAsync("broadcast", ["user@example.com"], cts.Token));
+    }
+
+    [Fact]
     public async Task ActivateBounceAsync_WithCanceledToken_PropagatesCancellation()
     {
         var client = new PostKitClient(new CancelingPostmarkClient(), new TestLogger());
