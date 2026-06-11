@@ -2,6 +2,7 @@ using System.Reflection;
 using PostKit.Bounces;
 using PostKit.BulkEmails;
 using PostKit.Emails;
+using PostKit.Messages;
 using PostKit.Suppressions;
 
 namespace PostKit.Tests;
@@ -23,6 +24,14 @@ public class PostKitClientResponseModelConstructorTests
             typeof(BounceDump),
             typeof(BounceActivation),
             typeof(BulkEmailJob),
+            typeof(OutboundMessagePage),
+            typeof(OutboundMessage),
+            typeof(OutboundMessageDetails),
+            typeof(OutboundMessageDump),
+            typeof(OutboundMessageRecipient),
+            typeof(OutboundMessageAttachment),
+            typeof(OutboundMessageEvent),
+            typeof(OutboundMessageEventDetails),
             typeof(SuppressionDump),
             typeof(Suppression),
             typeof(SuppressionBatch),
