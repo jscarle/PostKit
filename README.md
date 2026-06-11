@@ -20,8 +20,6 @@ using PostKit.Common;
 using PostKit.Emails;
 ```
 
-Add `using PostKit.BulkEmails;` for bulk email work, `using PostKit.Bounces;` for bounce queries and responses, `using PostKit.Messages;` for outbound message search, and `using PostKit.Suppressions;` for message stream suppression management.
-
 ### Namespace Changes
 
 - `Email`, `ComposedEmailBuilder`, `TemplatedEmailBuilder`, `EmailSubmission`, and `EmailBatchSubmission` live in `PostKit.Emails`.
