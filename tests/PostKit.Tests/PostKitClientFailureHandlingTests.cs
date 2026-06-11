@@ -48,15 +48,27 @@ public class PostKitClientFailureHandlingTests
     }
 
     [Fact]
-    public async Task GetBouncesAsync_WithNullQuery_ThrowsArgumentNullException()
+    public async Task GetBouncesAsync_WithNullMessageStream_ThrowsArgumentNullException()
     {
         var postmark = new RecordingPostmarkClient();
         var client = new PostKitClient(postmark, new TestLogger<PostKitClient>());
 
-        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetBouncesAsync(null!, CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetBouncesAsync(null!, cancellationToken: CancellationToken.None));
 
-        Assert.Equal("query", exception.ParamName);
-        Assert.Equal("The bounce query cannot be null. (Parameter 'query')", exception.Message);
+        Assert.Equal("messageStream", exception.ParamName);
+        Assert.Equal("The message stream ID cannot be null. (Parameter 'messageStream')", exception.Message);
+    }
+
+    [Fact]
+    public async Task SearchOutboundMessagesAsync_WithNullMessageStream_ThrowsArgumentNullException()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger<PostKitClient>());
+
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => client.SearchOutboundMessagesAsync(null!, cancellationToken: CancellationToken.None));
+
+        Assert.Equal("messageStream", exception.ParamName);
+        Assert.Equal("The message stream ID cannot be null. (Parameter 'messageStream')", exception.Message);
     }
 
     [Fact]

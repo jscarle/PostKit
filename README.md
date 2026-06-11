@@ -20,7 +20,7 @@ using PostKit.Common;
 using PostKit.Emails;
 ```
 
-Add `using PostKit.BulkEmails;` for bulk email work, `using PostKit.Bounces;` for bounce queries and responses, and `using PostKit.Suppressions;` for message stream suppression management.
+Add `using PostKit.BulkEmails;` for bulk email work, `using PostKit.Bounces;` for bounce queries and responses, `using PostKit.Messages;` for outbound message search, and `using PostKit.Suppressions;` for message stream suppression management.
 
 ### Namespace Changes
 
@@ -87,8 +87,7 @@ Built emails also snapshot addresses, headers, metadata, attachments, and templa
 
 ### Interface And DI Changes
 
-`IPostKitClient` now includes Bulk Email, Bounce, and Suppressions API methods. Code that implements `IPostKitClient` directly, including hand-written test doubles, must implement `SendBulkEmailAsync`, `GetBulkEmailStatusAsync`,
-`GetBouncesAsync`, `GetBounceAsync`, `GetDeliveryStatsAsync`, `GetBounceDumpAsync`, `ActivateBounceAsync`, `GetSuppressionsAsync`, `CreateSuppressionsAsync`, and `DeleteSuppressionsAsync`.
+`IPostKitClient` now includes outbound message methods: `SearchOutboundMessagesAsync`, `GetOutboundMessageDetailsAsync`, and `GetOutboundMessageDumpAsync`. Code that implements `IPostKitClient` directly, including hand-written test doubles, must implement these methods.
 
 PostKit service registration now validates `ServerApiToken`. `AddPostKit()` and `AddKeyedPostKit()` still exist, but missing tokens can fail during startup or first resolution, and the explicit configuration overloads throw immediately
 when a required configuration section is missing. Default and keyed registrations also replace existing PostKit client/options registrations for the same service/key, so register custom replacements after calling PostKit's registration
@@ -211,7 +210,7 @@ using PostKit.Common;
 using PostKit.Emails;
 ```
 
-Add `using PostKit.BulkEmails;` when working with the Bulk Email API, `using PostKit.Bounces;` when working with bounce queries and responses, and `using PostKit.Suppressions;` when working with message stream suppressions.
+Add `using PostKit.BulkEmails;` when working with the Bulk Email API, `using PostKit.Bounces;` when working with bounce queries and responses, `using PostKit.Messages;` when searching outbound messages, and `using PostKit.Suppressions;` when working with message stream suppressions.
 
 PostKit uses a fluent builder pattern with the following capabilities:
 
@@ -449,15 +448,17 @@ if (result.IsFailure(out var error, out _) && error is BulkEmailValidationError 
 ```csharp
 using MimeKit;
 using PostKit.Bounces;
+using PostKit.Common;
 
-var pageResult = await _postKitClient.GetBouncesAsync(new BounceQuery
-{
-    Count = 100,
-    Type = BounceType.HardBounce,
-    Inactive = true,
-    EmailFilter = new MailboxAddress(null, "user@example.com"),
-    MessageStream = "outbound",
-});
+var pageResult = await _postKitClient.GetBouncesAsync(
+    MessageStream.Transactional,
+    count: 100,
+    query: new BounceQuery
+    {
+        Type = BounceType.HardBounce,
+        Inactive = true,
+        EmailFilter = new MailboxAddress(null, "user@example.com"),
+    });
 
 if (pageResult.IsSuccess(out var page))
 {
@@ -466,8 +467,41 @@ if (pageResult.IsSuccess(out var page))
 }
 ```
 
-The bounce client also supports `GetBounceAsync`, `GetBounceDumpAsync`, `GetDeliveryStatsAsync`, and `ActivateBounceAsync`. Bounce date filters are sent using Postmark's US Eastern time interpretation; UTC `DateTime` values are converted
-before the request is made.
+The bounce client also supports `GetBounceAsync`, `GetBounceDumpAsync`, `GetDeliveryStatsAsync`, and `ActivateBounceAsync`. Bounce date filters accept `DateTimeOffset` values and are converted to Postmark's US Eastern time before the
+request is made.
+
+### Messages
+
+```csharp
+using MimeKit;
+using PostKit.Common;
+using PostKit.Messages;
+
+var messagesResult = await _postKitClient.SearchOutboundMessagesAsync(
+    MessageStream.Transactional,
+    count: 100,
+    query: new OutboundMessageQuery
+    {
+        Recipient = new MailboxAddress(null, "user@example.com"),
+        Status = OutboundMessageStatus.Sent,
+        Metadata = new OutboundMessageMetadataFilter { Name = "campaign", Value = "welcome" },
+    });
+
+if (messagesResult.IsSuccess(out var page))
+{
+    foreach (var message in page.Messages)
+        Console.WriteLine($"{message.MessageId}: {message.Status} {message.Subject}");
+
+    var firstMessage = page.Messages.FirstOrDefault();
+    if (firstMessage is not null)
+    {
+        var detailsResult = await _postKitClient.GetOutboundMessageDetailsAsync(firstMessage.MessageId);
+        var dumpResult = await _postKitClient.GetOutboundMessageDumpAsync(firstMessage.MessageId);
+    }
+}
+```
+
+Outbound message date filters accept `DateTimeOffset` values and are converted to Postmark's US Eastern time before the request is made. Postmark currently supports one metadata filter per outbound message search.
 
 ### Suppressions
 
@@ -748,9 +782,9 @@ The following tables track development progress and map the different Postmark A
 
 |    | Endpoint                                                                                                                                          | Implementation |
 |----|---------------------------------------------------------------------------------------------------------------------------------------------------|----------------|
-| ✏️ | [Outbound message search](https://postmarkapp.com/developer/api/messages-api#outbound-message-search)                                             |                |
-| ✏️ | [Outbound message details](https://postmarkapp.com/developer/api/messages-api#outbound-message-details)                                           |                |
-| ✏️ | [Outbound message dump](https://postmarkapp.com/developer/api/messages-api#outbound-message-dump)                                                 |                |
+| ✅ | [Outbound message search](https://postmarkapp.com/developer/api/messages-api#outbound-message-search)                                             | `IPostKitClient.SearchOutboundMessagesAsync` |
+| ✅ | [Outbound message details](https://postmarkapp.com/developer/api/messages-api#outbound-message-details)                                           | `IPostKitClient.GetOutboundMessageDetailsAsync` |
+| ✅ | [Outbound message dump](https://postmarkapp.com/developer/api/messages-api#outbound-message-dump)                                                 | `IPostKitClient.GetOutboundMessageDumpAsync` |
 | ✏️ | [Inbound message search](https://postmarkapp.com/developer/api/messages-api#inbound-message-search)                                               |                |
 | ✏️ | [Inbound message details](https://postmarkapp.com/developer/api/messages-api#inbound-message-details)                                             |                |
 | ✏️ | [Bypass rules for a blocked inbound message](https://postmarkapp.com/developer/api/messages-api#bypass-rules-for-a-blocked-inbound-message)       |                |
