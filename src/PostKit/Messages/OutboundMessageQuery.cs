@@ -5,6 +5,12 @@ namespace PostKit.Messages;
 /// <summary>Represents the query parameters used to search outbound Postmark messages.</summary>
 public sealed record OutboundMessageQuery
 {
+    /// <summary>Gets the optional lower bound for the message timestamp. PostKit converts the value to Postmark's US Eastern time before sending it.</summary>
+    public DateTimeOffset? FromDate { get; init; }
+
+    /// <summary>Gets the optional upper bound for the message timestamp. PostKit converts the value to Postmark's US Eastern time before sending it.</summary>
+    public DateTimeOffset? ToDate { get; init; }
+
     /// <summary>Gets the optional recipient email address filter. Only the <see cref="MailboxAddress.Address"/> value is sent to Postmark.</summary>
     public MailboxAddress? Recipient { get; init; }
 
@@ -16,13 +22,6 @@ public sealed record OutboundMessageQuery
 
     /// <summary>Gets the optional outbound message status filter.</summary>
     public OutboundMessageStatus? Status { get; init; }
-
-    /// <summary>Gets the optional upper bound for the message timestamp. PostKit converts the value to Postmark's US Eastern time before sending it.</summary>
-    public DateTimeOffset? ToDate { get; init; }
-
-    /// <summary>Gets the optional lower bound for the message timestamp. PostKit converts the value to Postmark's US Eastern time before sending it.</summary>
-    public DateTimeOffset? FromDate { get; init; }
-
     /// <summary>Gets the optional email subject filter.</summary>
     public string? Subject { get; init; }
 

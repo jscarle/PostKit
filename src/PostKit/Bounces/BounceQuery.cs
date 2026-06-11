@@ -5,6 +5,12 @@ namespace PostKit.Bounces;
 /// <summary>Represents the query parameters used to search Postmark bounces.</summary>
 public sealed record BounceQuery
 {
+    /// <summary>Gets the optional lower bound for the bounce timestamp. PostKit converts the value to Postmark's US Eastern time before sending it.</summary>
+    public DateTimeOffset? FromDate { get; init; }
+
+    /// <summary>Gets the optional upper bound for the bounce timestamp. PostKit converts the value to Postmark's US Eastern time before sending it.</summary>
+    public DateTimeOffset? ToDate { get; init; }
+
     /// <summary>Gets the optional bounce type filter.</summary>
     public BounceType? Type { get; init; }
 
@@ -19,10 +25,4 @@ public sealed record BounceQuery
 
     /// <summary>Gets the optional tag filter.</summary>
     public string? Tag { get; init; }
-
-    /// <summary>Gets the optional upper bound for the bounce timestamp. PostKit converts the value to Postmark's US Eastern time before sending it.</summary>
-    public DateTimeOffset? ToDate { get; init; }
-
-    /// <summary>Gets the optional lower bound for the bounce timestamp. PostKit converts the value to Postmark's US Eastern time before sending it.</summary>
-    public DateTimeOffset? FromDate { get; init; }
 }
