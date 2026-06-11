@@ -3,6 +3,7 @@ using PostKit.Bounces;
 using PostKit.BulkEmails;
 using PostKit.Common;
 using PostKit.Emails;
+using PostKit.Messages;
 using PostKit.Suppressions;
 
 namespace PostKit;
@@ -35,10 +36,22 @@ public interface IPostKitClient
     Task<Result<BulkEmailJob>> GetBulkEmailStatusAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>Gets a page of bounces asynchronously.</summary>
-    /// <param name="query">The bounce query to execute.</param>
+    /// <param name="messageStream">The message stream whose bounces should be queried.</param>
+    /// <param name="count">The number of bounces to return.</param>
+    /// <param name="offset">The number of bounces to skip before returning results.</param>
+    /// <param name="query">The optional bounce filters to apply.</param>
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the bounce search response or error information.</returns>
-    Task<Result<BouncePage>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default);
+    Task<Result<BouncePage>> GetBouncesAsync(MessageStream messageStream, int count = 500, int offset = 0, BounceQuery? query = null, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets a page of bounces asynchronously.</summary>
+    /// <param name="messageStream">The message stream ID whose bounces should be queried.</param>
+    /// <param name="count">The number of bounces to return.</param>
+    /// <param name="offset">The number of bounces to skip before returning results.</param>
+    /// <param name="query">The optional bounce filters to apply.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the bounce search response or error information.</returns>
+    Task<Result<BouncePage>> GetBouncesAsync(string messageStream, int count = 500, int offset = 0, BounceQuery? query = null, CancellationToken cancellationToken = default);
 
     /// <summary>Gets a single bounce asynchronously.</summary>
     /// <param name="id">The identifier of the bounce to retrieve.</param>
@@ -62,6 +75,36 @@ public interface IPostKitClient
     /// <param name="cancellationToken">A token used to cancel the operation.</param>
     /// <returns>A result containing the activation response or error information.</returns>
     Task<Result<BounceActivation>> ActivateBounceAsync(long id, CancellationToken cancellationToken = default);
+
+    /// <summary>Searches outbound messages asynchronously.</summary>
+    /// <param name="messageStream">The message stream whose outbound messages should be searched.</param>
+    /// <param name="count">The number of messages to return.</param>
+    /// <param name="offset">The number of messages to skip before returning results.</param>
+    /// <param name="query">The optional outbound message filters to apply.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the outbound message search response or error information.</returns>
+    Task<Result<OutboundMessagePage>> SearchOutboundMessagesAsync(MessageStream messageStream, int count = 500, int offset = 0, OutboundMessageQuery? query = null, CancellationToken cancellationToken = default);
+
+    /// <summary>Searches outbound messages asynchronously.</summary>
+    /// <param name="messageStream">The message stream ID whose outbound messages should be searched.</param>
+    /// <param name="count">The number of messages to return.</param>
+    /// <param name="offset">The number of messages to skip before returning results.</param>
+    /// <param name="query">The optional outbound message filters to apply.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the outbound message search response or error information.</returns>
+    Task<Result<OutboundMessagePage>> SearchOutboundMessagesAsync(string messageStream, int count = 500, int offset = 0, OutboundMessageQuery? query = null, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets a single outbound message asynchronously.</summary>
+    /// <param name="messageId">The identifier of the outbound message to retrieve.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the outbound message details or error information.</returns>
+    Task<Result<OutboundMessageDetails>> GetOutboundMessageDetailsAsync(Guid messageId, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets the raw dump for an outbound message asynchronously.</summary>
+    /// <param name="messageId">The identifier of the outbound message dump to retrieve.</param>
+    /// <param name="cancellationToken">A token used to cancel the operation.</param>
+    /// <returns>A result containing the raw outbound message dump or error information.</returns>
+    Task<Result<OutboundMessageDump>> GetOutboundMessageDumpAsync(Guid messageId, CancellationToken cancellationToken = default);
 
     /// <summary>Gets suppressions for a message stream asynchronously.</summary>
     /// <param name="messageStream">The message stream whose suppressions should be queried.</param>

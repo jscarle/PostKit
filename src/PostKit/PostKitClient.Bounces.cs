@@ -18,22 +18,29 @@ internal sealed partial class PostKitClient
     private const int MaxBounceSearchWindow = 10_000;
     private const int BounceActivationConfirmationAttempts = 30;
     private static readonly TimeSpan BounceActivationConfirmationDelay = TimeSpan.FromSeconds(2);
-    private static readonly string[] ValidTimeZoneIds = ["Eastern Standard Time", "America/New_York"];
-    private static readonly TimeZoneInfo EasternTimeZone = ResolveEasternTimeZone();
 
-    public async Task<Result<BouncePage>> GetBouncesAsync(BounceQuery query, CancellationToken cancellationToken = default)
+    public Task<Result<BouncePage>> GetBouncesAsync(MessageStream messageStream, int count = MaxBounceCount, int offset = 0, BounceQuery? query = null, CancellationToken cancellationToken = default)
     {
-        if (query is null)
-            throw new ArgumentNullException(nameof(query), "The bounce query cannot be null.");
+        var mappedMessageStream = GetMessageStreamId(messageStream, "The bounce query message stream");
+        if (mappedMessageStream.IsFailure(out var error, out var messageStreamId))
+            return Task.FromResult(Result.Failure<BouncePage>(error));
 
-        var validationError = ValidateBounceQuery(query);
+        return GetBouncesAsync(messageStreamId, count, offset, query, cancellationToken);
+    }
+
+    public async Task<Result<BouncePage>> GetBouncesAsync(string messageStream, int count = MaxBounceCount, int offset = 0, BounceQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        if (messageStream is null)
+            throw new ArgumentNullException(nameof(messageStream), "The message stream ID cannot be null.");
+
+        var validationError = ValidateBounceQuery(messageStream, count, offset, query);
         if (validationError is not null)
             return Result.Failure<BouncePage>(validationError);
 
         Result<GetBouncesModel> response;
         try
         {
-            var endpoint = BuildBounceSearchEndpoint(query);
+            var endpoint = BuildBounceSearchEndpoint(messageStream, count, offset, query);
             response = await postmark.GetAsync<GetBouncesModel>(endpoint, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -300,17 +307,28 @@ internal sealed partial class PostKitClient
         return Result.Success(currentBounce);
     }
 
-    private static string? ValidateBounceQuery(BounceQuery query)
+    private static string? ValidateBounceQuery(string messageStream, int count, int offset, BounceQuery? query)
     {
-        if (query.Count is < 1 or > MaxBounceCount)
-            return $"The bounce query count must be between 1 and {MaxBounceCount}. Received {query.Count}.";
+        if (string.IsNullOrWhiteSpace(messageStream))
+            return $"The bounce query message stream cannot be empty or whitespace. Actual length: {messageStream.Length}.";
 
-        if (query.Offset < 0)
-            return $"The bounce query offset must be zero or greater. Received {query.Offset}.";
+        if (!messageStream
+                .AsSpan()
+                .IsValidMessageStreamId())
+            return ValidationExtensions.FormatMessageStreamIdValidationMessage(messageStream, "The bounce query message stream");
 
-        var searchWindow = (long)query.Count + query.Offset;
+        if (count is < 1 or > MaxBounceCount)
+            return $"The bounce query count must be between 1 and {MaxBounceCount}. Received {count}.";
+
+        if (offset < 0)
+            return $"The bounce query offset must be zero or greater. Received {offset}.";
+
+        var searchWindow = (long)count + offset;
         if (searchWindow > MaxBounceSearchWindow)
-            return $"The bounce query count and offset cannot exceed {MaxBounceSearchWindow} when combined. Count: {query.Count}; offset: {query.Offset}; combined: {searchWindow}.";
+            return $"The bounce query count and offset cannot exceed {MaxBounceSearchWindow} when combined. Count: {count}; offset: {offset}; combined: {searchWindow}.";
+
+        if (query is null)
+            return null;
 
         if (query.EmailFilter is not null && string.IsNullOrWhiteSpace(query.EmailFilter.Address))
             return FormatEmptyBounceQueryFilterMessage("The bounce query email filter", nameof(BounceQuery.EmailFilter), query.EmailFilter.Address);
@@ -318,23 +336,8 @@ internal sealed partial class PostKitClient
         if (query.Tag is not null && string.IsNullOrWhiteSpace(query.Tag))
             return FormatEmptyBounceQueryFilterMessage("The bounce query tag filter", nameof(BounceQuery.Tag), query.Tag);
 
-        if (query.MessageStream is not null && string.IsNullOrWhiteSpace(query.MessageStream))
-            return FormatEmptyBounceQueryFilterMessage("The bounce query message stream filter", nameof(BounceQuery.MessageStream), query.MessageStream);
-
-        if (query.MessageStream is not null
-            && !query.MessageStream
-                .AsSpan()
-                .IsValidMessageStreamId())
-            return ValidationExtensions.FormatMessageStreamIdValidationMessage(query.MessageStream, "The bounce query message stream filter");
-
         if (query is { FromDate: not null, ToDate: not null } && query.FromDate.Value > query.ToDate.Value)
-            return $"The bounce query from-date must not be later than the to-date. FromDate: {FormatDateTimeForMessage(query.FromDate.Value)}; ToDate: {FormatDateTimeForMessage(query.ToDate.Value)}.";
-
-        if (query.FromDate.HasValue && IsInvalidLocalPostmarkQueryDate(query.FromDate.Value))
-            return "The bounce query from-date is an invalid local time because it falls within a daylight-saving time transition. Use UTC or choose an unambiguous local time.";
-
-        if (query.ToDate.HasValue && IsInvalidLocalPostmarkQueryDate(query.ToDate.Value))
-            return "The bounce query to-date is an invalid local time because it falls within a daylight-saving time transition. Use UTC or choose an unambiguous local time.";
+            return $"The bounce query from-date must not be later than the to-date. FromDate: {FormatOffsetForMessage(query.FromDate.Value)}; ToDate: {FormatOffsetForMessage(query.ToDate.Value)}.";
 
         return null;
     }
@@ -344,78 +347,47 @@ internal sealed partial class PostKitClient
         return $"{subject} cannot be empty or whitespace. Set {propertyName} to null to omit this filter. Actual length: {value?.Length ?? 0}.";
     }
 
-    private static string BuildBounceSearchEndpoint(BounceQuery query)
+    private static string BuildBounceSearchEndpoint(string messageStream, int count, int offset, BounceQuery? query)
     {
-        var parameters = new List<string>(10) { $"count={query.Count.ToString(CultureInfo.InvariantCulture)}", $"offset={query.Offset.ToString(CultureInfo.InvariantCulture)}" };
+        var parameters = new List<string>(10) { $"count={count.ToString(CultureInfo.InvariantCulture)}", $"offset={offset.ToString(CultureInfo.InvariantCulture)}" };
 
-        if (query.Type.HasValue)
+        if (query?.Type.HasValue == true)
             parameters.Add($"type={Uri.EscapeDataString(GetBounceTypeValue(query.Type.Value))}");
 
-        if (query.Inactive.HasValue)
+        if (query?.Inactive.HasValue == true)
             parameters.Add($"inactive={query.Inactive.Value.ToString().ToLowerInvariant()}");
 
-        if (query.EmailFilter is not null)
+        if (query?.EmailFilter is not null)
             parameters.Add($"emailFilter={Uri.EscapeDataString(query.EmailFilter.Address)}");
 
-        if (query.MessageId.HasValue)
+        if (query?.MessageId.HasValue == true)
             parameters.Add($"messageID={query.MessageId.Value:D}");
 
-        if (query.Tag is not null)
+        if (query?.Tag is not null)
             parameters.Add($"tag={Uri.EscapeDataString(query.Tag)}");
 
-        if (query.ToDate.HasValue)
+        if (query?.ToDate.HasValue == true)
             parameters.Add($"todate={Uri.EscapeDataString(FormatPostmarkDateQueryValue(query.ToDate.Value))}");
 
-        if (query.FromDate.HasValue)
+        if (query?.FromDate.HasValue == true)
             parameters.Add($"fromdate={Uri.EscapeDataString(FormatPostmarkDateQueryValue(query.FromDate.Value))}");
 
-        if (query.MessageStream is not null)
-            parameters.Add($"messagestream={Uri.EscapeDataString(query.MessageStream)}");
+        parameters.Add($"messagestream={Uri.EscapeDataString(messageStream)}");
 
         return $"/bounces?{string.Join("&", parameters)}";
     }
 
-    private static string FormatPostmarkDateQueryValue(DateTime value)
+    private static string FormatPostmarkDateQueryValue(DateTimeOffset value)
     {
         var useDateOnlyFormat = value.TimeOfDay == TimeSpan.Zero;
-
-        var normalizedValue = value.Kind switch
-        {
-            DateTimeKind.Utc => TimeZoneInfo.ConvertTimeFromUtc(value, EasternTimeZone),
-            DateTimeKind.Local => TimeZoneInfo.ConvertTime(value, EasternTimeZone),
-            _ => value,
-        };
+        var normalizedValue = value.ToEasternStandardDateTimeOffset();
 
         return normalizedValue.ToString(useDateOnlyFormat ? "yyyy-MM-dd" : "yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
     }
 
-    private static string FormatDateTimeForMessage(DateTime value)
+    private static string FormatOffsetForMessage(DateTimeOffset value)
     {
         return value.ToString("O", CultureInfo.InvariantCulture);
-    }
-
-    private static bool IsInvalidLocalPostmarkQueryDate(DateTime value)
-    {
-        return value.Kind == DateTimeKind.Local && TimeZoneInfo.Local.IsInvalidTime(value);
-    }
-
-    private static TimeZoneInfo ResolveEasternTimeZone()
-    {
-        foreach (var timeZoneId in ValidTimeZoneIds)
-        {
-            try
-            {
-                return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-            }
-            catch (TimeZoneNotFoundException)
-            {
-            }
-            catch (InvalidTimeZoneException)
-            {
-            }
-        }
-
-        throw new TimeZoneNotFoundException("Could not resolve the US Eastern time zone on this platform.");
     }
 
     private static Result<BouncePage> CreateGetBouncesResponse(GetBouncesModel response)
