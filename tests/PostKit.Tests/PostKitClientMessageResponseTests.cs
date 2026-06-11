@@ -259,7 +259,7 @@ public class PostKitClientMessageResponseTests
     }
 
     [Fact]
-    public async Task GetOutboundMessageDetailsAsync_WhenTextBodyIsMissing_ReturnsHelpfulFailure()
+    public async Task GetOutboundMessageDetailsAsync_WhenTextBodyIsNull_MapsNullableTextBody()
     {
         var messageId = Guid.Parse("07311c54-0687-4ab9-b034-b54b5bad88ba");
         const string endpoint = "/messages/outbound/07311c54-0687-4ab9-b034-b54b5bad88ba/details";
@@ -269,8 +269,40 @@ public class PostKitClientMessageResponseTests
 
         var result = await client.GetOutboundMessageDetailsAsync(messageId, CancellationToken.None);
 
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Null(response.TextBody);
+        Assert.Equal("<p>Thank you for your order...</p>", response.HtmlBody);
+    }
+
+    [Fact]
+    public async Task GetOutboundMessageDetailsAsync_WhenHtmlBodyIsNull_MapsNullableHtmlBody()
+    {
+        var messageId = Guid.Parse("07311c54-0687-4ab9-b034-b54b5bad88ba");
+        const string endpoint = "/messages/outbound/07311c54-0687-4ab9-b034-b54b5bad88ba/details";
+        var responseJson = SuccessfulDetailsResponseJson.Replace("\"HtmlBody\": \"<p>Thank you for your order...</p>\"", "\"HtmlBody\": null", StringComparison.Ordinal);
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        var result = await client.GetOutboundMessageDetailsAsync(messageId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out var response), result.ToString());
+        Assert.Equal("Thank you for your order...", response.TextBody);
+        Assert.Null(response.HtmlBody);
+    }
+
+    [Fact]
+    public async Task GetOutboundMessageDetailsAsync_WhenBodyIsMissing_ReturnsHelpfulFailure()
+    {
+        var messageId = Guid.Parse("07311c54-0687-4ab9-b034-b54b5bad88ba");
+        const string endpoint = "/messages/outbound/07311c54-0687-4ab9-b034-b54b5bad88ba/details";
+        var responseJson = SuccessfulDetailsResponseJson.Replace("\"Body\": \"SMTP dump data\"", "\"Body\": null", StringComparison.Ordinal);
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        var result = await client.GetOutboundMessageDetailsAsync(messageId, CancellationToken.None);
+
         Assert.True(result.IsFailure(out var error, out var _), result.ToString());
-        Assert.Equal("TextBody was not returned from the Postmark Messages API.", error.Message);
+        Assert.Equal("Body was not returned from the Postmark Messages API.", error.Message);
     }
 
     [Fact]

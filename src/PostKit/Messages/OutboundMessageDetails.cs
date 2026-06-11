@@ -6,11 +6,11 @@ namespace PostKit.Messages;
 /// <summary>Represents a single outbound message returned from the Postmark outbound message details endpoint.</summary>
 public sealed record OutboundMessageDetails : OutboundMessage
 {
-    /// <summary>Gets the text body of the message.</summary>
-    public string TextBody { [UsedImplicitly] get; }
+    /// <summary>Gets the text body of the message, when the message has one.</summary>
+    public string? TextBody { [UsedImplicitly] get; }
 
-    /// <summary>Gets the HTML body of the message.</summary>
-    public string HtmlBody { [UsedImplicitly] get; }
+    /// <summary>Gets the HTML body of the message, when the message has one.</summary>
+    public string? HtmlBody { [UsedImplicitly] get; }
 
     /// <summary>Gets the raw source of the message.</summary>
     public string Body { [UsedImplicitly] get; }
@@ -35,8 +35,8 @@ public sealed record OutboundMessageDetails : OutboundMessage
         LinkTracking trackLinks,
         IReadOnlyDictionary<string, string> metadata,
         bool sandboxed,
-        string textBody,
-        string htmlBody,
+        string? textBody,
+        string? htmlBody,
         string body,
         IReadOnlyCollection<OutboundMessageEvent> messageEvents
     )
