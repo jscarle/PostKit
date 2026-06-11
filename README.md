@@ -500,7 +500,7 @@ if (messagesResult.IsSuccess(out var page))
 ```
 
 Outbound message date filters accept `DateTimeOffset` values and are converted to Postmark's US Eastern time before the request is made. Postmark currently supports one metadata filter per outbound message search.
-Outbound message details expose nullable `TextBody` and `HtmlBody` properties because Postmark returns `null` for content variants that were not present on the sent message.
+Outbound message details expose nullable `TextBody`, `HtmlBody`, and `Body` properties because Postmark can omit content variants or the raw source on the details response. Use `GetOutboundMessageDumpAsync` when you specifically need the raw source.
 
 ### Suppressions
 

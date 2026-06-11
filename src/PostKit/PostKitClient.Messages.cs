@@ -323,9 +323,6 @@ internal sealed partial class PostKitClient
         if (mappedCore.IsFailure(out var error, out var outboundMessageCore))
             return Result.Failure<OutboundMessageDetails>(error);
 
-        if (response.Body is null)
-            return Result.Failure<OutboundMessageDetails>("Body was not returned from the Postmark Messages API.");
-
         if (response.MessageEvents is null)
             return Result.Failure<OutboundMessageDetails>("MessageEvents were not returned from the Postmark Messages API.");
 

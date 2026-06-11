@@ -12,8 +12,8 @@ public sealed record OutboundMessageDetails : OutboundMessage
     /// <summary>Gets the HTML body of the message, when the message has one.</summary>
     public string? HtmlBody { [UsedImplicitly] get; }
 
-    /// <summary>Gets the raw source of the message.</summary>
-    public string Body { [UsedImplicitly] get; }
+    /// <summary>Gets the raw source of the message, when Postmark returns it.</summary>
+    public string? Body { [UsedImplicitly] get; }
 
     /// <summary>Gets the events Postmark has recorded for the message.</summary>
     public IReadOnlyCollection<OutboundMessageEvent> MessageEvents { [UsedImplicitly] get; }
@@ -37,7 +37,7 @@ public sealed record OutboundMessageDetails : OutboundMessage
         bool sandboxed,
         string? textBody,
         string? htmlBody,
-        string body,
+        string? body,
         IReadOnlyCollection<OutboundMessageEvent> messageEvents
     )
         : base(tag, messageId, messageStream, to, cc, bcc, recipients, receivedAt, from, subject, attachments, status, trackOpens, trackLinks, metadata, sandboxed)
