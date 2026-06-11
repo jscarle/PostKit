@@ -16,20 +16,25 @@ namespace PostKit.Postmark;
 [UsedImplicitly]
 internal sealed partial class PostmarkClient : IPostmarkClient
 {
-    private static readonly TimeSpan InitialTooManyRequestsRetryDelay = TimeSpan.FromMilliseconds(100);
-    private static readonly TimeSpan FinalTooManyRequestsRetryDelay = TimeSpan.FromMilliseconds(1600);
+    private const int TooManyRequestsRetryCount = 6;
+    private const double TooManyRequestsBackoffFactor = 2;
+    private const double TooManyRequestsJitterRatio = 0.2;
+    private static readonly TimeSpan InitialTooManyRequestsRetryDelay = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan MaximumTooManyRequestsRetryDelay = TimeSpan.FromSeconds(30);
     private static readonly string Version = typeof(PostmarkClient).Assembly.GetName()
         .Version!.ToString(2);
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<PostmarkClient> _logger;
     private readonly PostmarkRateLimiter _rateLimiter;
+    private readonly Func<double> _tooManyRequestsJitterMultiplierProvider;
 
-    public PostmarkClient(HttpClient httpClient, IOptions<PostKitOptions> options, ILogger<PostmarkClient> logger, PostmarkRateLimiter? rateLimiter = null)
+    public PostmarkClient(HttpClient httpClient, IOptions<PostKitOptions> options, ILogger<PostmarkClient> logger, PostmarkRateLimiter? rateLimiter = null, Func<double>? tooManyRequestsJitterMultiplierProvider = null)
     {
         _httpClient = httpClient;
         _logger = logger;
         _rateLimiter = rateLimiter ?? new PostmarkRateLimiter();
+        _tooManyRequestsJitterMultiplierProvider = tooManyRequestsJitterMultiplierProvider ?? GetRandomTooManyRequestsJitterMultiplier;
 
         if (string.IsNullOrWhiteSpace(options.Value.ServerApiToken))
             throw new InvalidOperationException("The server API token has not been set.");
@@ -80,7 +85,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
     private async Task<HttpResponseMessage> SendAsync(string endpoint, Func<HttpRequestMessage> createRequest, int? requestSizeInBytes, CancellationToken cancellationToken)
     {
         var nextTooManyRequestsRetryDelay = InitialTooManyRequestsRetryDelay;
-        TimeSpan? previousTooManyRequestsRetryDelay = null;
+        var tooManyRequestsRetryCount = 0;
 
         while (true)
         {
@@ -95,14 +100,31 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             if (responseMessage.StatusCode != HttpStatusCode.TooManyRequests)
                 return responseMessage;
 
-            if (previousTooManyRequestsRetryDelay.HasValue && previousTooManyRequestsRetryDelay.Value >= FinalTooManyRequestsRetryDelay)
+            if (tooManyRequestsRetryCount >= TooManyRequestsRetryCount)
                 return responseMessage;
 
             responseMessage.Dispose();
-            await _rateLimiter.DelayAsync(nextTooManyRequestsRetryDelay, cancellationToken);
-            previousTooManyRequestsRetryDelay = nextTooManyRequestsRetryDelay;
-            nextTooManyRequestsRetryDelay = TimeSpan.FromMilliseconds(Math.Min(nextTooManyRequestsRetryDelay.TotalMilliseconds * 2, FinalTooManyRequestsRetryDelay.TotalMilliseconds));
+            _rateLimiter.ObserveTooManyRequests(endpoint, ApplyTooManyRequestsJitter(nextTooManyRequestsRetryDelay));
+            tooManyRequestsRetryCount++;
+            nextTooManyRequestsRetryDelay = GetNextTooManyRequestsRetryDelay(nextTooManyRequestsRetryDelay);
         }
+    }
+
+    private TimeSpan ApplyTooManyRequestsJitter(TimeSpan delay)
+    {
+        var jitterMultiplier = Math.Clamp(_tooManyRequestsJitterMultiplierProvider(), 1 - TooManyRequestsJitterRatio, 1 + TooManyRequestsJitterRatio);
+        var jitteredMilliseconds = Math.Ceiling(delay.TotalMilliseconds * jitterMultiplier);
+        return TimeSpan.FromMilliseconds(Math.Min(jitteredMilliseconds, MaximumTooManyRequestsRetryDelay.TotalMilliseconds));
+    }
+
+    private static TimeSpan GetNextTooManyRequestsRetryDelay(TimeSpan currentDelay)
+    {
+        return TimeSpan.FromMilliseconds(Math.Min(currentDelay.TotalMilliseconds * TooManyRequestsBackoffFactor, MaximumTooManyRequestsRetryDelay.TotalMilliseconds));
+    }
+
+    private static double GetRandomTooManyRequestsJitterMultiplier()
+    {
+        return 1 - TooManyRequestsJitterRatio + Random.Shared.NextDouble() * TooManyRequestsJitterRatio * 2;
     }
 
     private async Task<Result<TResponse>> GetResponse<TResponse>(string endpoint, HttpResponseMessage responseMessage, CancellationToken cancellationToken)

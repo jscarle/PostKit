@@ -158,6 +158,32 @@ public class PostmarkClientErrorHandlingTests
     }
 
     [Fact]
+    public async Task GetAsync_WithKnownRateLimitedEndpoint_DelaysColdSuccessiveCallsBeforeHeaders()
+    {
+        var delays = new List<TimeSpan>();
+        using var handler = new SequenceHttpMessageHandler(
+            CreateOkResponse(),
+            CreateOkResponse()
+        );
+        using var httpClient = new HttpClient(handler);
+        var rateLimiter = new PostmarkRateLimiter((delay, _) =>
+            {
+                delays.Add(delay);
+                return Task.CompletedTask;
+            }
+        );
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>(), rateLimiter);
+
+        var firstResult = await client.GetAsync<PostmarkResponse>("/messages/outbound?count=1", CancellationToken.None);
+        var secondResult = await client.GetAsync<PostmarkResponse>("/messages/outbound?count=1&offset=1", CancellationToken.None);
+
+        Assert.True(firstResult.IsSuccess(out _), firstResult.ToString());
+        Assert.True(secondResult.IsSuccess(out _), secondResult.ToString());
+        var delay = Assert.Single(delays);
+        Assert.True(delay >= TimeSpan.FromMilliseconds(1), $"Expected at least a 1 ms delay, received {delay.TotalMilliseconds} ms.");
+    }
+
+    [Fact]
     public async Task GetAsync_WithTooManyRequests_RetriesWithExponentialBackoff()
     {
         var delays = new List<TimeSpan>();
@@ -173,13 +199,74 @@ public class PostmarkClientErrorHandlingTests
                 return Task.CompletedTask;
             }
         );
-        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>(), rateLimiter);
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>(), rateLimiter, NoJitter);
 
         var result = await client.GetAsync<PostmarkResponse>("/bounces?count=1&offset=0", CancellationToken.None);
 
         Assert.True(result.IsSuccess(out _), result.ToString());
         Assert.Equal(3, handler.RequestCount);
-        Assert.Equal([TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(200)], delays);
+        Assert.Equal([TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)], delays);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithTooManyRequests_AppliesConfiguredJitter()
+    {
+        var delays = new List<TimeSpan>();
+        using var handler = new SequenceHttpMessageHandler(
+            new HttpResponseMessage(HttpStatusCode.TooManyRequests),
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"ErrorCode":0,"Message":"OK"}""", Encoding.UTF8, MediaTypeNames.Application.Json) }
+        );
+        using var httpClient = new HttpClient(handler);
+        var rateLimiter = new PostmarkRateLimiter((delay, _) =>
+            {
+                delays.Add(delay);
+                return Task.CompletedTask;
+            }
+        );
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>(), rateLimiter, static () => 1.2);
+
+        var result = await client.GetAsync<PostmarkResponse>("/bounces?count=1&offset=0", CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out _), result.ToString());
+        var delay = Assert.Single(delays);
+        Assert.Equal(TimeSpan.FromMilliseconds(1200), delay);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithTooManyRequests_BlocksEndpointGroupOnly()
+    {
+        var delays = new List<TimeSpan>();
+        using var handler = new SequenceHttpMessageHandler(
+            new HttpResponseMessage(HttpStatusCode.TooManyRequests),
+            CreateOkResponse(),
+            CreateOkResponse(),
+            CreateOkResponse()
+        );
+        using var httpClient = new HttpClient(handler);
+        var rateLimiter = new PostmarkRateLimiter((delay, _) =>
+            {
+                delays.Add(delay);
+                return Task.CompletedTask;
+            }
+        );
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>(), rateLimiter, NoJitter);
+
+        var detailsResult = await client.GetAsync<PostmarkResponse>("/messages/outbound/07311c54-0687-4ab9-b034-b54b5bad88ba/details", CancellationToken.None);
+
+        Assert.True(detailsResult.IsSuccess(out _), detailsResult.ToString());
+        var retryDelay = Assert.Single(delays);
+        Assert.Equal(TimeSpan.FromSeconds(1), retryDelay);
+
+        var suppressionsResult = await client.GetAsync<PostmarkResponse>("/message-streams/outbound/suppressions/dump", CancellationToken.None);
+
+        Assert.True(suppressionsResult.IsSuccess(out _), suppressionsResult.ToString());
+        Assert.Single(delays);
+
+        var searchResult = await client.GetAsync<PostmarkResponse>("/messages/outbound?count=1", CancellationToken.None);
+
+        Assert.True(searchResult.IsSuccess(out _), searchResult.ToString());
+        Assert.Equal(2, delays.Count);
+        Assert.True(delays[1] >= TimeSpan.FromMilliseconds(1), $"Expected the outbound message group to remain delayed, received {delays[1].TotalMilliseconds} ms.");
     }
 
     [Fact]
@@ -187,6 +274,7 @@ public class PostmarkClientErrorHandlingTests
     {
         var delays = new List<TimeSpan>();
         using var handler = new SequenceHttpMessageHandler(
+            new HttpResponseMessage(HttpStatusCode.TooManyRequests),
             new HttpResponseMessage(HttpStatusCode.TooManyRequests),
             new HttpResponseMessage(HttpStatusCode.TooManyRequests),
             new HttpResponseMessage(HttpStatusCode.TooManyRequests),
@@ -201,21 +289,22 @@ public class PostmarkClientErrorHandlingTests
                 return Task.CompletedTask;
             }
         );
-        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>(), rateLimiter);
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>(), rateLimiter, NoJitter);
 
         var result = await client.GetAsync<PostmarkResponse>("/bounces?count=1&offset=0", CancellationToken.None);
 
         Assert.True(result.IsFailure(out var error, out var _), result.ToString());
         var httpError = Assert.IsType<HttpError>(error);
         Assert.Equal(HttpStatusCode.TooManyRequests, httpError.StatusCode);
-        Assert.Equal(6, handler.RequestCount);
+        Assert.Equal(7, handler.RequestCount);
         Assert.Equal(
             [
-                TimeSpan.FromMilliseconds(100),
-                TimeSpan.FromMilliseconds(200),
-                TimeSpan.FromMilliseconds(400),
-                TimeSpan.FromMilliseconds(800),
-                TimeSpan.FromMilliseconds(1600),
+                TimeSpan.FromSeconds(1),
+                TimeSpan.FromSeconds(2),
+                TimeSpan.FromSeconds(4),
+                TimeSpan.FromSeconds(8),
+                TimeSpan.FromSeconds(16),
+                TimeSpan.FromSeconds(30),
             ],
             delays
         );
@@ -231,13 +320,28 @@ public class PostmarkClientErrorHandlingTests
 
     private static HttpResponseMessage CreateRateLimitedResponse(HttpStatusCode statusCode, int rateLimit)
     {
-        var response = new HttpResponseMessage(statusCode) { Content = new StringContent("""{"ErrorCode":0,"Message":"OK"}""", Encoding.UTF8, MediaTypeNames.Application.Json) };
+        var response = CreateResponse(statusCode);
         response.Headers.Add("RateLimit-Limit", rateLimit.ToString(CultureInfo.InvariantCulture));
         response.Headers.Add("RateLimit-Remaining", (rateLimit - 1).ToString(CultureInfo.InvariantCulture));
         response.Headers.Add("RateLimit-Reset", "1");
         response.Headers.Add("X-RateLimit-Limit-Second", rateLimit.ToString(CultureInfo.InvariantCulture));
         response.Headers.Add("X-RateLimit-Remaining-Second", (rateLimit - 1).ToString(CultureInfo.InvariantCulture));
         return response;
+    }
+
+    private static HttpResponseMessage CreateOkResponse()
+    {
+        return CreateResponse(HttpStatusCode.OK);
+    }
+
+    private static HttpResponseMessage CreateResponse(HttpStatusCode statusCode)
+    {
+        return new HttpResponseMessage(statusCode) { Content = new StringContent("""{"ErrorCode":0,"Message":"OK"}""", Encoding.UTF8, MediaTypeNames.Application.Json) };
+    }
+
+    private static double NoJitter()
+    {
+        return 1;
     }
 
     private sealed class SequenceHttpMessageHandler(params HttpResponseMessage[] responseMessages) : HttpMessageHandler, IDisposable
