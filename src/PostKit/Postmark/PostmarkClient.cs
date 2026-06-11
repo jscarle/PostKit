@@ -16,16 +16,20 @@ namespace PostKit.Postmark;
 [UsedImplicitly]
 internal sealed partial class PostmarkClient : IPostmarkClient
 {
+    private static readonly TimeSpan InitialTooManyRequestsRetryDelay = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan FinalTooManyRequestsRetryDelay = TimeSpan.FromMilliseconds(1600);
     private static readonly string Version = typeof(PostmarkClient).Assembly.GetName()
         .Version!.ToString(2);
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<PostmarkClient> _logger;
+    private readonly PostmarkRateLimiter _rateLimiter;
 
-    public PostmarkClient(HttpClient httpClient, IOptions<PostKitOptions> options, ILogger<PostmarkClient> logger)
+    public PostmarkClient(HttpClient httpClient, IOptions<PostKitOptions> options, ILogger<PostmarkClient> logger, PostmarkRateLimiter? rateLimiter = null)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _rateLimiter = rateLimiter ?? new PostmarkRateLimiter();
 
         if (string.IsNullOrWhiteSpace(options.Value.ServerApiToken))
             throw new InvalidOperationException("The server API token has not been set.");
@@ -39,25 +43,66 @@ internal sealed partial class PostmarkClient : IPostmarkClient
     public async Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
     {
         var jsonToSend = JsonSerializer.Serialize(body, PostmarkConfiguration.JsonSerializerOptions);
-        LogApiRequest(endpoint, Encoding.UTF8.GetByteCount(jsonToSend));
-        using var contentToSend = new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json);
-        using var responseMessage = await _httpClient.PostAsync(endpoint, contentToSend, cancellationToken);
+        var sizeInBytes = Encoding.UTF8.GetByteCount(jsonToSend);
+        using var responseMessage = await SendAsync(endpoint,
+            () =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, endpoint) { Content = new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json) };
+                return request;
+            },
+            sizeInBytes,
+            cancellationToken
+        );
         return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
     }
 
     public async Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
     {
-        using var responseMessage = await _httpClient.GetAsync(endpoint, cancellationToken);
+        using var responseMessage = await SendAsync(endpoint, () => new HttpRequestMessage(HttpMethod.Get, endpoint), null, cancellationToken);
         return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
     }
 
     public async Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
     {
         const string emptyJsonObject = "{}";
-        LogApiRequest(endpoint, Encoding.UTF8.GetByteCount(emptyJsonObject));
-        using var contentToSend = new StringContent(emptyJsonObject, Encoding.UTF8, MediaTypeNames.Application.Json);
-        using var responseMessage = await _httpClient.PutAsync(endpoint, contentToSend, cancellationToken);
+        using var responseMessage = await SendAsync(endpoint,
+            () =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Put, endpoint) { Content = new StringContent(emptyJsonObject, Encoding.UTF8, MediaTypeNames.Application.Json) };
+                return request;
+            },
+            Encoding.UTF8.GetByteCount(emptyJsonObject),
+            cancellationToken
+        );
         return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(string endpoint, Func<HttpRequestMessage> createRequest, int? requestSizeInBytes, CancellationToken cancellationToken)
+    {
+        var nextTooManyRequestsRetryDelay = InitialTooManyRequestsRetryDelay;
+        TimeSpan? previousTooManyRequestsRetryDelay = null;
+
+        while (true)
+        {
+            var lease = await _rateLimiter.WaitForAvailabilityAsync(endpoint, cancellationToken);
+            if (requestSizeInBytes.HasValue)
+                LogApiRequest(endpoint, requestSizeInBytes.Value);
+
+            using var request = createRequest();
+            var responseMessage = await _httpClient.SendAsync(request, cancellationToken);
+            _rateLimiter.ObserveResponse(endpoint, responseMessage.Headers, lease);
+
+            if (responseMessage.StatusCode != HttpStatusCode.TooManyRequests)
+                return responseMessage;
+
+            if (previousTooManyRequestsRetryDelay.HasValue && previousTooManyRequestsRetryDelay.Value >= FinalTooManyRequestsRetryDelay)
+                return responseMessage;
+
+            responseMessage.Dispose();
+            await _rateLimiter.DelayAsync(nextTooManyRequestsRetryDelay, cancellationToken);
+            previousTooManyRequestsRetryDelay = nextTooManyRequestsRetryDelay;
+            nextTooManyRequestsRetryDelay = TimeSpan.FromMilliseconds(Math.Min(nextTooManyRequestsRetryDelay.TotalMilliseconds * 2, FinalTooManyRequestsRetryDelay.TotalMilliseconds));
+        }
     }
 
     private async Task<Result<TResponse>> GetResponse<TResponse>(string endpoint, HttpResponseMessage responseMessage, CancellationToken cancellationToken)

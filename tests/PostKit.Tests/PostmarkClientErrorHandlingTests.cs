@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Mime;
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PostKit.Configuration;
@@ -130,10 +131,135 @@ public class PostmarkClientErrorHandlingTests
         Assert.Equal("{}", handler.LastContentBody);
     }
 
+    [Fact]
+    public async Task GetAsync_WithRateLimitHeaders_DelaysSuccessiveCallsInLearnedBucket()
+    {
+        var delays = new List<TimeSpan>();
+        using var handler = new SequenceHttpMessageHandler(
+            CreateRateLimitedResponse(HttpStatusCode.OK, 10),
+            CreateRateLimitedResponse(HttpStatusCode.OK, 10)
+        );
+        using var httpClient = new HttpClient(handler);
+        var rateLimiter = new PostmarkRateLimiter((delay, _) =>
+            {
+                delays.Add(delay);
+                return Task.CompletedTask;
+            }
+        );
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>(), rateLimiter);
+
+        var firstResult = await client.GetAsync<PostmarkResponse>("/messages/outbound?count=1", CancellationToken.None);
+        var secondResult = await client.GetAsync<PostmarkResponse>("/messages/outbound/07311c54-0687-4ab9-b034-b54b5bad88ba/details", CancellationToken.None);
+
+        Assert.True(firstResult.IsSuccess(out _), firstResult.ToString());
+        Assert.True(secondResult.IsSuccess(out _), secondResult.ToString());
+        var delay = Assert.Single(delays);
+        Assert.True(delay >= TimeSpan.FromMilliseconds(1), $"Expected at least a 1 ms delay, received {delay.TotalMilliseconds} ms.");
+    }
+
+    [Fact]
+    public async Task GetAsync_WithTooManyRequests_RetriesWithExponentialBackoff()
+    {
+        var delays = new List<TimeSpan>();
+        using var handler = new SequenceHttpMessageHandler(
+            new HttpResponseMessage(HttpStatusCode.TooManyRequests),
+            new HttpResponseMessage(HttpStatusCode.TooManyRequests),
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"ErrorCode":0,"Message":"OK"}""", Encoding.UTF8, MediaTypeNames.Application.Json) }
+        );
+        using var httpClient = new HttpClient(handler);
+        var rateLimiter = new PostmarkRateLimiter((delay, _) =>
+            {
+                delays.Add(delay);
+                return Task.CompletedTask;
+            }
+        );
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>(), rateLimiter);
+
+        var result = await client.GetAsync<PostmarkResponse>("/bounces?count=1&offset=0", CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out _), result.ToString());
+        Assert.Equal(3, handler.RequestCount);
+        Assert.Equal([TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(200)], delays);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithRepeatedTooManyRequests_ReturnsFailureAfterRetryAtFinalDelay()
+    {
+        var delays = new List<TimeSpan>();
+        using var handler = new SequenceHttpMessageHandler(
+            new HttpResponseMessage(HttpStatusCode.TooManyRequests),
+            new HttpResponseMessage(HttpStatusCode.TooManyRequests),
+            new HttpResponseMessage(HttpStatusCode.TooManyRequests),
+            new HttpResponseMessage(HttpStatusCode.TooManyRequests),
+            new HttpResponseMessage(HttpStatusCode.TooManyRequests),
+            new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+        );
+        using var httpClient = new HttpClient(handler);
+        var rateLimiter = new PostmarkRateLimiter((delay, _) =>
+            {
+                delays.Add(delay);
+                return Task.CompletedTask;
+            }
+        );
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>(), rateLimiter);
+
+        var result = await client.GetAsync<PostmarkResponse>("/bounces?count=1&offset=0", CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        var httpError = Assert.IsType<HttpError>(error);
+        Assert.Equal(HttpStatusCode.TooManyRequests, httpError.StatusCode);
+        Assert.Equal(6, handler.RequestCount);
+        Assert.Equal(
+            [
+                TimeSpan.FromMilliseconds(100),
+                TimeSpan.FromMilliseconds(200),
+                TimeSpan.FromMilliseconds(400),
+                TimeSpan.FromMilliseconds(800),
+                TimeSpan.FromMilliseconds(1600),
+            ],
+            delays
+        );
+    }
+
     private sealed class StubHttpMessageHandler(HttpResponseMessage responseMessage) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            return Task.FromResult(responseMessage);
+        }
+    }
+
+    private static HttpResponseMessage CreateRateLimitedResponse(HttpStatusCode statusCode, int rateLimit)
+    {
+        var response = new HttpResponseMessage(statusCode) { Content = new StringContent("""{"ErrorCode":0,"Message":"OK"}""", Encoding.UTF8, MediaTypeNames.Application.Json) };
+        response.Headers.Add("RateLimit-Limit", rateLimit.ToString(CultureInfo.InvariantCulture));
+        response.Headers.Add("RateLimit-Remaining", (rateLimit - 1).ToString(CultureInfo.InvariantCulture));
+        response.Headers.Add("RateLimit-Reset", "1");
+        response.Headers.Add("X-RateLimit-Limit-Second", rateLimit.ToString(CultureInfo.InvariantCulture));
+        response.Headers.Add("X-RateLimit-Remaining-Second", (rateLimit - 1).ToString(CultureInfo.InvariantCulture));
+        return response;
+    }
+
+    private sealed class SequenceHttpMessageHandler(params HttpResponseMessage[] responseMessages) : HttpMessageHandler, IDisposable
+    {
+        private readonly Queue<HttpResponseMessage> _responseMessages = new(responseMessages);
+
+        public int RequestCount { get; private set; }
+
+        public new void Dispose()
+        {
+            while (_responseMessages.TryDequeue(out var responseMessage))
+                responseMessage.Dispose();
+
+            base.Dispose();
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RequestCount++;
+            if (!_responseMessages.TryDequeue(out var responseMessage))
+                throw new InvalidOperationException("No response message was queued for this request.");
+
             return Task.FromResult(responseMessage);
         }
     }

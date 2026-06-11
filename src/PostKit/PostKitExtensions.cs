@@ -201,6 +201,7 @@ public static class PostKitExtensions
     {
         services.AddHttpClient("Postmark");
         services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
+        services.TryAddSingleton<PostmarkRateLimiter>();
     }
 
     private static OptionsBuilder<PostKitOptions> AddValidatedOptions(IServiceCollection services, string optionsName, bool validateConfigurationSectionFromServices)
