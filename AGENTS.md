@@ -19,3 +19,12 @@
 - Configuration binding and DI errors should use PostKit-specific messages. Missing configuration sections, missing API tokens, and invalid configuration keys should not surface as raw options or dependency-injection internals.
 - Normalize developer-supplied configuration keys in a forgiving way, such as trimming accidental surrounding whitespace, while keeping service keys and intentionally distinct identifiers unchanged.
 - Add focused tests for validation behavior and message clarity whenever changing builder validation, metadata merging, configuration binding, or error handling.
+
+## Codex Session Guidance
+
+- Implement one Postmark endpoint at a time when the user asks for a specific endpoint. Match the existing SDK style, naming, overloads, builders, validation, and tests.
+- For query objects, keep likely filters first where requested: `FromDate` before `ToDate` in bounce and outbound message queries.
+- Prefer `DateTimeOffset` for Postmark date/time query values and convert through the existing timezone helper/extension patterns.
+- For rate-limit behavior, use a progressive delay after successive calls within the last-second window when endpoints expose rate-limit headers, and use exponential retry for `429` responses. Keep retries bounded and observable.
+- Do not repeat full test server API keys in documentation, logs, commit messages, or PR bodies.
+- Release work usually happens from `feature/work` with version updates to both package and assembly versions, then a PR/release flow matching previous repository releases. Verify the current branch and remote state first because `feature/work` may be reused.
