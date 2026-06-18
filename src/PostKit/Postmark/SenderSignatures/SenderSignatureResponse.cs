@@ -52,4 +52,7 @@ internal sealed class SenderSignatureResponse : SenderSignatureSummaryResponse
 
     [JsonPropertyName("ReturnPathDomainCNAMEValue")]
     public string? ReturnPathDomainCNameValue { get; [UsedImplicitly] init; }
+
+    [JsonPropertyName("ConfirmationPersonalNote")]
+    public string? ConfirmationPersonalNote { get; [UsedImplicitly] init; }
 }

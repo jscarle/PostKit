@@ -12,6 +12,7 @@ using PostKit.Servers;
 using DomainCreateRequestModel = PostKit.Postmark.Domains.DomainCreateRequest;
 using MessageStreamRequestModel = PostKit.Postmark.MessageStreams.MessageStreamRequest;
 using SenderSignatureCreateRequestModel = PostKit.Postmark.SenderSignatures.SenderSignatureCreateRequest;
+using SenderSignatureEditRequestModel = PostKit.Postmark.SenderSignatures.SenderSignatureEditRequest;
 using ServerRequestModel = PostKit.Postmark.Servers.ServerRequest;
 
 namespace PostKit.Tests;
@@ -189,7 +190,8 @@ public class PostKitClientManagementResponseTests
                                                  "DKIMUpdateStatus": "Verified",
                                                  "ReturnPathDomain": "pm-bounces.example.com",
                                                  "ReturnPathDomainVerified": true,
-                                                 "ReturnPathDomainCNAMEValue": "pm.mtasv.net"
+                                                 "ReturnPathDomainCNAMEValue": "pm.mtasv.net",
+                                                 "ConfirmationPersonalNote": "Please confirm this sender."
                                                }
                                                """;
 
@@ -396,14 +398,27 @@ public class PostKitClientManagementResponseTests
     [Fact]
     public async Task VerifyDomainDkimAsync_UsesAccountPutWithoutBody()
     {
-        var postmark = new RecordingPostmarkClient(accountEmptyPutResponses: new Dictionary<string, string> { ["/domains/12/verifydkim"] = DomainJson });
+        var postmark = new RecordingPostmarkClient(accountEmptyPutResponses: new Dictionary<string, string> { ["/domains/12/verifyDkim"] = DomainJson });
         var client = new PostKitClient(postmark, new TestLogger());
 
         var result = await client.VerifyDomainDkimAsync(12, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess(out var domain), result.ToString());
         Assert.True(domain.DkimVerified);
-        Assert.Equal("/domains/12/verifydkim", postmark.LastAccountEmptyPutEndpoint);
+        Assert.Equal("/domains/12/verifyDkim", postmark.LastAccountEmptyPutEndpoint);
+    }
+
+    [Fact]
+    public async Task VerifyDomainReturnPathAsync_UsesAccountPutWithoutBody()
+    {
+        var postmark = new RecordingPostmarkClient(accountEmptyPutResponses: new Dictionary<string, string> { ["/domains/12/verifyReturnPath"] = DomainJson });
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        var result = await client.VerifyDomainReturnPathAsync(12, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess(out var domain), result.ToString());
+        Assert.True(domain.ReturnPathDomainVerified);
+        Assert.Equal("/domains/12/verifyReturnPath", postmark.LastAccountEmptyPutEndpoint);
     }
 
     [Fact]
@@ -445,15 +460,122 @@ public class PostKitClientManagementResponseTests
         {
             FromEmail = "sender@example.com",
             Name = "Sender",
-            ReplyToEmailAddress = "reply@example.com"
+            ReplyToEmailAddress = "reply@example.com",
+            ReturnPathDomain = "pm-bounces.example.com",
+            ConfirmationPersonalNote = "Please confirm this sender."
         }, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess(out var signature), result.ToString());
         Assert.Equal(77, signature.Id);
+        Assert.Equal("Please confirm this sender.", signature.ConfirmationPersonalNote);
         Assert.Equal("/senders", postmark.LastAccountPostEndpoint);
         var body = Assert.IsType<SenderSignatureCreateRequestModel>(postmark.LastAccountPostBody);
         Assert.Equal("sender@example.com", body.FromEmail);
         Assert.Equal("reply@example.com", body.ReplyToEmailAddress);
+        Assert.Equal("pm-bounces.example.com", body.ReturnPathDomain);
+        Assert.Equal("Please confirm this sender.", body.ConfirmationPersonalNote);
+    }
+
+    [Fact]
+    public async Task EditSenderSignatureAsync_SendsAccountPut()
+    {
+        var postmark = new RecordingPostmarkClient(accountPutResponses: new Dictionary<string, string> { ["/senders/77"] = SenderSignatureJson });
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        var result = await client.EditSenderSignatureAsync(77, new SenderSignatureEditParameters
+        {
+            Name = "Updated Sender",
+            ReplyToEmailAddress = "updated-reply@example.com",
+            ReturnPathDomain = "pm-bounces.example.com",
+            ConfirmationPersonalNote = "Please confirm this updated sender."
+        }, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess(out var signature), result.ToString());
+        Assert.Equal(77, signature.Id);
+        Assert.Equal("/senders/77", postmark.LastAccountPutEndpoint);
+        var body = Assert.IsType<SenderSignatureEditRequestModel>(postmark.LastAccountPutBody);
+        Assert.Equal("Updated Sender", body.Name);
+        Assert.Equal("updated-reply@example.com", body.ReplyToEmailAddress);
+        Assert.Equal("pm-bounces.example.com", body.ReturnPathDomain);
+        Assert.Equal("Please confirm this updated sender.", body.ConfirmationPersonalNote);
+    }
+
+    [Fact]
+    public void SenderSignatureCreateRequest_SerializesPostmarkRequestFieldNames()
+    {
+        var request = new SenderSignatureCreateRequestModel
+        {
+            FromEmail = "sender@example.com",
+            Name = "Sender",
+            ReplyToEmailAddress = "reply@example.com",
+            ReturnPathDomain = "pm-bounces.example.com",
+            ConfirmationPersonalNote = "Please confirm this sender."
+        };
+
+        var json = JsonSerializer.Serialize(request, PostmarkConfiguration.JsonSerializerOptions);
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        Assert.Equal("sender@example.com", root.GetProperty("FromEmail").GetString());
+        Assert.Equal("Sender", root.GetProperty("Name").GetString());
+        Assert.Equal("reply@example.com", root.GetProperty("ReplyToEmail").GetString());
+        Assert.Equal("pm-bounces.example.com", root.GetProperty("ReturnPathDomain").GetString());
+        Assert.Equal("Please confirm this sender.", root.GetProperty("ConfirmationPersonalNote").GetString());
+        Assert.False(root.TryGetProperty("ReplyToEmailAddress", out _));
+    }
+
+    [Fact]
+    public void SenderSignatureEditRequest_SerializesPostmarkRequestFieldNames()
+    {
+        var request = new SenderSignatureEditRequestModel
+        {
+            Name = "Updated Sender",
+            ReplyToEmailAddress = "reply@example.com",
+            ReturnPathDomain = "pm-bounces.example.com",
+            ConfirmationPersonalNote = "Please confirm this sender."
+        };
+
+        var json = JsonSerializer.Serialize(request, PostmarkConfiguration.JsonSerializerOptions);
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        Assert.Equal("Updated Sender", root.GetProperty("Name").GetString());
+        Assert.Equal("reply@example.com", root.GetProperty("ReplyToEmail").GetString());
+        Assert.Equal("pm-bounces.example.com", root.GetProperty("ReturnPathDomain").GetString());
+        Assert.Equal("Please confirm this sender.", root.GetProperty("ConfirmationPersonalNote").GetString());
+        Assert.False(root.TryGetProperty("ReplyToEmailAddress", out _));
+    }
+
+    [Fact]
+    public async Task CreateSenderSignatureAsync_WithTooLongConfirmationPersonalNote_ReturnsValidationFailureBeforePostmarkCall()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger());
+        var note = new string('a', 401);
+
+        var result = await client.CreateSenderSignatureAsync(new SenderSignatureCreateParameters
+        {
+            FromEmail = "sender@example.com",
+            Name = "Sender",
+            ConfirmationPersonalNote = note
+        }, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        Assert.Equal("The sender signature create parameters confirmation personal note must not exceed 400 characters. Actual length: 401.", error.Message);
+        Assert.Null(postmark.LastAccountPostEndpoint);
+    }
+
+    [Fact]
+    public async Task EditSenderSignatureAsync_WithNoFields_ReturnsValidationFailureBeforePostmarkCall()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        var result = await client.EditSenderSignatureAsync(77, new SenderSignatureEditParameters(), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        Assert.Equal("The sender signature edit parameters must set Name, ReplyToEmailAddress, ReturnPathDomain, or ConfirmationPersonalNote.", error.Message);
+        Assert.Null(postmark.LastAccountPutEndpoint);
     }
 
     [Fact]

@@ -214,13 +214,13 @@ internal sealed partial class PostKitClient
 
     public Task<Result<PostmarkDomain>> VerifyDomainDkimAsync(long domainId, CancellationToken cancellationToken = default)
     {
-        return RunDomainActionAsync(domainId, "verify DKIM", $"/domains/{domainId.ToString(CultureInfo.InvariantCulture)}/verifydkim", (endpoint, token) => postmark.PutAsync<DomainResponseModel>(PostmarkTokenScope.Account, endpoint, token),
+        return RunDomainActionAsync(domainId, "verify DKIM", $"/domains/{domainId.ToString(CultureInfo.InvariantCulture)}/verifyDkim", (endpoint, token) => postmark.PutAsync<DomainResponseModel>(PostmarkTokenScope.Account, endpoint, token),
             LogVerifyDomainDkimException, LogVerifyDomainDkimError, cancellationToken);
     }
 
     public Task<Result<PostmarkDomain>> VerifyDomainReturnPathAsync(long domainId, CancellationToken cancellationToken = default)
     {
-        return RunDomainActionAsync(domainId, "verify return path", $"/domains/{domainId.ToString(CultureInfo.InvariantCulture)}/verifyreturnpath",
+        return RunDomainActionAsync(domainId, "verify return path", $"/domains/{domainId.ToString(CultureInfo.InvariantCulture)}/verifyReturnPath",
             (endpoint, token) => postmark.PutAsync<DomainResponseModel>(PostmarkTokenScope.Account, endpoint, token), LogVerifyDomainReturnPathException, LogVerifyDomainReturnPathError, cancellationToken);
     }
 

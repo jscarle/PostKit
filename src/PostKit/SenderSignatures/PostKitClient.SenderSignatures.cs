@@ -17,6 +17,8 @@ namespace PostKit;
 
 internal sealed partial class PostKitClient
 {
+    private const int SenderSignatureConfirmationPersonalNoteMaxLength = 400;
+
     public async Task<Result<SenderSignaturePage>> ListSenderSignaturesAsync(int count = 100, int offset = 0, CancellationToken cancellationToken = default)
     {
         var validationError = ValidationExtensions.ValidateListRequest("The sender signature list", count, offset);
@@ -302,26 +304,55 @@ internal sealed partial class PostKitClient
     {
         var validationError = ValidationExtensions.ValidateEmailAddress(parameters.FromEmail, nameof(SenderSignatureCreateParameters.FromEmail), "The sender signature create parameters from email address") ??
                               ValidationExtensions.ValidateRequiredText(parameters.Name, "The sender signature create parameters name") ?? ValidationExtensions.ValidateOptionalEmailAddress(parameters.ReplyToEmailAddress,
-                                  nameof(SenderSignatureCreateParameters.ReplyToEmailAddress), "The sender signature create parameters reply-to email address");
+                                  nameof(SenderSignatureCreateParameters.ReplyToEmailAddress), "The sender signature create parameters reply-to email address") ??
+                              ValidationExtensions.ValidateDomainName(parameters.ReturnPathDomain, "The sender signature create parameters return-path domain", true, true) ??
+                              ValidateSenderSignatureConfirmationPersonalNote(parameters.ConfirmationPersonalNote, "The sender signature create parameters confirmation personal note");
 
         if (validationError is not null)
             return Result.Failure<SenderSignatureCreateRequestModel>(validationError);
 
-        return Result.Success(new SenderSignatureCreateRequestModel { FromEmail = parameters.FromEmail, Name = parameters.Name, ReplyToEmailAddress = parameters.ReplyToEmailAddress });
+        return Result.Success(new SenderSignatureCreateRequestModel
+        {
+            FromEmail = parameters.FromEmail,
+            Name = parameters.Name,
+            ReplyToEmailAddress = parameters.ReplyToEmailAddress,
+            ReturnPathDomain = parameters.ReturnPathDomain,
+            ConfirmationPersonalNote = parameters.ConfirmationPersonalNote
+        });
     }
 
     private static Result<SenderSignatureEditRequestModel> CreateSenderSignatureRequest(SenderSignatureEditParameters parameters)
     {
-        if (parameters.Name is null && parameters.ReplyToEmailAddress is null)
-            return Result.Failure<SenderSignatureEditRequestModel>("The sender signature edit parameters must set Name or ReplyToEmailAddress.");
+        if (parameters.Name is null && parameters.ReplyToEmailAddress is null && parameters.ReturnPathDomain is null && parameters.ConfirmationPersonalNote is null)
+            return Result.Failure<SenderSignatureEditRequestModel>("The sender signature edit parameters must set Name, ReplyToEmailAddress, ReturnPathDomain, or ConfirmationPersonalNote.");
 
         var validationError = ValidationExtensions.ValidateOptionalText(parameters.Name, "The sender signature edit parameters name") ?? ValidationExtensions.ValidateOptionalEmailAddress(parameters.ReplyToEmailAddress,
-            nameof(SenderSignatureEditParameters.ReplyToEmailAddress), "The sender signature edit parameters reply-to email address");
+                                  nameof(SenderSignatureEditParameters.ReplyToEmailAddress), "The sender signature edit parameters reply-to email address") ??
+                              ValidationExtensions.ValidateDomainName(parameters.ReturnPathDomain, "The sender signature edit parameters return-path domain", true, true) ??
+                              ValidateSenderSignatureConfirmationPersonalNote(parameters.ConfirmationPersonalNote, "The sender signature edit parameters confirmation personal note");
 
         if (validationError is not null)
             return Result.Failure<SenderSignatureEditRequestModel>(validationError);
 
-        return Result.Success(new SenderSignatureEditRequestModel { Name = parameters.Name, ReplyToEmailAddress = parameters.ReplyToEmailAddress });
+        return Result.Success(new SenderSignatureEditRequestModel
+        {
+            Name = parameters.Name,
+            ReplyToEmailAddress = parameters.ReplyToEmailAddress,
+            ReturnPathDomain = parameters.ReturnPathDomain,
+            ConfirmationPersonalNote = parameters.ConfirmationPersonalNote
+        });
+    }
+
+    private static string? ValidateSenderSignatureConfirmationPersonalNote(string? value, string subject)
+    {
+        var validationError = ValidationExtensions.ValidateOptionalText(value, subject);
+        if (validationError is not null)
+            return validationError;
+
+        var length = value.AsSpan()
+            .GetPostmarkCharacterCount();
+
+        return length > SenderSignatureConfirmationPersonalNoteMaxLength ? $"{subject} must not exceed {SenderSignatureConfirmationPersonalNoteMaxLength} characters. Actual length: {length}." : null;
     }
 
     private static Result<SenderSignaturePage> CreateSenderSignaturePage(SenderSignatureListModel response)
@@ -386,7 +417,7 @@ internal sealed partial class PostKitClient
             ValidationExtensions.NormalizeOptionalString(response.DkimHost), ValidationExtensions.NormalizeOptionalString(response.DkimTextValue), ValidationExtensions.NormalizeOptionalString(response.DkimPendingHost),
             ValidationExtensions.NormalizeOptionalString(response.DkimPendingTextValue), ValidationExtensions.NormalizeOptionalString(response.DkimRevokedHost), ValidationExtensions.NormalizeOptionalString(response.DkimRevokedTextValue),
             response.SafeToRemoveRevokedKeyFromDns, ValidationExtensions.NormalizeOptionalString(response.DkimUpdateStatus), ValidationExtensions.NormalizeOptionalString(response.ReturnPathDomain), response.ReturnPathDomainVerified.Value,
-            ValidationExtensions.NormalizeOptionalString(response.ReturnPathDomainCNameValue)));
+            ValidationExtensions.NormalizeOptionalString(response.ReturnPathDomainCNameValue), ValidationExtensions.NormalizeOptionalString(response.ConfirmationPersonalNote)));
     }
 
     private static Result<SenderSignatureAction> CreateSenderSignatureAction(SenderSignatureActionModel response)

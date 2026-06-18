@@ -149,7 +149,7 @@ public class PostmarkClientErrorHandlingTests
         Assert.NotNull(handler.LastRequest);
         Assert.Equal(HttpMethod.Post, handler.LastRequest.Method);
         Assert.True(handler.HadContent);
-        Assert.Null(handler.LastContentType);
+        Assert.Equal(MediaTypeNames.Application.Json, handler.LastContentType);
         Assert.Equal(string.Empty, handler.LastContentBody);
         Assert.Equal("server-token", Assert.Single(handler.LastRequest.Headers.GetValues("X-Postmark-Server-Token")));
     }
@@ -167,7 +167,7 @@ public class PostmarkClientErrorHandlingTests
         Assert.NotNull(handler.LastRequest);
         Assert.Equal(HttpMethod.Post, handler.LastRequest.Method);
         Assert.True(handler.HadContent);
-        Assert.Null(handler.LastContentType);
+        Assert.Equal(MediaTypeNames.Application.Json, handler.LastContentType);
         Assert.Equal(string.Empty, handler.LastContentBody);
         Assert.Equal("account-token", Assert.Single(handler.LastRequest.Headers.GetValues("X-Postmark-Account-Token")));
         Assert.False(handler.LastRequest.Headers.Contains("X-Postmark-Server-Token"));
@@ -180,13 +180,13 @@ public class PostmarkClientErrorHandlingTests
         using var httpClient = new HttpClient(handler);
         var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "server-token", AccountApiToken = "account-token" }), new TestLogger<PostmarkClient>());
 
-        var result = await client.PutAsync<PostmarkResponse>(PostmarkTokenScope.Account, "/domains/12/verifydkim", CancellationToken.None);
+        var result = await client.PutAsync<PostmarkResponse>(PostmarkTokenScope.Account, "/domains/12/verifyDkim", CancellationToken.None);
 
         Assert.True(result.IsSuccess(out _), result.ToString());
         Assert.NotNull(handler.LastRequest);
         Assert.Equal(HttpMethod.Put, handler.LastRequest.Method);
         Assert.True(handler.HadContent);
-        Assert.Null(handler.LastContentType);
+        Assert.Equal(MediaTypeNames.Application.Json, handler.LastContentType);
         Assert.Equal(string.Empty, handler.LastContentBody);
         Assert.Equal("account-token", Assert.Single(handler.LastRequest.Headers.GetValues("X-Postmark-Account-Token")));
         Assert.False(handler.LastRequest.Headers.Contains("X-Postmark-Server-Token"));

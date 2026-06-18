@@ -11,6 +11,12 @@ internal sealed class SenderSignatureCreateRequest
     [JsonPropertyName("Name")]
     public required string Name { [UsedImplicitly] get; init; }
 
-    [JsonPropertyName("ReplyToEmailAddress")]
+    [JsonPropertyName("ReplyToEmail")]
     public string? ReplyToEmailAddress { [UsedImplicitly] get; init; }
+
+    [JsonPropertyName("ReturnPathDomain")]
+    public string? ReturnPathDomain { [UsedImplicitly] get; init; }
+
+    [JsonPropertyName("ConfirmationPersonalNote")]
+    public string? ConfirmationPersonalNote { [UsedImplicitly] get; init; }
 }

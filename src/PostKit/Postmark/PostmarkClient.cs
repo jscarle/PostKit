@@ -110,7 +110,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
     {
         using var responseMessage = await SendAsync(endpoint, () =>
         {
-            var request = new HttpRequestMessage(method, endpoint) { Content = new ByteArrayContent([]) };
+            var request = new HttpRequestMessage(method, endpoint) { Content = new StringContent(string.Empty, Encoding.UTF8, MediaTypeNames.Application.Json) };
             return request;
         }, 0, tokenScope, cancellationToken);
         return await GetResponse<TResponse>(endpoint, responseMessage, tokenScope, cancellationToken);

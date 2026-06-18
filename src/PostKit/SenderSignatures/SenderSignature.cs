@@ -7,7 +7,7 @@ public sealed record SenderSignature : SenderSignatureSummary
 {
     internal SenderSignature(long id, string domain, string emailAddress, string? replyToEmailAddress, string name, bool confirmed, bool spfVerified, string? spfHost, string? spfTextValue, bool dkimVerified, bool weakDkim, string? dkimHost,
         string? dkimTextValue, string? dkimPendingHost, string? dkimPendingTextValue, string? dkimRevokedHost, string? dkimRevokedTextValue, bool? safeToRemoveRevokedKeyFromDns, string? dkimUpdateStatus, string? returnPathDomain,
-        bool returnPathDomainVerified, string? returnPathDomainCNameValue) : base(id, domain, emailAddress, replyToEmailAddress, name, confirmed)
+        bool returnPathDomainVerified, string? returnPathDomainCNameValue, string? confirmationPersonalNote) : base(id, domain, emailAddress, replyToEmailAddress, name, confirmed)
     {
         SpfVerified = spfVerified;
         SpfHost = spfHost;
@@ -25,6 +25,7 @@ public sealed record SenderSignature : SenderSignatureSummary
         ReturnPathDomain = returnPathDomain;
         ReturnPathDomainVerified = returnPathDomainVerified;
         ReturnPathDomainCNameValue = returnPathDomainCNameValue;
+        ConfirmationPersonalNote = confirmationPersonalNote;
     }
 
     /// <summary>Gets whether SPF is verified.</summary>
@@ -74,4 +75,7 @@ public sealed record SenderSignature : SenderSignatureSummary
 
     /// <summary>Gets the return-path CNAME value.</summary>
     public string? ReturnPathDomainCNameValue { [UsedImplicitly] get; }
+
+    /// <summary>Gets the personal note sent with the confirmation email.</summary>
+    public string? ConfirmationPersonalNote { [UsedImplicitly] get; }
 }
