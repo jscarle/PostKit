@@ -17,7 +17,7 @@ public sealed record BounceQuery
     /// <summary>Gets the optional inactive filter.</summary>
     public bool? Inactive { get; init; }
 
-    /// <summary>Gets the optional recipient email address filter. Only the <see cref="MailboxAddress.Address"/> value is sent to Postmark.</summary>
+    /// <summary>Gets the optional recipient email address filter. Only the <see cref="MailboxAddress.Address" /> value is sent to Postmark.</summary>
     public MailboxAddress? EmailFilter { get; init; }
 
     /// <summary>Gets the optional Postmark message ID filter.</summary>

@@ -6,6 +6,10 @@ namespace PostKit.BulkEmails;
 /// <summary>Represents a recipient-specific message within a Postmark bulk email request.</summary>
 public sealed class BulkEmailMessage
 {
+    internal BulkEmailMessage()
+    {
+    }
+
     /// <summary>Gets the primary recipients for the message.</summary>
     public IReadOnlyCollection<MailboxAddress>? To { get; internal init; }
 
@@ -28,17 +32,13 @@ public sealed class BulkEmailMessage
 
     internal int TemplateModelSizeInBytes { get; init; }
 
-    internal BulkEmailMessage()
-    {
-    }
-
-    /// <summary>Creates a new <see cref="ComposedBulkEmailMessageBuilder"/> for composing a <see cref="BulkEmailMessage"/>.</summary>
+    /// <summary>Creates a new <see cref="ComposedBulkEmailMessageBuilder" /> for composing a <see cref="BulkEmailMessage" />.</summary>
     public static ComposedBulkEmailMessageBuilder Compose()
     {
         return new ComposedBulkEmailMessageBuilder();
     }
 
-    /// <summary>Creates a new <see cref="TemplatedBulkEmailMessageBuilder"/> for composing a <see cref="BulkEmailMessage"/> with a template model.</summary>
+    /// <summary>Creates a new <see cref="TemplatedBulkEmailMessageBuilder" /> for composing a <see cref="BulkEmailMessage" /> with a template model.</summary>
     public static TemplatedBulkEmailMessageBuilder FromTemplate()
     {
         return new TemplatedBulkEmailMessageBuilder();

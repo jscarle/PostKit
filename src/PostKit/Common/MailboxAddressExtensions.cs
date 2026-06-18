@@ -57,7 +57,7 @@ internal static class MailboxAddressExtensions
         if (mailboxAddress is null)
             throw new ArgumentNullException(nameof(mailboxAddress), "The email address cannot be null.");
 
-        return [mailboxAddress];
+        return [mailboxAddress.Snapshot()];
     }
 
     public static IList<MailboxAddress> ToAddressList(this IEnumerable<string> addresses, string paramName = "addresses")
@@ -101,7 +101,7 @@ internal static class MailboxAddressExtensions
             if (mailboxAddress is null)
                 throw new ArgumentNullException(paramName, $"The email address at index {index} cannot be null.");
 
-            list.Add(mailboxAddress);
+            list.Add(mailboxAddress.Snapshot());
             index++;
         }
 
@@ -135,9 +135,7 @@ internal static class MailboxAddressExtensions
         if (atIndex > 0 && atIndex < address.Length - 1)
             return;
 
-        var message = index.HasValue
-            ? $"The email address at index {index.Value} is invalid. {AddressFormatHint}"
-            : $"The email address is invalid. {AddressFormatHint}";
+        var message = index.HasValue ? $"The email address at index {index.Value} is invalid. {AddressFormatHint}" : $"The email address is invalid. {AddressFormatHint}";
         throw new ArgumentException(message, paramName);
     }
 }

@@ -5,6 +5,16 @@ namespace PostKit.IntegrationTests;
 /// <summary>Test configuration for integration tests.</summary>
 internal static class TestConfiguration
 {
+    private const string DefaultApiToken = "POSTMARK_API_TEST";
+    private const string DefaultTestFromEmail = "sender@postkit.com";
+    private const string DefaultTestToEmail = "receiver@postkit.com";
+    private const string DefaultTestCcEmail = "cc@postkit.com";
+    private const string DefaultTestBccEmail = "bcc@postkit.com";
+    private const string DefaultTestReplyToEmail = "replyto@postkit.com";
+
+    private static readonly Lazy<IConfigurationRoot> Configuration = new(CreateConfiguration);
+    private static readonly Lazy<IConfigurationRoot> DevelopmentConfiguration = new(CreateDevelopmentConfiguration);
+
     /// <summary>Postmark test API token - This is a special test token provided by Postmark.</summary>
     public static string ApiToken => GetValue("ApiToken", DefaultApiToken);
 
@@ -24,15 +34,6 @@ internal static class TestConfiguration
     public static string? DevelopmentCcEmail => GetDevelopmentValue("CcEmail");
     public static string? DevelopmentBccEmail => GetDevelopmentValue("BccEmail");
     public static string? DevelopmentReplyToEmail => GetDevelopmentValue("ReplyToEmail");
-    private const string DefaultApiToken = "POSTMARK_API_TEST";
-    private const string DefaultTestFromEmail = "sender@postkit.com";
-    private const string DefaultTestToEmail = "receiver@postkit.com";
-    private const string DefaultTestCcEmail = "cc@postkit.com";
-    private const string DefaultTestBccEmail = "bcc@postkit.com";
-    private const string DefaultTestReplyToEmail = "replyto@postkit.com";
-
-    private static readonly Lazy<IConfigurationRoot> Configuration = new(CreateConfiguration);
-    private static readonly Lazy<IConfigurationRoot> DevelopmentConfiguration = new(CreateDevelopmentConfiguration);
 
     private static IConfigurationRoot CreateConfiguration()
     {

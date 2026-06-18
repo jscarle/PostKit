@@ -13,5 +13,5 @@ public enum LinkTracking
     HtmlOnly = 2,
 
     /// <summary>Enables link tracking for the plain text body only.</summary>
-    TextOnly = 3,
+    TextOnly = 3
 }

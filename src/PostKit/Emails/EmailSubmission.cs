@@ -5,6 +5,14 @@ namespace PostKit.Emails;
 /// <summary>Represents the response returned after Postmark accepts an email for delivery.</summary>
 public sealed record EmailSubmission
 {
+    internal EmailSubmission(Guid messageId, string? to, DateTimeOffset submittedAt, string? internetMessageId = null)
+    {
+        MessageId = messageId;
+        InternetMessageId = string.IsNullOrWhiteSpace(internetMessageId) ? FormatInternetMessageId(messageId) : internetMessageId.Trim();
+        To = to;
+        SubmittedAt = submittedAt;
+    }
+
     /// <summary>Gets the identifier assigned to the accepted message.</summary>
     public Guid MessageId { [UsedImplicitly] get; }
 
@@ -16,14 +24,6 @@ public sealed record EmailSubmission
 
     /// <summary>Gets the time Postmark accepted the email.</summary>
     public DateTimeOffset SubmittedAt { [UsedImplicitly] get; }
-
-    internal EmailSubmission(Guid messageId, string? to, DateTimeOffset submittedAt, string? internetMessageId = null)
-    {
-        MessageId = messageId;
-        InternetMessageId = string.IsNullOrWhiteSpace(internetMessageId) ? FormatInternetMessageId(messageId) : internetMessageId.Trim();
-        To = to;
-        SubmittedAt = submittedAt;
-    }
 
     internal static string ResolveInternetMessageId(Guid messageId, IReadOnlyDictionary<string, string>? headers, bool requireKeepId)
     {
@@ -55,10 +55,8 @@ public sealed record EmailSubmission
             return value;
 
         foreach (var header in headers)
-        {
             if (string.Equals(header.Key, headerName, StringComparison.OrdinalIgnoreCase))
                 return header.Value;
-        }
 
         return null;
     }

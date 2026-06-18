@@ -7,11 +7,12 @@ namespace PostKit.Postmark;
 internal sealed class PostmarkRateLimiter(Func<TimeSpan, CancellationToken, Task>? delayAsync = null)
 {
     private static readonly TimeSpan RateLimitWindow = TimeSpan.FromSeconds(1);
+
     private static readonly Dictionary<string, int> DefaultRateLimits = new(StringComparer.Ordinal)
     {
         ["email"] = 5000,
         ["messages/outbound"] = 150,
-        ["message-streams/suppressions"] = 500,
+        ["message-streams/suppressions"] = 500
     };
 
     private readonly ConcurrentDictionary<string, RateLimitBucket> _buckets = new(StringComparer.Ordinal);
@@ -80,10 +81,8 @@ internal sealed class PostmarkRateLimiter(Func<TimeSpan, CancellationToken, Task
             return false;
 
         foreach (var headerValue in values)
-        {
             if (int.TryParse(headerValue, out value) && value > 0)
                 return true;
-        }
 
         value = 0;
         return false;
@@ -96,10 +95,8 @@ internal sealed class PostmarkRateLimiter(Func<TimeSpan, CancellationToken, Task
             return false;
 
         foreach (var headerValue in values)
-        {
             if (int.TryParse(headerValue, out value) && value >= 0)
                 return true;
-        }
 
         value = 0;
         return false;
@@ -126,8 +123,8 @@ internal sealed class PostmarkRateLimiter(Func<TimeSpan, CancellationToken, Task
     {
         private readonly object _gate = new();
         private readonly Queue<long> _requestTimestamps = new();
-        private int? _limit;
         private long? _blockedUntilTimestamp;
+        private int? _limit;
 
         public RateLimitBucket(int? limit = null)
         {

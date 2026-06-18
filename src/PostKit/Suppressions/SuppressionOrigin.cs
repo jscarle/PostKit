@@ -10,5 +10,5 @@ public enum SuppressionOrigin
     Customer = 1,
 
     /// <summary>A Postmark administrator caused the suppression.</summary>
-    Admin = 2,
+    Admin = 2
 }

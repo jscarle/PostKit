@@ -5,6 +5,13 @@ namespace PostKit.Bounces;
 /// <summary>Represents a bounce summary entry returned by Postmark delivery stats.</summary>
 public sealed record BounceSummary
 {
+    internal BounceSummary(BounceType? type, string name, int count)
+    {
+        Type = type;
+        Name = name;
+        Count = count;
+    }
+
     /// <summary>Gets the bounce type for the entry when Postmark provides one.</summary>
     public BounceType? Type { [UsedImplicitly] get; }
 
@@ -13,11 +20,4 @@ public sealed record BounceSummary
 
     /// <summary>Gets the count associated with the entry.</summary>
     public int Count { [UsedImplicitly] get; }
-
-    internal BounceSummary(BounceType? type, string name, int count)
-    {
-        Type = type;
-        Name = name;
-        Count = count;
-    }
 }

@@ -7,6 +7,10 @@ namespace PostKit.Emails;
 /// <summary>Represents an email message that can be composed and sent through PostKit.</summary>
 public sealed class Email
 {
+    internal Email()
+    {
+    }
+
     /// <summary>Gets the sender of the email.</summary>
     public MailboxAddress? From { get; internal init; }
 
@@ -68,18 +72,14 @@ public sealed class Email
 
     internal int TemplateModelSizeInBytes { get; init; }
 
-    internal Email()
-    {
-    }
-
-    /// <summary>Creates a new <see cref="ComposedEmailBuilder"/> for composing an <see cref="Email"/>.</summary>
+    /// <summary>Creates a new <see cref="ComposedEmailBuilder" /> for composing an <see cref="Email" />.</summary>
     /// <returns>A builder that can be used to configure an email.</returns>
     public static ComposedEmailBuilder Compose()
     {
         return new ComposedEmailBuilder();
     }
 
-    /// <summary>Creates a new <see cref="TemplatedEmailBuilder"/> for composing an <see cref="Email"/> from a Postmark template.</summary>
+    /// <summary>Creates a new <see cref="TemplatedEmailBuilder" /> for composing an <see cref="Email" /> from a Postmark template.</summary>
     /// <param name="templateId">The Postmark template identifier.</param>
     /// <param name="inlineCss">Whether CSS should be inlined when rendering the template.</param>
     /// <returns>A builder that can be used to configure a templated email.</returns>
@@ -88,7 +88,7 @@ public sealed class Email
         return new TemplatedEmailBuilder(templateId, inlineCss);
     }
 
-    /// <summary>Creates a new <see cref="TemplatedEmailBuilder"/> for composing an <see cref="Email"/> from a Postmark template.</summary>
+    /// <summary>Creates a new <see cref="TemplatedEmailBuilder" /> for composing an <see cref="Email" /> from a Postmark template.</summary>
     /// <param name="templateAlias">The Postmark template alias.</param>
     /// <param name="inlineCss">Whether CSS should be inlined when rendering the template.</param>
     /// <returns>A builder that can be used to configure a templated email.</returns>

@@ -1,6 +1,5 @@
 using LightResults;
 using Microsoft.Extensions.Logging;
-using PostKit.Bounces;
 using PostKit.BulkEmails;
 using PostKit.Common;
 using PostKit.Emails;
@@ -40,7 +39,7 @@ public class PostKitClientCancellationTests
                 .To("recipient@postkit.com")
                 .Subject("Canceled")
                 .TextBody("Canceled")
-                .Build(),
+                .Build()
         };
 
         using var cts = new CancellationTokenSource();
@@ -60,8 +59,7 @@ public class PostKitClientCancellationTests
             .UseMessageStream(MessageStream.Broadcast)
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         using var cts = new CancellationTokenSource();
@@ -78,7 +76,7 @@ public class PostKitClientCancellationTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetBouncesAsync("outbound", count: 10, cancellationToken: cts.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetBouncesAsync("outbound", 10, cancellationToken: cts.Token));
     }
 
     [Fact]
@@ -89,7 +87,7 @@ public class PostKitClientCancellationTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetSuppressionsAsync("broadcast", cancellationToken: cts.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetSuppressionsAsync("broadcast", cts.Token));
     }
 
     [Fact]
@@ -151,17 +149,17 @@ public class PostKitClientCancellationTests
 
     private sealed class CancelingPostmarkClient : IPostmarkClient
     {
-        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             throw new OperationCanceledException(cancellationToken);
         }
 
-        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             throw new OperationCanceledException(cancellationToken);
         }
 
-        public Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PutAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             throw new OperationCanceledException(cancellationToken);
         }
@@ -171,12 +169,12 @@ public class PostKitClientCancellationTests
     {
         public List<string> CalledEndpoints { get; } = [];
 
-        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException("PostAsync should not be called in this test.");
         }
 
-        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             CalledEndpoints.Add(endpoint);
 
@@ -184,7 +182,7 @@ public class PostKitClientCancellationTests
             return Task.FromResult(Result.Success((TResponse)(object)bounce));
         }
 
-        public Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PutAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             CalledEndpoints.Add(endpoint);
 
@@ -212,7 +210,7 @@ public class PostKitClientCancellationTests
                 DumpAvailable = true,
                 Inactive = inactive,
                 CanActivate = true,
-                Subject = "PostKit Bounces API probe",
+                Subject = "PostKit Bounces API probe"
             };
         }
     }

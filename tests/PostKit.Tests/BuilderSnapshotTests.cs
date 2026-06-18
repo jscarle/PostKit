@@ -43,6 +43,47 @@ public class BuilderSnapshotTests
     }
 
     [Fact]
+    public void EmailBuild_WithExternalFromMailboxAddressMutatedBeforeBuild_UsesAssignmentSnapshot()
+    {
+        var sender = new MailboxAddress("Sender", "sender@postkit.com");
+
+        var builder = Email.Compose()
+            .From(sender)
+            .To("recipient@postkit.com")
+            .Subject("Snapshot")
+            .TextBody("Body");
+
+        sender.Name = "Changed Sender";
+        sender.Address = "changed-sender@postkit.com";
+
+        var email = builder.Build();
+
+        Assert.Equal("Sender", email.From!.Name);
+        Assert.Equal("sender@postkit.com", email.From.Address);
+    }
+
+    [Fact]
+    public void EmailBuild_WithExternalRecipientMailboxAddressMutatedBeforeBuild_UsesAssignmentSnapshot()
+    {
+        var recipient = new MailboxAddress("Recipient", "recipient@postkit.com");
+
+        var builder = Email.Compose()
+            .From("sender@postkit.com")
+            .To(recipient)
+            .Subject("Snapshot")
+            .TextBody("Body");
+
+        recipient.Name = "Changed Recipient";
+        recipient.Address = "changed-recipient@postkit.com";
+
+        var email = builder.Build();
+        var to = Assert.Single(email.To!);
+
+        Assert.Equal("Recipient", to.Name);
+        Assert.Equal("recipient@postkit.com", to.Address);
+    }
+
+    [Fact]
     public void EmailBuilder_AlsoTo_DoesNotMutateCallerOwnedRecipientList()
     {
         IList<MailboxAddress> recipients = new List<MailboxAddress> { new(string.Empty, "first@postkit.com") };
@@ -130,6 +171,70 @@ public class BuilderSnapshotTests
         recipients.Add(new MailboxAddress(string.Empty, "second@postkit.com"));
 
         Assert.Single(message.To!);
+    }
+
+    [Fact]
+    public void BulkEmailBuild_WithExternalFromMailboxAddressMutatedBeforeBuild_UsesAssignmentSnapshot()
+    {
+        var sender = new MailboxAddress("Sender", "sender@postkit.com");
+
+        var builder = BulkEmail.Compose()
+            .From(sender)
+            .Subject("Snapshot")
+            .TextBody("Body")
+            .AddMessage(BulkEmailMessage.Compose()
+                .To("recipient@postkit.com")
+                .Build());
+
+        sender.Name = "Changed Sender";
+        sender.Address = "changed-sender@postkit.com";
+
+        var email = builder.Build();
+
+        Assert.Equal("Sender", email.From!.Name);
+        Assert.Equal("sender@postkit.com", email.From.Address);
+    }
+
+    [Fact]
+    public void BulkEmailBuild_WithExternalReplyToMailboxAddressMutatedBeforeBuild_UsesAssignmentSnapshot()
+    {
+        var replyTo = new MailboxAddress("Reply", "reply@postkit.com");
+
+        var builder = BulkEmail.Compose()
+            .From("sender@postkit.com")
+            .ReplyTo(replyTo)
+            .Subject("Snapshot")
+            .TextBody("Body")
+            .AddMessage(BulkEmailMessage.Compose()
+                .To("recipient@postkit.com")
+                .Build());
+
+        replyTo.Name = "Changed Reply";
+        replyTo.Address = "changed-reply@postkit.com";
+
+        var email = builder.Build();
+        var builtReplyTo = Assert.Single(email.ReplyTo!);
+
+        Assert.Equal("Reply", builtReplyTo.Name);
+        Assert.Equal("reply@postkit.com", builtReplyTo.Address);
+    }
+
+    [Fact]
+    public void BulkEmailMessageBuild_WithExternalRecipientMailboxAddressMutatedBeforeBuild_UsesAssignmentSnapshot()
+    {
+        var recipient = new MailboxAddress("Recipient", "recipient@postkit.com");
+
+        var builder = BulkEmailMessage.Compose()
+            .To(recipient);
+
+        recipient.Name = "Changed Recipient";
+        recipient.Address = "changed-recipient@postkit.com";
+
+        var message = builder.Build();
+        var to = Assert.Single(message.To!);
+
+        Assert.Equal("Recipient", to.Name);
+        Assert.Equal("recipient@postkit.com", to.Address);
     }
 
     [Fact]

@@ -17,8 +17,7 @@ public class PostKitClientBatchSizeLimitTests
                 .To($"recipient{index}@postkit.com")
                 .Subject("Batch count check")
                 .TextBody("Count check")
-                .Build()
-            )
+                .Build())
             .ToList();
 
         var postmark = new RecordingPostmarkClient();
@@ -27,7 +26,7 @@ public class PostKitClientBatchSizeLimitTests
 
         var result = await client.SendEmailBatchAsync(emails, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("Postmark only accepts 500 emails per batch request. Received 501.", error.Message);
         Assert.Equal(0, postmark.CallCount);
     }
@@ -47,8 +46,7 @@ public class PostKitClientBatchSizeLimitTests
                 .Subject("Batch size check")
                 .TextBody(textBody)
                 .HtmlBody(htmlBody)
-                .Build()
-            )
+                .Build())
             .ToList();
 
         var postmark = new RecordingPostmarkClient();
@@ -57,7 +55,7 @@ public class PostKitClientBatchSizeLimitTests
 
         var result = await client.SendEmailBatchAsync(emails, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.StartsWith("Estimated batch payload size exceeds Postmark's 50 MB limit. Estimated size: ", error.Message, StringComparison.Ordinal);
         Assert.Contains("Limit: 52,428,800 bytes.", error.Message, StringComparison.Ordinal);
         Assert.Equal(0, postmark.CallCount);
@@ -75,8 +73,7 @@ public class PostKitClientBatchSizeLimitTests
                 .Subject("Batch size check")
                 .TextBody(textBody)
                 .AddHeader("X-Large-Header", largeHeaderValue)
-                .Build()
-            )
+                .Build())
             .ToList();
 
         var postmark = new RecordingPostmarkClient();
@@ -100,8 +97,7 @@ public class PostKitClientBatchSizeLimitTests
                 .From("sender@postkit.com")
                 .To($"recipient{index}@postkit.com")
                 .WithModel(new { Data = new string('x', 5 * 1024 * 1024) })
-                .Build()
-            )
+                .Build())
             .ToList();
 
         var postmark = new RecordingPostmarkClient();
@@ -121,7 +117,7 @@ public class PostKitClientBatchSizeLimitTests
     {
         public int CallCount { get; private set; }
 
-        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             CallCount++;
 
@@ -131,7 +127,7 @@ public class PostKitClientBatchSizeLimitTests
             throw new InvalidOperationException("Postmark should not be called for oversized batches.");
         }
 
-        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             CallCount++;
             throw new InvalidOperationException("Postmark should not be called for oversized batches.");

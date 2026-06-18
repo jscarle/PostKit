@@ -23,6 +23,11 @@
 ## Codex Session Guidance
 
 - Implement one Postmark endpoint at a time when the user asks for a specific endpoint. Match the existing SDK style, naming, overloads, builders, validation, and tests.
+- Current broad endpoint implementation order: MailboxAddress snapshot TODO, Templates API, Webhooks API, remaining Messages API, Triggers: Inbound rules, Stats API, Data Removal API.
+- Live Postmark development/testing for this work is limited to the named `PostKit Testing` and `PostKit Alternate Testing` servers. Do not write their server API tokens into repository files, logs, docs, commits, PR bodies, or summaries.
+- Never perform live Postmark reads or writes against servers named `Development`, `Infrastructure`, `Production`, `Test`, or any similarly production-sensitive server unless the user explicitly changes this constraint in a later message.
+- Account-token live testing must be read-only unless the operation is pushing templates only between the named `PostKit Testing` and `PostKit Alternate Testing` servers.
+- Current broad endpoint implementation order after the first API expansion: Server API, Servers API, Message Streams API, Domains API, Sender signatures API.
 - For query objects, keep likely filters first where requested: `FromDate` before `ToDate` in bounce and outbound message queries.
 - Prefer `DateTimeOffset` for Postmark date/time query values and convert through the existing timezone helper/extension patterns.
 - For rate-limit behavior, use a progressive delay after successive calls within the last-second window when endpoints expose rate-limit headers, and use exponential retry for `429` responses. Keep retries bounded and observable.

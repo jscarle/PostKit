@@ -7,6 +7,17 @@ namespace PostKit.BulkEmails;
 /// <summary>Represents the status returned for a Postmark bulk email request.</summary>
 public sealed record BulkEmailJob
 {
+    internal BulkEmailJob(Guid id, BulkEmailStatus status, DateTimeOffset submittedAt, int totalMessages, double percentageCompleted, string subject, ReadOnlyDictionary<string, JsonElement>? additionalProperties = null)
+    {
+        Id = id;
+        Status = status;
+        SubmittedAt = submittedAt;
+        TotalMessages = totalMessages;
+        PercentageCompleted = percentageCompleted;
+        Subject = subject;
+        AdditionalProperties = additionalProperties;
+    }
+
     /// <summary>Gets the identifier assigned to the bulk email request.</summary>
     public Guid Id { [UsedImplicitly] get; }
 
@@ -27,15 +38,4 @@ public sealed record BulkEmailJob
 
     /// <summary>Gets any additional server-provided fields returned for the bulk request.</summary>
     public IReadOnlyDictionary<string, JsonElement>? AdditionalProperties { [UsedImplicitly] get; }
-
-    internal BulkEmailJob(Guid id, BulkEmailStatus status, DateTimeOffset submittedAt, int totalMessages, double percentageCompleted, string subject, ReadOnlyDictionary<string, JsonElement>? additionalProperties = null)
-    {
-        Id = id;
-        Status = status;
-        SubmittedAt = submittedAt;
-        TotalMessages = totalMessages;
-        PercentageCompleted = percentageCompleted;
-        Subject = subject;
-        AdditionalProperties = additionalProperties;
-    }
 }

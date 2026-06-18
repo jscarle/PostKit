@@ -7,6 +7,32 @@ namespace PostKit.Messages;
 /// <summary>Represents an outbound message summary returned from Postmark message endpoints.</summary>
 public record OutboundMessage
 {
+    internal OutboundMessage(string tag, Guid messageId, string messageStream, IReadOnlyCollection<OutboundMessageRecipient> to, IReadOnlyCollection<OutboundMessageRecipient> cc, IReadOnlyCollection<OutboundMessageRecipient> bcc,
+        IReadOnlyCollection<string> recipients, DateTimeOffset receivedAt, string from, string subject, IReadOnlyCollection<OutboundMessageAttachment> attachments, OutboundMessageStatus status, bool trackOpens, LinkTracking trackLinks,
+        IReadOnlyDictionary<string, string> metadata, bool sandboxed)
+    {
+        Tag = tag;
+        MessageId = messageId;
+        MessageStream = messageStream;
+        To = SnapshotCollection(to);
+        Cc = SnapshotCollection(cc);
+        Bcc = SnapshotCollection(bcc);
+        Recipients = SnapshotCollection(recipients);
+        ReceivedAt = receivedAt;
+        From = from;
+        Subject = subject;
+        Attachments = SnapshotCollection(attachments);
+        Status = status;
+        TrackOpens = trackOpens;
+        TrackLinks = trackLinks;
+        Metadata = metadata switch
+        {
+            ReadOnlyDictionary<string, string> dictionary => dictionary,
+            _ => new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(metadata, StringComparer.OrdinalIgnoreCase))
+        };
+        Sandboxed = sandboxed;
+    }
+
     /// <summary>Gets the message tag.</summary>
     public string Tag { [UsedImplicitly] get; }
 
@@ -55,53 +81,12 @@ public record OutboundMessage
     /// <summary>Gets a value indicating whether the message was sandboxed.</summary>
     public bool Sandboxed { [UsedImplicitly] get; }
 
-    internal OutboundMessage(
-        string tag,
-        Guid messageId,
-        string messageStream,
-        IReadOnlyCollection<OutboundMessageRecipient> to,
-        IReadOnlyCollection<OutboundMessageRecipient> cc,
-        IReadOnlyCollection<OutboundMessageRecipient> bcc,
-        IReadOnlyCollection<string> recipients,
-        DateTimeOffset receivedAt,
-        string from,
-        string subject,
-        IReadOnlyCollection<OutboundMessageAttachment> attachments,
-        OutboundMessageStatus status,
-        bool trackOpens,
-        LinkTracking trackLinks,
-        IReadOnlyDictionary<string, string> metadata,
-        bool sandboxed
-    )
-    {
-        Tag = tag;
-        MessageId = messageId;
-        MessageStream = messageStream;
-        To = SnapshotCollection(to);
-        Cc = SnapshotCollection(cc);
-        Bcc = SnapshotCollection(bcc);
-        Recipients = SnapshotCollection(recipients);
-        ReceivedAt = receivedAt;
-        From = from;
-        Subject = subject;
-        Attachments = SnapshotCollection(attachments);
-        Status = status;
-        TrackOpens = trackOpens;
-        TrackLinks = trackLinks;
-        Metadata = metadata switch
-        {
-            ReadOnlyDictionary<string, string> dictionary => dictionary,
-            _ => new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(metadata, StringComparer.OrdinalIgnoreCase)),
-        };
-        Sandboxed = sandboxed;
-    }
-
     private protected static ReadOnlyCollection<T> SnapshotCollection<T>(IReadOnlyCollection<T> values)
     {
         return values switch
         {
             ReadOnlyCollection<T> collection => collection,
-            _ => new ReadOnlyCollection<T>(values.ToList()),
+            _ => new ReadOnlyCollection<T>(values.ToList())
         };
     }
 }

@@ -46,8 +46,7 @@ public class BounceIntegrationTests
         var bounce = Assert.Single(searchResponse.Bounces);
 
         var detail = await WaitForBounceDetailsAsync(bounce.Id, response => response.MessageId == sent.MessageId && response.Content.Contains($"X-PM-Message-Id: {sent.MessageId:D}", StringComparison.Ordinal),
-            TestContext.Current.CancellationToken
-        );
+            TestContext.Current.CancellationToken);
 
         Assert.Equal(bounce.Id, detail.Id);
         Assert.Equal(sent.MessageId, detail.MessageId);
@@ -126,8 +125,7 @@ public class BounceIntegrationTests
 
         for (var attempt = 0; attempt < 24; attempt++)
         {
-            var result = await _client.GetBouncesAsync("outbound", count: 10, query: new BounceQuery { MessageId = messageId, Inactive = inactive }, cancellationToken: cancellationToken
-            );
+            var result = await _client.GetBouncesAsync("outbound", 10, query: new BounceQuery { MessageId = messageId, Inactive = inactive }, cancellationToken: cancellationToken);
 
             lastResponse = RequireBounceApi(result);
             if (lastResponse.TotalCount > 0)
@@ -176,13 +174,12 @@ public class BounceIntegrationTests
             return existing;
 
         var sendResult = await _client.SendEmailAsync(Email.Compose()
-                .From(RequireDevelopmentValue(TestConfiguration.DevelopmentFromEmail, nameof(TestConfiguration.DevelopmentFromEmail)))
-                .To(HardBounceRecipient)
-                .Subject($"PostKit hard bounce activation {Guid.NewGuid():N}")
-                .TextBody("Generate a hard bounce that can be reactivated.")
-                .UseMessageStream(MessageStream.Transactional)
-                .Build(), cancellationToken
-        );
+            .From(RequireDevelopmentValue(TestConfiguration.DevelopmentFromEmail, nameof(TestConfiguration.DevelopmentFromEmail)))
+            .To(HardBounceRecipient)
+            .Subject($"PostKit hard bounce activation {Guid.NewGuid():N}")
+            .TextBody("Generate a hard bounce that can be reactivated.")
+            .UseMessageStream(MessageStream.Transactional)
+            .Build(), cancellationToken);
 
         if (sendResult.IsSuccess(out var sent))
         {
@@ -190,7 +187,7 @@ public class BounceIntegrationTests
             return Assert.Single(searchResponse.Bounces);
         }
 
-        Assert.True(sendResult.IsFailure(out var sendError, out var _), sendResult.ToString());
+        Assert.True(sendResult.IsFailure(out var sendError, out _), sendResult.ToString());
 
         if (sendError.Message.Contains("inactive", StringComparison.OrdinalIgnoreCase))
         {
@@ -205,13 +202,12 @@ public class BounceIntegrationTests
 
     private async Task<Bounce?> FindHardBounceAsync(bool inactive, CancellationToken cancellationToken)
     {
-        var result = await _client.GetBouncesAsync("outbound", count: 1, query: new BounceQuery
-            {
-                Type = BounceType.HardBounce,
-                Inactive = inactive,
-                EmailFilter = new MailboxAddress(string.Empty, HardBounceRecipient),
-            }, cancellationToken: cancellationToken
-        );
+        var result = await _client.GetBouncesAsync("outbound", 1, query: new BounceQuery
+        {
+            Type = BounceType.HardBounce,
+            Inactive = inactive,
+            EmailFilter = new MailboxAddress(string.Empty, HardBounceRecipient)
+        }, cancellationToken: cancellationToken);
 
         var response = RequireBounceApi(result);
         return response.Bounces.FirstOrDefault();
@@ -237,7 +233,7 @@ public class BounceIntegrationTests
         if (result.IsSuccess(out var response))
             return response;
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
 
         if (ShouldSkip(error))
             Assert.Skip($"Bounces API is not available in this environment: {error.Message}");
@@ -266,8 +262,8 @@ public class BounceIntegrationTests
         if (error is HttpError { StatusCode: HttpStatusCode.NotFound })
             return true;
 
-        return error.Message.Contains("requires activation", StringComparison.OrdinalIgnoreCase)
-               || (error.Message.Contains("bounces api", StringComparison.OrdinalIgnoreCase) && error.Message.Contains("activation", StringComparison.OrdinalIgnoreCase));
+        return error.Message.Contains("requires activation", StringComparison.OrdinalIgnoreCase) ||
+               (error.Message.Contains("bounces api", StringComparison.OrdinalIgnoreCase) && error.Message.Contains("activation", StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool ShouldRetryBounceLookup(IError error)
@@ -288,7 +284,7 @@ public class BounceIntegrationTests
             }
             else
             {
-                Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+                Assert.True(result.IsFailure(out var error, out _), result.ToString());
 
                 if (ShouldSkip(error))
                     Assert.Skip($"Bounces API is not available in this environment: {error.Message}");

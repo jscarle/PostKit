@@ -10,5 +10,5 @@ public enum MessageStream
     Transactional = 0,
 
     /// <summary>Represents the broadcast message stream.</summary>
-    Broadcast = 1,
+    Broadcast = 1
 }

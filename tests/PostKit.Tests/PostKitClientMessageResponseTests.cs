@@ -128,7 +128,8 @@ public class PostKitClientMessageResponseTests
     [Fact]
     public async Task SearchOutboundMessagesAsync_UsesOutboundMessageSearchEndpointAndMapsResponse()
     {
-        const string endpoint = "/messages/outbound?count=50&offset=0&recipient=john.doe%40yahoo.com&fromemail=joe%40domain.com&tag=welcome&status=sent&todate=2015-01-12&fromdate=2015-01-01&subject=staging%20%2B%20prod&messagestream=outbound&metadata_color=blue";
+        const string endpoint =
+            "/messages/outbound?count=50&offset=0&recipient=john.doe%40yahoo.com&fromemail=joe%40domain.com&tag=welcome&status=sent&todate=2015-01-12&fromdate=2015-01-01&subject=staging%20%2B%20prod&messagestream=outbound&metadata_color=blue";
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = SuccessfulResponseJson });
         var client = new PostKitClient(postmark, new TestLogger());
         var query = new OutboundMessageQuery
@@ -140,10 +141,10 @@ public class PostKitClientMessageResponseTests
             ToDate = new DateTimeOffset(2015, 1, 12, 0, 0, 0, TimeSpan.FromHours(-5)),
             FromDate = new DateTimeOffset(2015, 1, 1, 0, 0, 0, TimeSpan.FromHours(-5)),
             Subject = "staging + prod",
-            Metadata = new OutboundMessageMetadataFilter { Name = "color", Value = "blue" },
+            Metadata = new OutboundMessageMetadataFilter { Name = "color", Value = "blue" }
         };
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 50, query: query, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 50, query: query, cancellationToken: CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(endpoint, postmark.LastEndpoint);
@@ -238,7 +239,7 @@ public class PostKitClientMessageResponseTests
 
         var result = await client.GetOutboundMessageDetailsAsync(Guid.Empty, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The outbound message ID must not be empty.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -254,7 +255,7 @@ public class PostKitClientMessageResponseTests
 
         var result = await client.GetOutboundMessageDetailsAsync(messageId, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("MessageEvents item 0 could not be mapped: Type value 'FutureEvent' returned from the Postmark Messages API is not supported.", error.Message);
     }
 
@@ -330,7 +331,7 @@ public class PostKitClientMessageResponseTests
 
         var result = await client.GetOutboundMessageDumpAsync(Guid.Empty, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The outbound message ID must not be empty.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -369,7 +370,7 @@ public class PostKitClientMessageResponseTests
 
         var result = await client.GetOutboundMessageDumpAsync(messageId, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("Body was not returned from the Postmark Messages API.", error.Message);
     }
 
@@ -388,7 +389,7 @@ public class PostKitClientMessageResponseTests
         var client = new PostKitClient(postmark, new TestLogger());
         var query = new OutboundMessageQuery { FromDate = new DateTimeOffset(2026, 1, 15, 18, 0, 0, TimeSpan.Zero), ToDate = new DateTimeOffset(2026, 1, 15, 18, 59, 59, TimeSpan.Zero) };
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 10, query: query, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 10, query: query, cancellationToken: CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(endpoint, postmark.LastEndpoint);
@@ -409,7 +410,7 @@ public class PostKitClientMessageResponseTests
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 10, query: new OutboundMessageQuery { Status = OutboundMessageStatus.Processed }, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 10, query: new OutboundMessageQuery { Status = OutboundMessageStatus.Processed }, cancellationToken: CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(endpoint, postmark.LastEndpoint);
@@ -468,7 +469,7 @@ public class PostKitClientMessageResponseTests
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/messages/outbound?count=10&offset=0&messagestream=outbound"] = responseJson });
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 10, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 10, cancellationToken: CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         var message = Assert.Single(response.Messages);
@@ -490,9 +491,9 @@ public class PostKitClientMessageResponseTests
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/messages/outbound?count=10&offset=0&messagestream=outbound"] = responseJson });
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 10, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 10, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("Outbound message item 0 could not be mapped: Status value 'Deferred' returned from the Postmark Messages API is not supported.", error.Message);
     }
 
@@ -503,9 +504,9 @@ public class PostKitClientMessageResponseTests
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/messages/outbound?count=10&offset=0&messagestream=outbound"] = responseJson });
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 10, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 10, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("Outbound message item 0 could not be mapped: TrackLinks value 'FutureMode' returned from the Postmark Messages API is not supported.", error.Message);
     }
 
@@ -522,9 +523,9 @@ public class PostKitClientMessageResponseTests
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { ["/messages/outbound?count=10&offset=0&messagestream=outbound"] = responseJson });
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 10, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 10, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("TotalCount returned from the Postmark Messages API was invalid. Received -1.", error.Message);
     }
 
@@ -534,9 +535,9 @@ public class PostKitClientMessageResponseTests
         var postmark = new RecordingPostmarkClient();
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 0, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 0, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The outbound message query count must be between 1 and 500. Received 0.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -547,9 +548,9 @@ public class PostKitClientMessageResponseTests
         var postmark = new RecordingPostmarkClient();
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 500, offset: 9800, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 500, 9800, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The outbound message query count and offset cannot exceed 10000 when combined. Count: 500; offset: 9800; combined: 10300.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -560,9 +561,9 @@ public class PostKitClientMessageResponseTests
         var postmark = new RecordingPostmarkClient();
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 10, query: new OutboundMessageQuery { Subject = "\t " }, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 10, query: new OutboundMessageQuery { Subject = "\t " }, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The outbound message query subject filter cannot be empty or whitespace. Set Subject to null to omit this filter. Actual length: 2.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -573,9 +574,10 @@ public class PostKitClientMessageResponseTests
         var postmark = new RecordingPostmarkClient();
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 10, query: new OutboundMessageQuery { FromDate = new DateTimeOffset(2026, 3, 12, 0, 0, 0, TimeSpan.Zero), ToDate = new DateTimeOffset(2026, 3, 11, 0, 0, 0, TimeSpan.Zero) }, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 10,
+            query: new OutboundMessageQuery { FromDate = new DateTimeOffset(2026, 3, 12, 0, 0, 0, TimeSpan.Zero), ToDate = new DateTimeOffset(2026, 3, 11, 0, 0, 0, TimeSpan.Zero) }, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The outbound message query from-date must not be later than the to-date. FromDate: 2026-03-12T00:00:00.0000000+00:00; ToDate: 2026-03-11T00:00:00.0000000+00:00.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -586,10 +588,12 @@ public class PostKitClientMessageResponseTests
         var postmark = new RecordingPostmarkClient();
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.SearchOutboundMessagesAsync("_invalid", count: 10, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("_invalid", 10, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
-        Assert.Equal("The outbound message query message stream must be 1-30 characters, start with a lowercase letter, contain only lowercase letters, numbers, '-', or '_', cannot contain consecutive hyphens, and cannot be 'all' or start with 'pm-'. First character must be a lowercase letter. Received '_' at index 0.", error.Message);
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        Assert.Equal(
+            "The outbound message query message stream must be 1-30 characters, start with a lowercase letter, contain only lowercase letters, numbers, '-', or '_', cannot contain consecutive hyphens, and cannot be 'all' or start with 'pm-'. First character must be a lowercase letter. Received '_' at index 0.",
+            error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
 
@@ -599,9 +603,9 @@ public class PostKitClientMessageResponseTests
         var postmark = new RecordingPostmarkClient();
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 10, query: new OutboundMessageQuery { Status = (OutboundMessageStatus)999 }, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 10, query: new OutboundMessageQuery { Status = (OutboundMessageStatus)999 }, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The outbound message query status filter must be OutboundMessageStatus.Queued, OutboundMessageStatus.Sent, or OutboundMessageStatus.Processed. Received 999.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -613,10 +617,11 @@ public class PostKitClientMessageResponseTests
         var client = new PostKitClient(postmark, new TestLogger());
         var query = new OutboundMessageQuery { Metadata = new OutboundMessageMetadataFilter { Name = " color", Value = "blue" } };
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 10, query: query, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 10, query: query, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
-        Assert.Equal("The outbound message query metadata filter name is invalid. The metadata name is required, must not exceed 20 characters, and cannot start or end with whitespace. Invalid leading whitespace space at index 0.", error.Message);
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        Assert.Equal("The outbound message query metadata filter name is invalid. The metadata name is required, must not exceed 20 characters, and cannot start or end with whitespace. Invalid leading whitespace space at index 0.",
+            error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
 
@@ -627,25 +632,24 @@ public class PostKitClientMessageResponseTests
         var client = new PostKitClient(postmark, new TestLogger());
         var query = new OutboundMessageQuery { Metadata = new OutboundMessageMetadataFilter { Name = "color", Value = "\t " } };
 
-        var result = await client.SearchOutboundMessagesAsync("outbound", count: 10, query: query, cancellationToken: CancellationToken.None);
+        var result = await client.SearchOutboundMessagesAsync("outbound", 10, query: query, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The outbound message query metadata filter value cannot be empty or whitespace. Set Metadata to null to omit this filter. Actual length: 2.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
 
     private sealed class RecordingPostmarkClient(Dictionary<string, string>? getResponses = null) : IPostmarkClient
     {
+        private readonly Dictionary<string, string> _getResponses = getResponses ?? [];
         public string? LastEndpoint { get; private set; }
 
-        private readonly Dictionary<string, string> _getResponses = getResponses ?? [];
-
-        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException("PostAsync should not be called in this test.");
         }
 
-        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             LastEndpoint = endpoint;
             return Task.FromResult(Result.Success(Deserialize<TResponse>(_getResponses, endpoint)));

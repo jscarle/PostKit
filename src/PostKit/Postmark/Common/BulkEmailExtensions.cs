@@ -14,15 +14,12 @@ internal static class BulkEmailExtensions
             throw new UnreachableException($"{nameof(bulkEmail.From)} is unexpectedly null.");
 
         var replyTo = bulkEmail.ReplyTo is not null ? string.Join(",", bulkEmail.ReplyTo.Select(static x => x.ToString(true))) : null;
-        IReadOnlyList<EmailRequestAttachment>? attachments = bulkEmail.Attachments
-            ?.Select(static attachment => new EmailRequestAttachment
-                {
-                    Name = attachment.Name, ContentType = attachment.ContentType, Content = attachment.Content, ContentId = attachment.ContentId,
-                }
-            )
+        IReadOnlyList<EmailRequestAttachment>? attachments = bulkEmail.Attachments?.Select(static attachment => new EmailRequestAttachment
+            {
+                Name = attachment.Name, ContentType = attachment.ContentType, Content = attachment.Content, ContentId = attachment.ContentId
+            })
             .ToList();
-        IReadOnlyList<EmailRequestHeader>? headers = bulkEmail.Headers
-            ?.Select(static x => new EmailRequestHeader { Name = x.Key, Value = x.Value })
+        IReadOnlyList<EmailRequestHeader>? headers = bulkEmail.Headers?.Select(static x => new EmailRequestHeader { Name = x.Key, Value = x.Value })
             .ToList();
         IReadOnlyDictionary<string, string>? metadata = bulkEmail.Metadata?.ToDictionary();
 
@@ -33,7 +30,7 @@ internal static class BulkEmailExtensions
                 LinkTracking.HtmlAndText => "HtmlAndText",
                 LinkTracking.HtmlOnly => "HtmlOnly",
                 LinkTracking.TextOnly => "TextOnly",
-                _ => throw new UnreachableException($"Enum value of '{nameof(LinkTracking)}.{bulkEmail.LinkTracking}' has not been handled."),
+                _ => throw new UnreachableException($"Enum value of '{nameof(LinkTracking)}.{bulkEmail.LinkTracking}' has not been handled.")
             }
             : null;
 
@@ -54,9 +51,8 @@ internal static class BulkEmailExtensions
             TrackLinks = trackLinks,
             Attachments = attachments,
             Headers = headers,
-            Messages = bulkEmail.Messages
-                .Select(ToBulkEmailMessageRequest)
-                .ToList(),
+            Messages = bulkEmail.Messages.Select(ToBulkEmailMessageRequest)
+                .ToList()
         };
     }
 
@@ -65,8 +61,7 @@ internal static class BulkEmailExtensions
         var to = message.To is not null ? string.Join(",", message.To.Select(static x => x.ToString(true))) : null;
         var cc = message.Cc is not null ? string.Join(",", message.Cc.Select(static x => x.ToString(true))) : null;
         var bcc = message.Bcc is not null ? string.Join(",", message.Bcc.Select(static x => x.ToString(true))) : null;
-        IReadOnlyList<EmailRequestHeader>? headers = message.Headers
-            ?.Select(static x => new EmailRequestHeader { Name = x.Key, Value = x.Value })
+        IReadOnlyList<EmailRequestHeader>? headers = message.Headers?.Select(static x => new EmailRequestHeader { Name = x.Key, Value = x.Value })
             .ToList();
         IReadOnlyDictionary<string, string>? metadata = message.Metadata?.ToDictionary();
 
@@ -77,7 +72,7 @@ internal static class BulkEmailExtensions
             Bcc = bcc,
             TemplateModel = message.TemplateModelNode,
             Metadata = metadata,
-            Headers = headers,
+            Headers = headers
         };
     }
 }

@@ -205,11 +205,10 @@ public class TemplateIntegrationTests
         Assert.True(batchResponse.IsSuccessful);
         Assert.Equal(2, batchResponse.Results.Count);
         Assert.All(batchResponse.Results, r =>
-            {
-                Assert.True(r.IsSuccess(out var response), r.ToString());
-                Assert.NotEqual(Guid.Empty, response.MessageId);
-            }
-        );
+        {
+            Assert.True(r.IsSuccess(out var response), r.ToString());
+            Assert.NotEqual(Guid.Empty, response.MessageId);
+        });
     }
 
     [Fact(Skip = "Cannot be tested with test API token.")]
@@ -221,9 +220,9 @@ public class TemplateIntegrationTests
             user = new { first_name = "John", last_name = "Doe", email = "john.doe@postkit.com" },
             order = new
             {
-                id = "ORDER-123", date = "2024-01-15", total = 99.99, items = new[] { new { name = "Product 1", quantity = 2, price = 29.99 }, new { name = "Product 2", quantity = 1, price = 40.01 } },
+                id = "ORDER-123", date = "2024-01-15", total = 99.99, items = new[] { new { name = "Product 1", quantity = 2, price = 29.99 }, new { name = "Product 2", quantity = 1, price = 40.01 } }
             },
-            settings = new { currency = "USD", tax_rate = 0.08 },
+            settings = new { currency = "USD", tax_rate = 0.08 }
         };
 
         var email = Email.FromTemplate(41813873)

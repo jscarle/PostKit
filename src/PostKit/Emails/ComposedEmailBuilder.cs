@@ -3,7 +3,7 @@ using PostKit.Common;
 
 namespace PostKit.Emails;
 
-/// <summary>Provides a fluent interface for composing an <see cref="Email"/> without a Postmark template.</summary>
+/// <summary>Provides a fluent interface for composing an <see cref="Email" /> without a Postmark template.</summary>
 public sealed class ComposedEmailBuilder
 {
     private readonly DraftEmail _draft = new();
@@ -423,7 +423,7 @@ public sealed class ComposedEmailBuilder
         return this;
     }
 
-    /// <summary>Creates the configured <see cref="Email"/>.</summary>
+    /// <summary>Creates the configured <see cref="Email" />.</summary>
     /// <returns>The configured email.</returns>
     public Email Build()
     {

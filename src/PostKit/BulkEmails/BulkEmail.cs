@@ -6,6 +6,10 @@ namespace PostKit.BulkEmails;
 /// <summary>Represents a Postmark bulk email request.</summary>
 public sealed class BulkEmail
 {
+    internal BulkEmail()
+    {
+    }
+
     /// <summary>Gets the sender of the bulk email request.</summary>
     public MailboxAddress From { get; internal init; } = null!;
 
@@ -54,17 +58,13 @@ public sealed class BulkEmail
     /// <summary>Gets the recipient-specific messages included in the bulk request.</summary>
     public IReadOnlyList<BulkEmailMessage> Messages { get; internal init; } = [];
 
-    internal BulkEmail()
-    {
-    }
-
-    /// <summary>Creates a new <see cref="ComposedBulkEmailBuilder"/> for composing a <see cref="BulkEmail"/>.</summary>
+    /// <summary>Creates a new <see cref="ComposedBulkEmailBuilder" /> for composing a <see cref="BulkEmail" />.</summary>
     public static ComposedBulkEmailBuilder Compose()
     {
         return new ComposedBulkEmailBuilder();
     }
 
-    /// <summary>Creates a new <see cref="TemplatedBulkEmailBuilder"/> for composing a <see cref="BulkEmail"/> from a Postmark template.</summary>
+    /// <summary>Creates a new <see cref="TemplatedBulkEmailBuilder" /> for composing a <see cref="BulkEmail" /> from a Postmark template.</summary>
     /// <param name="templateId">The Postmark template identifier.</param>
     /// <param name="inlineCss">Whether CSS should be inlined when rendering the template.</param>
     public static TemplatedBulkEmailBuilder FromTemplate(int templateId, bool? inlineCss = null)
@@ -72,7 +72,7 @@ public sealed class BulkEmail
         return new TemplatedBulkEmailBuilder(templateId, inlineCss);
     }
 
-    /// <summary>Creates a new <see cref="TemplatedBulkEmailBuilder"/> for composing a <see cref="BulkEmail"/> from a Postmark template.</summary>
+    /// <summary>Creates a new <see cref="TemplatedBulkEmailBuilder" /> for composing a <see cref="BulkEmail" /> from a Postmark template.</summary>
     /// <param name="templateAlias">The Postmark template alias.</param>
     /// <param name="inlineCss">Whether CSS should be inlined when rendering the template.</param>
     public static TemplatedBulkEmailBuilder FromTemplate(string templateAlias, bool? inlineCss = null)

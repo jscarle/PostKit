@@ -29,12 +29,10 @@ public class PostKitClientBulkResponseTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
+                .Build())
             .AddMessage(BulkEmailMessage.Compose()
                 .Cc("cc@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         var postmark = new RecordingPostmarkClient(responseJson);
@@ -73,8 +71,7 @@ public class PostKitClientBulkResponseTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         var postmark = new RecordingPostmarkClient(responseJson);
@@ -107,8 +104,7 @@ public class PostKitClientBulkResponseTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         var postmark = new RecordingPostmarkClient(responseJson);
@@ -141,8 +137,7 @@ public class PostKitClientBulkResponseTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         var postmark = new RecordingPostmarkClient(responseJson);
@@ -175,8 +170,7 @@ public class PostKitClientBulkResponseTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         var postmark = new RecordingPostmarkClient(responseJson);
@@ -185,7 +179,7 @@ public class PostKitClientBulkResponseTests
 
         var result = await client.SendBulkEmailAsync(bulkEmail, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("Status value 'QueuedForReview' returned from the Postmark Bulk API is not supported.", error.Message);
     }
 
@@ -239,8 +233,7 @@ public class PostKitClientBulkResponseTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         var postmark = new RecordingPostmarkClient(responseJson);
@@ -253,8 +246,7 @@ public class PostKitClientBulkResponseTests
         var additionalProperties = Assert.IsAssignableFrom<IReadOnlyDictionary<string, JsonElement>>(response.AdditionalProperties);
         Assert.True(additionalProperties.TryGetValue("ServerInfo", out var serverInfo));
         Assert.Equal(2, serverInfo.GetProperty("RequestVersion")
-            .GetInt32()
-        );
+            .GetInt32());
     }
 
     [Fact]
@@ -285,8 +277,7 @@ public class PostKitClientBulkResponseTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         var postmark = new RecordingPostmarkClient(responseJson);
@@ -295,20 +286,16 @@ public class PostKitClientBulkResponseTests
 
         var result = await client.SendBulkEmailAsync(bulkEmail, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         var validationError = Assert.IsType<BulkEmailValidationError>(error);
         Assert.Equal(Guid.Parse("c42d4a19-b645-4cdd-9859-08d8f24b649a"), validationError.AcceptedJob.Id);
         Assert.Equal(BulkEmailStatus.Accepted, validationError.AcceptedJob.Status);
-        Assert.Equal("bad@postkit.com", validationError.UnprocessableContent
-            .GetProperty("Messages")[0]
+        Assert.Equal("bad@postkit.com", validationError.UnprocessableContent.GetProperty("Messages")[0]
             .GetProperty("To")
-            .GetString()
-        );
-        Assert.Equal("Invalid recipient", validationError.UnprocessableContent
-            .GetProperty("Messages")[0]
+            .GetString());
+        Assert.Equal("Invalid recipient", validationError.UnprocessableContent.GetProperty("Messages")[0]
             .GetProperty("Error")
-            .GetString()
-        );
+            .GetString());
     }
 
     private sealed class RecordingPostmarkClient(string responseJson) : IPostmarkClient
@@ -317,14 +304,14 @@ public class PostKitClientBulkResponseTests
 
         public string? LastRequestJson { get; private set; }
 
-        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             LastEndpoint = endpoint;
             LastRequestJson = JsonSerializer.Serialize(body);
             return Task.FromResult(Result.Success(Deserialize<TResponse>()));
         }
 
-        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             LastEndpoint = endpoint;
             return Task.FromResult(Result.Success(Deserialize<TResponse>()));

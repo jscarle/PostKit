@@ -44,11 +44,10 @@ public class PostKitClientBounceResponseTests
                                     """;
 
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string>
-            {
-                ["/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&todate=2026-03-11T13%3A59%3A59&fromdate=2026-03-11T13%3A00%3A00&messagestream=outbound"] =
-                    responseJson,
-            }
-        );
+        {
+            ["/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&todate=2026-03-11T13%3A59%3A59&fromdate=2026-03-11T13%3A00%3A00&messagestream=outbound"] =
+                responseJson
+        });
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
         var query = new BounceQuery
@@ -59,16 +58,15 @@ public class PostKitClientBounceResponseTests
             MessageId = Guid.Parse("69ce4784-c202-41c6-a1a9-91757022b25e"),
             Tag = "ops+alerts",
             ToDate = new DateTimeOffset(2026, 3, 11, 13, 59, 59, TimeSpan.FromHours(-4)),
-            FromDate = new DateTimeOffset(2026, 3, 11, 13, 0, 0, TimeSpan.FromHours(-4)),
+            FromDate = new DateTimeOffset(2026, 3, 11, 13, 0, 0, TimeSpan.FromHours(-4))
         };
 
-        var result = await client.GetBouncesAsync("outbound", count: 25, offset: 10, query: query, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 25, 10, query, CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(
             "/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&todate=2026-03-11T13%3A59%3A59&fromdate=2026-03-11T13%3A00%3A00&messagestream=outbound",
-            postmark.LastEndpoint
-        );
+            postmark.LastEndpoint);
 
         Assert.Equal(1, response.TotalCount);
         var bounce = Assert.Single(response.Bounces);
@@ -100,7 +98,7 @@ public class PostKitClientBounceResponseTests
         var client = new PostKitClient(postmark, logger);
         var query = new BounceQuery { FromDate = new DateTimeOffset(2026, 1, 15, 18, 0, 0, TimeSpan.Zero), ToDate = new DateTimeOffset(2026, 1, 15, 18, 59, 59, TimeSpan.Zero) };
 
-        var result = await client.GetBouncesAsync("outbound", count: 10, query: query, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 10, query: query, cancellationToken: CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(endpoint, postmark.LastEndpoint);
@@ -145,7 +143,7 @@ public class PostKitClientBounceResponseTests
         var client = new PostKitClient(postmark, logger);
         var query = new BounceQuery { FromDate = new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero), ToDate = new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero) };
 
-        var result = await client.GetBouncesAsync("outbound", count: 10, query: query, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 10, query: query, cancellationToken: CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(endpoint, postmark.LastEndpoint);
@@ -160,9 +158,9 @@ public class PostKitClientBounceResponseTests
         var client = new PostKitClient(postmark, logger);
         var query = new BounceQuery { FromDate = new DateTimeOffset(2026, 3, 12, 0, 0, 0, TimeSpan.Zero), ToDate = new DateTimeOffset(2026, 3, 11, 0, 0, 0, TimeSpan.Zero) };
 
-        var result = await client.GetBouncesAsync("outbound", count: 10, query: query, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 10, query: query, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The bounce query from-date must not be later than the to-date. FromDate: 2026-03-12T00:00:00.0000000+00:00; ToDate: 2026-03-11T00:00:00.0000000+00:00.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -242,7 +240,7 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync("outbound", count: 10, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 10, cancellationToken: CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         var bounce = Assert.Single(response.Bounces);
@@ -284,12 +282,11 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync("outbound", count: 10, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 10, cancellationToken: CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(BounceType.ChallengeVerification, Assert.Single(response.Bounces)
-            .Type
-        );
+            .Type);
     }
 
     [Fact]
@@ -325,9 +322,9 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync("outbound", count: 10, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 10, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("Bounce item 0 could not be mapped: Bounce type value 'BrandNewBounce' returned from the Postmark Bounces API is not supported.", error.Message);
     }
 
@@ -346,7 +343,7 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync("outbound", count: 10, query: new BounceQuery { Type = BounceType.ChallengeVerification }, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 10, query: new BounceQuery { Type = BounceType.ChallengeVerification }, cancellationToken: CancellationToken.None);
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(endpoint, postmark.LastEndpoint);
@@ -404,9 +401,9 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync("outbound", count: 10, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 10, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("TotalCount returned from the Postmark Bounces API was invalid. Received -1.", error.Message);
     }
 
@@ -425,7 +422,7 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.GetBounceAsync(1599950051, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("ID returned from the Postmark Bounces API was invalid. Received 0.", error.Message);
     }
 
@@ -449,7 +446,7 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.GetBounceAsync(1599950051, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("ServerID returned from the Postmark Bounces API was invalid. Received 0.", error.Message);
     }
 
@@ -514,8 +511,7 @@ public class PostKitClientBounceResponseTests
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(BounceType.ChallengeVerification, Assert.Single(response.Bounces)
-            .Type
-        );
+            .Type);
     }
 
     [Fact]
@@ -534,7 +530,7 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.GetDeliveryStatsAsync(CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("InactiveMails returned from the Postmark Bounces API was invalid. Received -2.", error.Message);
     }
 
@@ -559,7 +555,7 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.GetDeliveryStatsAsync(CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("Delivery stats bounce item 0 could not be mapped: Count returned from the Postmark Bounces API was invalid. Received -3.", error.Message);
     }
 
@@ -585,7 +581,7 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.GetDeliveryStatsAsync(CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("Delivery stats bounce item 0 could not be mapped: Bounce type value 'BrandNewBounce' returned from the Postmark Bounces API is not supported.", error.Message);
     }
 
@@ -760,7 +756,7 @@ public class PostKitClientBounceResponseTests
 
         var result = await client.ActivateBounceAsync(1599950051, CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Contains("could not be confirmed as active", error.Message, StringComparison.Ordinal);
         Assert.Equal(31, postmark.CalledEndpoints.Count);
     }
@@ -772,9 +768,9 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync("outbound", count: 0, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 0, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The bounce query count must be between 1 and 500. Received 0.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -786,9 +782,9 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync("outbound", count: 10, offset: -1, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 10, -1, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The bounce query offset must be zero or greater. Received -1.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -800,9 +796,9 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync("outbound", count: 500, offset: 9800, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 500, 9800, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The bounce query count and offset cannot exceed 10000 when combined. Count: 500; offset: 9800; combined: 10300.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -814,9 +810,9 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync("outbound", count: 10, query: new BounceQuery { Tag = "\t " }, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("outbound", 10, query: new BounceQuery { Tag = "\t " }, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The bounce query tag filter cannot be empty or whitespace. Set Tag to null to omit this filter. Actual length: 2.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -828,9 +824,9 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync("  ", count: 10, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("  ", 10, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The bounce query message stream cannot be empty or whitespace. Actual length: 2.", error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -846,11 +842,11 @@ public class PostKitClientBounceResponseTests
         var dump = await client.GetBounceDumpAsync(-1, CancellationToken.None);
         var activation = await client.ActivateBounceAsync(0, CancellationToken.None);
 
-        Assert.True(bounce.IsFailure(out var bounceError, out var _), bounce.ToString());
+        Assert.True(bounce.IsFailure(out var bounceError, out _), bounce.ToString());
         Assert.Equal("The bounce ID must be greater than zero. Received 0.", bounceError.Message);
-        Assert.True(dump.IsFailure(out var dumpError, out var _), dump.ToString());
+        Assert.True(dump.IsFailure(out var dumpError, out _), dump.ToString());
         Assert.Equal("The bounce ID must be greater than zero. Received -1.", dumpError.Message);
-        Assert.True(activation.IsFailure(out var activationError, out var _), activation.ToString());
+        Assert.True(activation.IsFailure(out var activationError, out _), activation.ToString());
         Assert.Equal("The bounce ID must be greater than zero. Received 0.", activationError.Message);
         Assert.Null(postmark.LastEndpoint);
     }
@@ -862,34 +858,36 @@ public class PostKitClientBounceResponseTests
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
-        var result = await client.GetBouncesAsync("_invalid", count: 10, cancellationToken: CancellationToken.None);
+        var result = await client.GetBouncesAsync("_invalid", 10, cancellationToken: CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
-        Assert.Equal("The bounce query message stream must be 1-30 characters, start with a lowercase letter, contain only lowercase letters, numbers, '-', or '_', cannot contain consecutive hyphens, and cannot be 'all' or start with 'pm-'. First character must be a lowercase letter. Received '_' at index 0.", error.Message);
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        Assert.Equal(
+            "The bounce query message stream must be 1-30 characters, start with a lowercase letter, contain only lowercase letters, numbers, '-', or '_', cannot contain consecutive hyphens, and cannot be 'all' or start with 'pm-'. First character must be a lowercase letter. Received '_' at index 0.",
+            error.Message);
         Assert.Null(postmark.LastEndpoint);
     }
 
     private sealed class RecordingPostmarkClient(Dictionary<string, string>? getResponses = null, Dictionary<string, string>? putResponses = null) : IPostmarkClient
     {
+        private readonly Dictionary<string, string> _getResponses = getResponses ?? [];
+        private readonly Dictionary<string, string> _putResponses = putResponses ?? [];
         public List<string> CalledEndpoints { get; } = [];
 
         public string? LastEndpoint { get; private set; }
-        private readonly Dictionary<string, string> _getResponses = getResponses ?? [];
-        private readonly Dictionary<string, string> _putResponses = putResponses ?? [];
 
-        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException("PostAsync should not be called in this test.");
         }
 
-        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             LastEndpoint = endpoint;
             CalledEndpoints.Add(endpoint);
             return Task.FromResult(Result.Success(Deserialize<TResponse>(_getResponses, endpoint)));
         }
 
-        public Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PutAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             LastEndpoint = endpoint;
             CalledEndpoints.Add(endpoint);
@@ -908,15 +906,15 @@ public class PostKitClientBounceResponseTests
 
     private sealed class TransientConfirmationFailurePostmarkClient : IPostmarkClient
     {
-        public List<string> CalledEndpoints { get; } = [];
         private int _getAttempts;
+        public List<string> CalledEndpoints { get; } = [];
 
-        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException("PostAsync should not be called in this test.");
         }
 
-        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             CalledEndpoints.Add(endpoint);
 
@@ -942,13 +940,13 @@ public class PostKitClientBounceResponseTests
                 Inactive = false,
                 CanActivate = true,
                 Subject = "PostKit Bounces API probe",
-                Content = "X-PM-Message-Id: 69ce4784-c202-41c6-a1a9-91757022b25e",
+                Content = "X-PM-Message-Id: 69ce4784-c202-41c6-a1a9-91757022b25e"
             };
 
             return Task.FromResult(Result.Success((TResponse)(object)bounce));
         }
 
-        public Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PutAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             CalledEndpoints.Add(endpoint);
 
@@ -972,8 +970,8 @@ public class PostKitClientBounceResponseTests
                     DumpAvailable = true,
                     Inactive = true,
                     CanActivate = true,
-                    Subject = "PostKit Bounces API probe",
-                },
+                    Subject = "PostKit Bounces API probe"
+                }
             };
 
             return Task.FromResult(Result.Success((TResponse)(object)activation));
@@ -984,12 +982,12 @@ public class PostKitClientBounceResponseTests
     {
         public List<string> CalledEndpoints { get; } = [];
 
-        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException("PostAsync should not be called in this test.");
         }
 
-        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             CalledEndpoints.Add(endpoint);
 
@@ -1011,13 +1009,13 @@ public class PostKitClientBounceResponseTests
                 Inactive = true,
                 CanActivate = true,
                 Subject = "PostKit Bounces API probe",
-                Content = "X-PM-Message-Id: 69ce4784-c202-41c6-a1a9-91757022b25e",
+                Content = "X-PM-Message-Id: 69ce4784-c202-41c6-a1a9-91757022b25e"
             };
 
             return Task.FromResult(Result.Success((TResponse)(object)bounce));
         }
 
-        public Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PutAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             CalledEndpoints.Add(endpoint);
 
@@ -1041,8 +1039,8 @@ public class PostKitClientBounceResponseTests
                     DumpAvailable = true,
                     Inactive = true,
                     CanActivate = true,
-                    Subject = "PostKit Bounces API probe",
-                },
+                    Subject = "PostKit Bounces API probe"
+                }
             };
 
             return Task.FromResult(Result.Success((TResponse)(object)activation));

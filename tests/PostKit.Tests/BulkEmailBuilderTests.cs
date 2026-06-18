@@ -10,7 +10,8 @@ namespace PostKit.Tests;
 
 public class BulkEmailBuilderTests
 {
-    private const string MessageStreamRuleMessage = "The message stream ID must be 1-30 characters, start with a lowercase letter, contain only lowercase letters, numbers, '-', or '_', cannot contain consecutive hyphens, and cannot be 'all' or start with 'pm-'.";
+    private const string MessageStreamRuleMessage =
+        "The message stream ID must be 1-30 characters, start with a lowercase letter, contain only lowercase letters, numbers, '-', or '_', cannot contain consecutive hyphens, and cannot be 'all' or start with 'pm-'.";
 
     [Fact]
     public void Build_WithReplyToInterfaceChaining_Succeeds()
@@ -24,8 +25,7 @@ public class BulkEmailBuilderTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         Assert.NotNull(bulkEmail.ReplyTo);
@@ -57,8 +57,7 @@ public class BulkEmailBuilderTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .Cc("cc@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         Assert.Equal("sender@postkit.com", bulkEmail.From.Address);
@@ -77,8 +76,7 @@ public class BulkEmailBuilderTests
             .Length;
 
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
-            .From("sender@postkit.com", displayName)
-        );
+            .From("sender@postkit.com", displayName));
 
         Assert.Equal("address", exception.ParamName);
         Assert.Equal($"The From address cannot exceed 255 characters. Actual length: {expectedLength}. (Parameter 'address')", exception.Message);
@@ -95,8 +93,7 @@ public class BulkEmailBuilderTests
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
                 .AddMetadata("recipient", string.Empty)
-                .Build()
-            )
+                .Build())
             .Build();
 
         Assert.NotNull(bulkEmail.Metadata);
@@ -110,11 +107,9 @@ public class BulkEmailBuilderTests
     public void Build_WithNullMetadataValues_ThrowsHelpfulException()
     {
         var bulkException = Assert.Throws<ArgumentNullException>(() => BulkEmail.Compose()
-            .AddMetadata("campaign", null!)
-        );
+            .AddMetadata("campaign", null!));
         var messageException = Assert.Throws<ArgumentNullException>(() => BulkEmailMessage.Compose()
-            .AddMetadata("recipient", null!)
-        );
+            .AddMetadata("recipient", null!));
 
         Assert.Equal("value", bulkException.ParamName);
         Assert.Equal("The metadata value cannot be null. (Parameter 'value')", bulkException.Message);
@@ -185,18 +180,17 @@ public class BulkEmailBuilderTests
         var builder = BulkEmail.Compose();
 
         var exception = Assert.Throws<ArgumentException>(() =>
+        {
+            switch (methodName)
             {
-                switch (methodName)
-                {
-                    case "From":
-                        builder.From("Sender Name", "sender@postkit.com");
-                        break;
-                    case "ReplyTo":
-                        builder.ReplyTo("Reply Target", "reply@postkit.com");
-                        break;
-                }
+                case "From":
+                    builder.From("Sender Name", "sender@postkit.com");
+                    break;
+                case "ReplyTo":
+                    builder.ReplyTo("Reply Target", "reply@postkit.com");
+                    break;
             }
-        );
+        });
 
         Assert.Equal("address", exception.ParamName);
         Assert.Equal($"Display name overloads must specify the email address first: use .{methodName}(\"recipient@example.com\", \"Recipient Name\"). (Parameter 'address')", exception.Message);
@@ -211,21 +205,20 @@ public class BulkEmailBuilderTests
         var builder = BulkEmailMessage.Compose();
 
         var exception = Assert.Throws<ArgumentException>(() =>
+        {
+            switch (methodName)
             {
-                switch (methodName)
-                {
-                    case "To":
-                        builder.To("Recipient Name", "recipient@example.com");
-                        break;
-                    case "Cc":
-                        builder.Cc("Recipient Name", "recipient@example.com");
-                        break;
-                    case "Bcc":
-                        builder.Bcc("Recipient Name", "recipient@example.com");
-                        break;
-                }
+                case "To":
+                    builder.To("Recipient Name", "recipient@example.com");
+                    break;
+                case "Cc":
+                    builder.Cc("Recipient Name", "recipient@example.com");
+                    break;
+                case "Bcc":
+                    builder.Bcc("Recipient Name", "recipient@example.com");
+                    break;
             }
-        );
+        });
 
         Assert.Equal("address", exception.ParamName);
         Assert.Equal($"Display name overloads must specify the email address first: use .{methodName}(\"recipient@example.com\", \"Recipient Name\"). (Parameter 'address')", exception.Message);
@@ -235,8 +228,7 @@ public class BulkEmailBuilderTests
     public void Build_WithoutAnyMessageRecipients_Throws()
     {
         var exception = Assert.Throws<InvalidOperationException>(() => BulkEmailMessage.Compose()
-            .Build()
-        );
+            .Build());
 
         Assert.Equal("At least one recipient is required before building the bulk email message. Call To(...), Cc(...), or Bcc(...).", exception.Message);
     }
@@ -249,10 +241,8 @@ public class BulkEmailBuilderTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
-            .Build()
-        );
+                .Build())
+            .Build());
 
         Assert.Equal("From address is required before building the bulk email. Call From(...).", exception.Message);
     }
@@ -264,8 +254,7 @@ public class BulkEmailBuilderTests
             .From("sender@postkit.com")
             .Subject("Hello")
             .TextBody("Hello world")
-            .Build()
-        );
+            .Build());
 
         Assert.Equal("At least one message is required before building the bulk email. Call AddMessage(...).", exception.Message);
     }
@@ -278,10 +267,8 @@ public class BulkEmailBuilderTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
-            .Build()
-        );
+                .Build())
+            .Build());
 
         Assert.Equal("Subject is required before building the bulk email. Call Subject(...).", exception.Message);
     }
@@ -294,10 +281,8 @@ public class BulkEmailBuilderTests
             .Subject("Hello")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
-            .Build()
-        );
+                .Build())
+            .Build());
 
         Assert.Equal("Message content is required before building the bulk email. Call TextBody(...) or HtmlBody(...).", exception.Message);
     }
@@ -306,8 +291,7 @@ public class BulkEmailBuilderTests
     public void UsingMessageStream_WithTransactionalStream_Throws()
     {
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
-            .UseMessageStream(MessageStream.Transactional)
-        );
+            .UseMessageStream(MessageStream.Transactional));
 
         Assert.Equal("Bulk sends require a broadcast message stream. Received MessageStream.Transactional; use MessageStream.Broadcast or a broadcast stream ID. (Parameter 'messageStream')", exception.Message);
     }
@@ -316,8 +300,7 @@ public class BulkEmailBuilderTests
     public void UsingMessageStream_WithOutboundStreamId_Throws()
     {
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
-            .UseMessageStream("outbound")
-        );
+            .UseMessageStream("outbound"));
 
         Assert.Equal("Bulk sends require a broadcast message stream. Received 'outbound'; use MessageStream.Broadcast or a broadcast stream ID. (Parameter 'messageStreamId')", exception.Message);
     }
@@ -332,8 +315,7 @@ public class BulkEmailBuilderTests
             .TextBody("Hello world")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         Assert.Equal("broadcast_stream", bulkEmail.MessageStream);
@@ -343,8 +325,7 @@ public class BulkEmailBuilderTests
     public void UsingMessageStream_WithLeadingUnderscore_Throws()
     {
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
-            .UseMessageStream("_broadcast")
-        );
+            .UseMessageStream("_broadcast"));
 
         Assert.Equal($"{MessageStreamRuleMessage} First character must be a lowercase letter. Received '_' at index 0. (Parameter 'messageStreamId')", exception.Message);
     }
@@ -353,8 +334,7 @@ public class BulkEmailBuilderTests
     public void UsingMessageStream_WithReservedPrefix_Throws()
     {
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
-            .UseMessageStream("pm-broadcast")
-        );
+            .UseMessageStream("pm-broadcast"));
 
         Assert.Equal($"{MessageStreamRuleMessage} The prefix 'pm-' is reserved. (Parameter 'messageStreamId')", exception.Message);
     }
@@ -363,8 +343,7 @@ public class BulkEmailBuilderTests
     public void UsingMessageStream_WithReservedAllId_Throws()
     {
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
-            .UseMessageStream("all")
-        );
+            .UseMessageStream("all"));
 
         Assert.Equal($"{MessageStreamRuleMessage} 'all' is reserved. (Parameter 'messageStreamId')", exception.Message);
     }
@@ -373,8 +352,7 @@ public class BulkEmailBuilderTests
     public void UsingMessageStream_WithNullString_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => BulkEmail.Compose()
-            .UseMessageStream(null!)
-        );
+            .UseMessageStream(null!));
 
         Assert.Equal("messageStreamId", exception.ParamName);
         Assert.Equal("The message stream ID cannot be null. (Parameter 'messageStreamId')", exception.Message);
@@ -384,8 +362,7 @@ public class BulkEmailBuilderTests
     public void WithTag_WithNullTag_ThrowsArgumentNullException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => BulkEmail.Compose()
-            .WithTag(null!)
-        );
+            .WithTag(null!));
 
         Assert.Equal("tag", exception.ParamName);
         Assert.Equal("The tag cannot be null. (Parameter 'tag')", exception.Message);
@@ -397,8 +374,7 @@ public class BulkEmailBuilderTests
         var tag = new string('a', 1001);
 
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
-            .WithTag(tag)
-        );
+            .WithTag(tag));
 
         Assert.Equal("The tag cannot be longer than 1000 characters. Actual length: 1001. (Parameter 'tag')", exception.Message);
     }
@@ -438,7 +414,8 @@ public class BulkEmailBuilderTests
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.FromTemplate("1welcome"));
 
         Assert.Equal("templateAlias", exception.ParamName);
-        Assert.Equal("The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters. First character must be a letter. Received '1' at index 0. (Parameter 'templateAlias')", exception.Message);
+        Assert.Equal("The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters. First character must be a letter. Received '1' at index 0. (Parameter 'templateAlias')",
+            exception.Message);
     }
 
     [Fact]
@@ -448,8 +425,7 @@ public class BulkEmailBuilderTests
         IEnumerable<Attachment> attachments = [attachment, null!];
 
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
-            .AddAttachment(attachments)
-        );
+            .AddAttachment(attachments));
 
         Assert.Equal("attachments", exception.ParamName);
         Assert.Equal("The attachment at index 1 cannot be null. (Parameter 'attachments')", exception.Message);
@@ -464,8 +440,7 @@ public class BulkEmailBuilderTests
         IEnumerable<BulkEmailMessage> messages = [message, null!];
 
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
-            .AddMessage(messages)
-        );
+            .AddMessage(messages));
 
         Assert.Equal("messages", exception.ParamName);
         Assert.Equal("The bulk email message at index 1 cannot be null. (Parameter 'messages')", exception.Message);
@@ -481,12 +456,11 @@ public class BulkEmailBuilderTests
             .AddMetadata("campaign", "spring")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            );
+                .Build());
         IEnumerable<KeyValuePair<string, string>> metadata =
         [
             new("segment", "beta"),
-            new("CAMPAIGN", "duplicate"),
+            new("CAMPAIGN", "duplicate")
         ];
 
         var exception = Assert.Throws<ArgumentException>(() => builder.AddMetadata(metadata));
@@ -508,8 +482,7 @@ public class BulkEmailBuilderTests
             .From("sender@postkit.com")
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            )
+                .Build())
             .Build();
 
         Assert.Equal("welcome-email", bulkEmail.TemplateAlias);
@@ -522,8 +495,7 @@ public class BulkEmailBuilderTests
     public void WithTemplateModel_WithUnserializableModel_Throws()
     {
         var exception = Assert.Throws<ArgumentException>(() => BulkEmailMessage.FromTemplate()
-            .WithModel(CyclicTemplateModel.Create())
-        );
+            .WithModel(CyclicTemplateModel.Create()));
 
         Assert.Equal("The template model could not be serialized to a JSON object. Ensure it does not contain cycles or members unsupported by System.Text.Json. (Parameter 'templateModel')", exception.Message);
         Assert.NotNull(exception.InnerException);
@@ -533,8 +505,7 @@ public class BulkEmailBuilderTests
     public void WithTemplateModel_WithScalarModel_Throws()
     {
         var exception = Assert.Throws<ArgumentException>(() => BulkEmailMessage.FromTemplate()
-            .WithModel("Alice")
-        );
+            .WithModel("Alice"));
 
         Assert.Equal("The template model must serialize to a JSON object. (Parameter 'templateModel')", exception.Message);
     }
@@ -543,8 +514,7 @@ public class BulkEmailBuilderTests
     public void WithTemplateModel_WithNullSerializerOptions_ThrowsHelpfulException()
     {
         var exception = Assert.Throws<ArgumentNullException>(() => BulkEmailMessage.FromTemplate()
-            .WithModel(new { Name = "Alice" }, null!)
-        );
+            .WithModel(new { Name = "Alice" }, null!));
 
         Assert.Equal("serializerOptions", exception.ParamName);
         Assert.Equal("The serializer options cannot be null. (Parameter 'serializerOptions')", exception.Message);
@@ -561,8 +531,7 @@ public class BulkEmailBuilderTests
         var bulkEmail = BulkEmail.FromTemplate(42)
             .From("sender@postkit.com")
             .AddMessage(builder.WithModel(new { FirstName = "Alice" }, serializerOptions)
-                .Build()
-            )
+                .Build())
             .Build();
 
         var request = bulkEmail.ToBulkEmailRequest();
@@ -579,8 +548,7 @@ public class BulkEmailBuilderTests
         var subject = new string('S', 2001);
 
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
-            .Subject(subject)
-        );
+            .Subject(subject));
 
         Assert.Equal("The subject cannot be longer than 2000 characters. Actual length: 2001. (Parameter 'subject')", exception.Message);
     }
@@ -591,8 +559,7 @@ public class BulkEmailBuilderTests
         var subject = string.Concat(Enumerable.Repeat("😀", 1001));
 
         var exception = Assert.Throws<ArgumentException>(() => BulkEmail.Compose()
-            .Subject(subject)
-        );
+            .Subject(subject));
 
         Assert.Equal("The subject cannot be longer than 2000 characters. Actual length: 2002. (Parameter 'subject')", exception.Message);
     }
@@ -621,13 +588,10 @@ public class BulkEmailBuilderTests
             .TextBody(textBody);
 
         for (var index = 0; index < 47; index++)
-        {
             builder.AddMessage(BulkEmailMessage.Compose()
                 .To($"recipient{index}@postkit.com")
                 .AddHeader("X-Large-Header", largeHeaderValue)
-                .Build()
-            );
-        }
+                .Build());
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
@@ -642,8 +606,7 @@ public class BulkEmailBuilderTests
             .AddMessage(BulkEmailMessage.FromTemplate()
                 .To("recipient@postkit.com")
                 .WithModel(new { Name = "Alice" })
-                .Build()
-            )
+                .Build())
             .Build();
 
         var request = bulkEmail.ToBulkEmailRequest();
@@ -667,8 +630,7 @@ public class BulkEmailBuilderTests
         builder.AddMessage(BulkEmailMessage.Compose()
             .To("recipient@postkit.com")
             .AddMetadata("message-extra", "value")
-            .Build()
-        );
+            .Build());
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
@@ -689,12 +651,13 @@ public class BulkEmailBuilderTests
         builder.AddMessage(BulkEmailMessage.Compose()
             .To("recipient@postkit.com")
             .AddMetadata("ROOT0", "override")
-            .Build()
-        );
+            .Build());
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
-        Assert.Equal("Cannot use duplicate metadata names for bulk message at index 0 after combining request-level and message-level metadata. Metadata name 'ROOT0' duplicates request-level metadata name 'root0'. Metadata names are compared case-insensitively.", exception.Message);
+        Assert.Equal(
+            "Cannot use duplicate metadata names for bulk message at index 0 after combining request-level and message-level metadata. Metadata name 'ROOT0' duplicates request-level metadata name 'root0'. Metadata names are compared case-insensitively.",
+            exception.Message);
     }
 
     [Fact]
@@ -708,12 +671,13 @@ public class BulkEmailBuilderTests
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
                 .AddHeader("list-unsubscribe-post", "List-Unsubscribe=One-Click")
-                .Build()
-            );
+                .Build());
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
-        Assert.Equal("Cannot use duplicate header names for bulk message at index 0 after combining request-level and message-level headers. Header name 'list-unsubscribe-post' duplicates request-level header name 'List-Unsubscribe-Post'. Header names are compared case-insensitively.", exception.Message);
+        Assert.Equal(
+            "Cannot use duplicate header names for bulk message at index 0 after combining request-level and message-level headers. Header name 'list-unsubscribe-post' duplicates request-level header name 'List-Unsubscribe-Post'. Header names are compared case-insensitively.",
+            exception.Message);
     }
 
     [Fact]
@@ -727,8 +691,7 @@ public class BulkEmailBuilderTests
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
                 .AddHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
-                .Build()
-            )
+                .Build())
             .Build();
 
         Assert.NotNull(bulkEmail.Headers);
@@ -748,8 +711,7 @@ public class BulkEmailBuilderTests
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
                 .AddMetadata("ROOT", "override")
-                .Build()
-            );
+                .Build());
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
@@ -766,8 +728,7 @@ public class BulkEmailBuilderTests
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
                 .AddMetadata("ROOT", "override")
-                .Build()
-            );
+                .Build());
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
@@ -781,13 +742,10 @@ public class BulkEmailBuilderTests
             .From("sender@postkit.com");
 
         for (var index = 0; index < 11; index++)
-        {
             builder.AddMessage(BulkEmailMessage.FromTemplate()
                 .To($"recipient{index}@postkit.com")
                 .WithModel(new { Data = new string('x', 5 * 1024 * 1024) })
-                .Build()
-            );
-        }
+                .Build());
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
@@ -807,8 +765,7 @@ public class BulkEmailBuilderTests
             .TextBody(textBody)
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            );
+                .Build());
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
@@ -828,8 +785,7 @@ public class BulkEmailBuilderTests
             .TextBody(textBody)
             .AddMessage(BulkEmailMessage.Compose()
                 .To("recipient@postkit.com")
-                .Build()
-            );
+                .Build());
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
@@ -844,25 +800,12 @@ public class BulkEmailBuilderTests
             .AddMessage(BulkEmailMessage.FromTemplate()
                 .To("recipient@postkit.com")
                 .WithModel(new { Data = new string('x', 11 * 1024 * 1024) })
-                .Build()
-            );
+                .Build());
 
         var exception = Assert.Throws<InvalidOperationException>(builder.Build);
 
         Assert.StartsWith("Estimated message content for bulk message at index 0 exceeds Postmark's 10 MB limit. Estimated size: ", exception.Message, StringComparison.Ordinal);
         Assert.Contains("Limit: 10,485,760 bytes.", exception.Message, StringComparison.Ordinal);
-    }
-
-    private sealed class CyclicTemplateModel
-    {
-        public CyclicTemplateModel? Self { [UsedImplicitly] get; private set; }
-
-        public static CyclicTemplateModel Create()
-        {
-            var model = new CyclicTemplateModel();
-            model.Self = model;
-            return model;
-        }
     }
 
     private static void AssertEstimatedMessageSizeMessage(InvalidOperationException exception)
@@ -875,5 +818,17 @@ public class BulkEmailBuilderTests
     {
         Assert.StartsWith("Estimated bulk request size exceeds Postmark's 50 MB limit. Estimated size: ", exception.Message, StringComparison.Ordinal);
         Assert.Contains("Limit: 52,428,800 bytes.", exception.Message, StringComparison.Ordinal);
+    }
+
+    private sealed class CyclicTemplateModel
+    {
+        public CyclicTemplateModel? Self { [UsedImplicitly] get; private set; }
+
+        public static CyclicTemplateModel Create()
+        {
+            var model = new CyclicTemplateModel();
+            model.Self = model;
+            return model;
+        }
     }
 }

@@ -11,8 +11,8 @@ internal sealed class RebasedOptions<TOptions>(IOptionsMonitor<TOptions> monitor
 internal sealed class RebasedOptionsSnapshot<TOptions>(IOptionsFactory<TOptions> factory, string defaultName) : IOptionsSnapshot<TOptions>
     where TOptions : class
 {
-    public TOptions Value => Get(Options.DefaultName);
     private readonly OptionsCache<TOptions> _cache = new();
+    public TOptions Value => Get(Options.DefaultName);
 
     public TOptions Get(string? name)
     {
@@ -30,8 +30,14 @@ internal sealed class RebasedOptionsMonitor<TOptions>(IOptionsFactory<TOptions> 
     : IOptionsMonitor<TOptions>, IDisposable
     where TOptions : class
 {
-    public TOptions CurrentValue => Get(Options.DefaultName);
     private readonly OptionsMonitor<TOptions> _inner = new(factory, sources, cache);
+
+    public void Dispose()
+    {
+        _inner.Dispose();
+    }
+
+    public TOptions CurrentValue => Get(Options.DefaultName);
 
     public TOptions Get(string? name)
     {
@@ -41,11 +47,6 @@ internal sealed class RebasedOptionsMonitor<TOptions>(IOptionsFactory<TOptions> 
     public IDisposable OnChange(Action<TOptions, string?> listener)
     {
         return _inner.OnChange((options, name) => listener(options, UnmapName(name)));
-    }
-
-    public void Dispose()
-    {
-        _inner.Dispose();
     }
 
     private string MapName(string? name)

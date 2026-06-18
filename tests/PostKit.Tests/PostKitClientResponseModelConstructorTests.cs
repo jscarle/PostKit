@@ -35,7 +35,7 @@ public class PostKitClientResponseModelConstructorTests
             typeof(SuppressionDump),
             typeof(Suppression),
             typeof(SuppressionBatch),
-            typeof(SuppressionResult),
+            typeof(SuppressionResult)
         ];
 
         foreach (var responseModelType in responseModelTypes)

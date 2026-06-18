@@ -1,0 +1,8 @@
+{
+  "ApiToken": "",
+  "FromEmail": "from@domain.com",
+  "ToEmail": "receiver@domain.com",
+  "CcEmail": "cc@domain.com",
+  "BccEmail": "bcc@domain.com",
+  "ReplyToEmail": "replyto@domain.com"
+}

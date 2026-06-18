@@ -3,7 +3,7 @@ using PostKit.Common;
 
 namespace PostKit.BulkEmails;
 
-/// <summary>Provides a fluent interface for composing a <see cref="BulkEmail"/> without a Postmark template.</summary>
+/// <summary>Provides a fluent interface for composing a <see cref="BulkEmail" /> without a Postmark template.</summary>
 public sealed class ComposedBulkEmailBuilder
 {
     private readonly DraftBulkEmail _draft = new();
@@ -276,7 +276,7 @@ public sealed class ComposedBulkEmailBuilder
         return this;
     }
 
-    /// <summary>Creates the configured <see cref="BulkEmail"/>.</summary>
+    /// <summary>Creates the configured <see cref="BulkEmail" />.</summary>
     /// <returns>The configured bulk email request.</returns>
     public BulkEmail Build()
     {
