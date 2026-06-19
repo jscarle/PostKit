@@ -752,7 +752,8 @@ internal static partial class ValidationExtensions
 #if NET9_0_OR_GREATER
         if (!TemplateAliasRegex.IsMatch(value))
 #else
-        if (!TemplateAliasRegex().IsMatch(value))
+        if (!TemplateAliasRegex()
+                .IsMatch(value))
 #endif
             return $"{subject} must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters. {GetTemplateAliasValidationDetail(value)}";
 

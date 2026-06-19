@@ -310,8 +310,7 @@ internal sealed partial class PostKitClient
         if (validationError is not null)
             return Result.Failure<SenderSignatureCreateRequestModel>(validationError);
 
-        validationError = ValidationExtensions.ValidateOptionalEmailAddress(parameters.ReplyToEmailAddress, nameof(SenderSignatureCreateParameters.ReplyToEmailAddress),
-            "The sender signature create parameters reply-to email address");
+        validationError = ValidationExtensions.ValidateOptionalEmailAddress(parameters.ReplyToEmailAddress, nameof(SenderSignatureCreateParameters.ReplyToEmailAddress), "The sender signature create parameters reply-to email address");
         if (validationError is not null)
             return Result.Failure<SenderSignatureCreateRequestModel>(validationError);
 
@@ -340,8 +339,7 @@ internal sealed partial class PostKitClient
         if (validationError is not null)
             return Result.Failure<SenderSignatureEditRequestModel>(validationError);
 
-        validationError = ValidationExtensions.ValidateOptionalEmailAddress(parameters.ReplyToEmailAddress, nameof(SenderSignatureEditParameters.ReplyToEmailAddress),
-            "The sender signature edit parameters reply-to email address");
+        validationError = ValidationExtensions.ValidateOptionalEmailAddress(parameters.ReplyToEmailAddress, nameof(SenderSignatureEditParameters.ReplyToEmailAddress), "The sender signature edit parameters reply-to email address");
         if (validationError is not null)
             return Result.Failure<SenderSignatureEditRequestModel>(validationError);
 

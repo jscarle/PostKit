@@ -406,7 +406,8 @@ internal sealed partial class DraftBulkEmail
 #if NET9_0_OR_GREATER
         if (!TemplateAliasRegex.IsMatch(templateAlias))
 #else
-        if (!TemplateAliasRegex().IsMatch(templateAlias))
+        if (!TemplateAliasRegex()
+                .IsMatch(templateAlias))
 #endif
             throw new ArgumentException($"The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters. {GetTemplateAliasValidationDetail(templateAlias)}", nameof(templateAlias));
 

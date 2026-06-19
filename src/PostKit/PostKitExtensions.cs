@@ -13,8 +13,8 @@ namespace PostKit;
 public static class PostKitExtensions
 {
     private const string ConfigurationSectionName = "PostKit";
-    private static readonly string RequiredTokenMessage =
-        $"must define '{nameof(PostKitOptions.ServerApiToken)}' or '{nameof(PostKitOptions.AccountApiToken)}'.";
+
+    private static readonly string RequiredTokenMessage = $"must define '{nameof(PostKitOptions.ServerApiToken)}' or '{nameof(PostKitOptions.AccountApiToken)}'.";
 
     /// <summary>Registers the default (non-keyed) PostKit services using configuration from the <c>PostKit</c> section.</summary>
     /// <param name="services">The service collection to configure.</param>

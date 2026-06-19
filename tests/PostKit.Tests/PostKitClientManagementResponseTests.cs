@@ -529,11 +529,16 @@ public class PostKitClientManagementResponseTests
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
 
-        Assert.Equal("sender@example.com", root.GetProperty("FromEmail").GetString());
-        Assert.Equal("Sender", root.GetProperty("Name").GetString());
-        Assert.Equal("reply@example.com", root.GetProperty("ReplyToEmail").GetString());
-        Assert.Equal("pm-bounces.example.com", root.GetProperty("ReturnPathDomain").GetString());
-        Assert.Equal("Please confirm this sender.", root.GetProperty("ConfirmationPersonalNote").GetString());
+        Assert.Equal("sender@example.com", root.GetProperty("FromEmail")
+            .GetString());
+        Assert.Equal("Sender", root.GetProperty("Name")
+            .GetString());
+        Assert.Equal("reply@example.com", root.GetProperty("ReplyToEmail")
+            .GetString());
+        Assert.Equal("pm-bounces.example.com", root.GetProperty("ReturnPathDomain")
+            .GetString());
+        Assert.Equal("Please confirm this sender.", root.GetProperty("ConfirmationPersonalNote")
+            .GetString());
         Assert.False(root.TryGetProperty("ReplyToEmailAddress", out _));
     }
 
@@ -552,10 +557,14 @@ public class PostKitClientManagementResponseTests
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
 
-        Assert.Equal("Updated Sender", root.GetProperty("Name").GetString());
-        Assert.Equal("reply@example.com", root.GetProperty("ReplyToEmail").GetString());
-        Assert.Equal("pm-bounces.example.com", root.GetProperty("ReturnPathDomain").GetString());
-        Assert.Equal("Please confirm this sender.", root.GetProperty("ConfirmationPersonalNote").GetString());
+        Assert.Equal("Updated Sender", root.GetProperty("Name")
+            .GetString());
+        Assert.Equal("reply@example.com", root.GetProperty("ReplyToEmail")
+            .GetString());
+        Assert.Equal("pm-bounces.example.com", root.GetProperty("ReturnPathDomain")
+            .GetString());
+        Assert.Equal("Please confirm this sender.", root.GetProperty("ConfirmationPersonalNote")
+            .GetString());
         Assert.False(root.TryGetProperty("ReplyToEmailAddress", out _));
     }
 
