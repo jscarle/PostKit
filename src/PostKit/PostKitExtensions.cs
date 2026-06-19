@@ -13,6 +13,8 @@ namespace PostKit;
 public static class PostKitExtensions
 {
     private const string ConfigurationSectionName = "PostKit";
+    private static readonly string RequiredTokenMessage =
+        $"must define '{nameof(PostKitOptions.ServerApiToken)}' or '{nameof(PostKitOptions.AccountApiToken)}'.";
 
     /// <summary>Registers the default (non-keyed) PostKit services using configuration from the <c>PostKit</c> section.</summary>
     /// <param name="services">The service collection to configure.</param>
@@ -203,17 +205,22 @@ public static class PostKitExtensions
             optionsBuilder.Validate<IConfiguration>((options, configuration) =>
                 {
                     var section = configuration.GetSection(optionsName);
-                    return !section.Exists() || !string.IsNullOrWhiteSpace(options.ServerApiToken);
-                }, $"The configuration section '{optionsName}' must define '{nameof(PostKitOptions.ServerApiToken)}'.");
+                    return !section.Exists() || HasAnyApiToken(options);
+                }, $"The configuration section '{optionsName}' {RequiredTokenMessage}");
         }
         else
         {
-            optionsBuilder.Validate(options => !string.IsNullOrWhiteSpace(options.ServerApiToken), $"The configuration section '{optionsName}' must define '{nameof(PostKitOptions.ServerApiToken)}'.");
+            optionsBuilder.Validate(HasAnyApiToken, $"The configuration section '{optionsName}' {RequiredTokenMessage}");
         }
 
         optionsBuilder.ValidateOnStart();
 
         return optionsBuilder;
+    }
+
+    private static bool HasAnyApiToken(PostKitOptions options)
+    {
+        return !string.IsNullOrWhiteSpace(options.ServerApiToken) || !string.IsNullOrWhiteSpace(options.AccountApiToken);
     }
 
     private static string ResolveConfigurationKey(object serviceKey, string? configurationKey)

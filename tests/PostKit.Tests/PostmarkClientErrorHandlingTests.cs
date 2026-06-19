@@ -15,6 +15,16 @@ namespace PostKit.Tests;
 public class PostmarkClientErrorHandlingTests
 {
     [Fact]
+    public void Constructor_WithoutAnyApiToken_ThrowsPostKitConfigurationError()
+    {
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK)));
+
+        var exception = Assert.Throws<InvalidOperationException>(() => new PostmarkClient(httpClient, Options.Create(new PostKitOptions()), new TestLogger<PostmarkClient>()));
+
+        Assert.Equal("At least one Postmark API token must be set. Set ServerApiToken for server-level endpoints or AccountApiToken for account-level endpoints.", exception.Message);
+    }
+
+    [Fact]
     public async Task PostAsync_WithUnknownPostmarkErrorCode_ReturnsPostmarkError()
     {
         using var httpClient = new HttpClient(new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.UnprocessableEntity)
@@ -247,7 +257,7 @@ public class PostmarkClientErrorHandlingTests
     {
         using var handler = new RecordingHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"ErrorCode":0,"Message":"OK"}""", Encoding.UTF8, MediaTypeNames.Application.Json) });
         using var httpClient = new HttpClient(handler);
-        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "server-token", AccountApiToken = "account-token" }), new TestLogger<PostmarkClient>());
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { AccountApiToken = "account-token" }), new TestLogger<PostmarkClient>());
 
         var result = await client.GetAsync<PostmarkResponse>(PostmarkTokenScope.Account, "/data-removals/1", CancellationToken.None);
 
@@ -256,6 +266,19 @@ public class PostmarkClientErrorHandlingTests
         Assert.Equal(HttpMethod.Get, handler.LastRequest.Method);
         Assert.Equal("account-token", Assert.Single(handler.LastRequest.Headers.GetValues("X-Postmark-Account-Token")));
         Assert.False(handler.LastRequest.Headers.Contains("X-Postmark-Server-Token"));
+    }
+
+    [Fact]
+    public async Task GetAsync_WithServerScopeWithoutServerToken_ThrowsPostKitConfigurationError()
+    {
+        using var handler = new RecordingHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"ErrorCode":0,"Message":"OK"}""", Encoding.UTF8, MediaTypeNames.Application.Json) });
+        using var httpClient = new HttpClient(handler);
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { AccountApiToken = "account-token" }), new TestLogger<PostmarkClient>());
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.GetAsync<PostmarkResponse>(PostmarkTokenScope.Server, "/email", CancellationToken.None));
+
+        Assert.Equal("The server API token has not been set.", exception.Message);
+        Assert.Null(handler.LastRequest);
     }
 
     [Fact]

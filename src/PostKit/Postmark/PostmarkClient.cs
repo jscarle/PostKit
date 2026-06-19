@@ -39,8 +39,8 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         _rateLimiter = rateLimiter ?? new PostmarkRateLimiter();
         _tooManyRequestsJitterMultiplierProvider = tooManyRequestsJitterMultiplierProvider ?? GetRandomTooManyRequestsJitterMultiplier;
 
-        if (string.IsNullOrWhiteSpace(options.Value.ServerApiToken))
-            throw new InvalidOperationException("The server API token has not been set.");
+        if (!HasAnyApiToken(options.Value))
+            throw new InvalidOperationException("At least one Postmark API token must be set. Set ServerApiToken for server-level endpoints or AccountApiToken for account-level endpoints.");
 
         _options = options;
         _httpClient.BaseAddress = new Uri("https://api.postmarkapp.com/");
@@ -155,6 +155,11 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             throw new InvalidOperationException($"The {tokenDescription} API token has not been set.");
 
         request.Headers.Add(headerName, token);
+    }
+
+    private static bool HasAnyApiToken(PostKitOptions options)
+    {
+        return !string.IsNullOrWhiteSpace(options.ServerApiToken) || !string.IsNullOrWhiteSpace(options.AccountApiToken);
     }
 
     private TimeSpan ApplyTooManyRequestsJitter(TimeSpan delay)

@@ -88,9 +88,9 @@ Built emails also snapshot addresses, headers, metadata, attachments, and templa
 `IPostKitClient` now includes Postmark API methods beyond sending email, including messages, templates, webhooks, inbound rules, stats, suppressions, and data removals. Code that implements `IPostKitClient` directly, including hand-written
 test doubles, must implement these methods.
 
-PostKit service registration now validates `ServerApiToken`. `AddPostKit()` and `AddKeyedPostKit()` still exist, but missing tokens can fail during startup or first resolution, and the explicit configuration overloads throw immediately
-when a required configuration section is missing. Default and keyed registrations also replace existing PostKit client/options registrations for the same service/key, so register custom replacements after calling PostKit's registration
-helpers.
+PostKit service registration now validates that the selected configuration section defines at least one Postmark API token. `AddPostKit()` and `AddKeyedPostKit()` still exist, but missing tokens can fail during startup or first
+resolution, and the explicit configuration overloads throw immediately when a required configuration section is missing. Default and keyed registrations also replace existing PostKit client/options registrations for the same service/key,
+so register custom replacements after calling PostKit's registration helpers.
 
 ### Validation Changes
 
@@ -194,7 +194,8 @@ builder.Services.AddKeyedPostKit(PostmarkServer.Production, builder.Configuratio
 }
 ```
 
-PostKit validates that the selected configuration section defines `ServerApiToken`. When you use the explicit configuration overloads above, missing sections fail immediately and missing tokens fail during startup or first resolution.
+PostKit validates that the selected configuration section defines `ServerApiToken`, `AccountApiToken`, or both. When you use the explicit configuration overloads above, missing sections fail immediately and missing tokens fail during
+startup or first resolution. Server-level endpoints still require `ServerApiToken`; account-level endpoints still require `AccountApiToken`.
 
 Resolve keyed clients with the standard keyed DI APIs:
 

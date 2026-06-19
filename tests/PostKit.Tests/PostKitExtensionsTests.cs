@@ -28,6 +28,26 @@ public class PostKitExtensionsTests
     }
 
     [Fact]
+    public void AddPostKit_WithConfiguration_AllowsAccountApiTokenWithoutServerApiToken()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:AccountApiToken"] = "account-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddPostKit(configuration);
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>()
+            .Value;
+
+        Assert.Null(options.ServerApiToken);
+        Assert.Equal("account-token", options.AccountApiToken);
+        Assert.NotNull(serviceProvider.GetRequiredService<IPostKitClient>());
+    }
+
+    [Fact]
     public void AddPostKit_WithConfigurationSection_BindsProvidedSectionWithoutIConfigurationRegistration()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Tenants:Marketing:ServerApiToken"] = "marketing-token", ["Tenants:Marketing:AccountApiToken"] = "marketing-account" })
@@ -105,7 +125,7 @@ public class PostKitExtensionsTests
         var exception = Assert.Throws<OptionsValidationException>(serviceProvider.GetRequiredService<IPostKitClient>);
 
         Assert.Contains("The configuration section 'PostKit' could not be found.", exception.Failures);
-        Assert.DoesNotContain("The configuration section 'PostKit' must define 'ServerApiToken'.", exception.Failures);
+        Assert.DoesNotContain("The configuration section 'PostKit' must define 'ServerApiToken' or 'AccountApiToken'.", exception.Failures);
     }
 
     [Fact]
@@ -118,6 +138,23 @@ public class PostKitExtensionsTests
         var exception = Assert.Throws<InvalidOperationException>(() => services.AddPostKit(configuration.GetSection("Tenants:Missing")));
 
         Assert.Equal("The configuration section 'Tenants:Missing' could not be found.", exception.Message);
+    }
+
+    [Fact]
+    public void AddPostKit_WithConfigurationSection_ThrowsValidationExceptionWhenSectionHasNoApiToken()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:ServerApiToken"] = " " })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddPostKit(configuration.GetSection("PostKit"));
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var exception = Assert.Throws<OptionsValidationException>(serviceProvider.GetRequiredService<IPostKitClient>);
+
+        Assert.Contains("The configuration section 'PostKit' must define 'ServerApiToken' or 'AccountApiToken'.", exception.Failures);
     }
 
     [Fact]
@@ -302,7 +339,7 @@ public class PostKitExtensionsTests
     }
 
     [Fact]
-    public void AddKeyedPostKit_DefaultRegistration_ThrowsValidationExceptionWhenRequestedSectionIsMissingServerApiToken()
+    public void AddKeyedPostKit_DefaultRegistration_AllowsRequestedSectionWithOnlyAccountApiToken()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:ServerApiToken"] = "root-token", ["PostKit:Secondary:AccountApiToken"] = "account-only" })
             .Build();
@@ -315,9 +352,12 @@ public class PostKitExtensionsTests
 
         using var serviceProvider = services.BuildServiceProvider();
 
-        var exception = Assert.Throws<OptionsValidationException>(serviceProvider.GetRequiredService<IPostKitClient>);
+        var options = serviceProvider.GetRequiredService<IOptions<PostKitOptions>>()
+            .Value;
 
-        Assert.Contains("The configuration section 'PostKit:Secondary' must define 'ServerApiToken'.", exception.Failures);
+        Assert.Null(options.ServerApiToken);
+        Assert.Equal("account-only", options.AccountApiToken);
+        Assert.NotNull(serviceProvider.GetRequiredService<IPostKitClient>());
     }
 
     [Fact]
@@ -336,7 +376,7 @@ public class PostKitExtensionsTests
         var exception = Assert.Throws<OptionsValidationException>(() => serviceProvider.GetRequiredKeyedService<IPostKitClient>("Marketing"));
 
         Assert.Contains("The configuration section 'PostKit:Marketing' could not be found.", exception.Failures);
-        Assert.DoesNotContain("The configuration section 'PostKit:Marketing' must define 'ServerApiToken'.", exception.Failures);
+        Assert.DoesNotContain("The configuration section 'PostKit:Marketing' must define 'ServerApiToken' or 'AccountApiToken'.", exception.Failures);
     }
 
     [Fact]
@@ -377,8 +417,6 @@ public class PostKitExtensionsTests
 
         using var serviceProvider = services.BuildServiceProvider();
 
-        var exception = Assert.Throws<OptionsValidationException>(() => serviceProvider.GetRequiredKeyedService<IPostKitClient>("shared"));
-
-        Assert.Contains("The configuration section 'PostKit:Secondary' must define 'ServerApiToken'.", exception.Failures);
+        Assert.NotNull(serviceProvider.GetRequiredKeyedService<IPostKitClient>("shared"));
     }
 }
