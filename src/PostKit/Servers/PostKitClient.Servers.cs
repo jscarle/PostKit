@@ -285,12 +285,31 @@ internal sealed partial class PostKitClient
 
     private static Result<ServerRequestModel> CreateServerRequest(ServerCreateParameters parameters)
     {
-        var validationError = ValidationExtensions.ValidateServerName(parameters.Name, "The server create parameters name", true) ?? ValidationExtensions.ValidateServerColor(parameters.Color, "The server create parameters color") ??
-            ValidationExtensions.ValidateServerDeliveryType(parameters.DeliveryType, "The server create parameters delivery type") ?? ValidationExtensions.ValidateServerHooks(parameters, "The server create parameters") ??
-            ValidationExtensions.ValidateServerInboundDomain(parameters.InboundDomain, "The server create parameters inbound domain") ??
-            ValidationExtensions.ValidateServerInboundSpamThreshold(parameters.InboundSpamThreshold, "The server create parameters inbound spam threshold") ??
-            ValidationExtensions.ValidateServerLinkTracking(parameters.TrackLinks, "The server create parameters link tracking");
+        var validationError = ValidationExtensions.ValidateServerName(parameters.Name, "The server create parameters name", true);
+        if (validationError is not null)
+            return Result.Failure<ServerRequestModel>(validationError);
 
+        validationError = ValidationExtensions.ValidateServerColor(parameters.Color, "The server create parameters color");
+        if (validationError is not null)
+            return Result.Failure<ServerRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateServerDeliveryType(parameters.DeliveryType, "The server create parameters delivery type");
+        if (validationError is not null)
+            return Result.Failure<ServerRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateServerHooks(parameters, "The server create parameters");
+        if (validationError is not null)
+            return Result.Failure<ServerRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateServerInboundDomain(parameters.InboundDomain, "The server create parameters inbound domain");
+        if (validationError is not null)
+            return Result.Failure<ServerRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateServerInboundSpamThreshold(parameters.InboundSpamThreshold, "The server create parameters inbound spam threshold");
+        if (validationError is not null)
+            return Result.Failure<ServerRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateServerLinkTracking(parameters.TrackLinks, "The server create parameters link tracking");
         if (validationError is not null)
             return Result.Failure<ServerRequestModel>(validationError);
 
@@ -323,11 +342,27 @@ internal sealed partial class PostKitClient
             parameters.TrackLinks is null && parameters.IncludeBounceContentInHook is null && parameters.ClickHookUrl is null && parameters.EnableSmtpApiErrorHooks is null)
             return Result.Failure<ServerRequestModel>("The server edit parameters must set at least one editable property.");
 
-        var validationError = ValidationExtensions.ValidateServerName(parameters.Name, "The server edit parameters name", false) ?? ValidationExtensions.ValidateServerColor(parameters.Color, "The server edit parameters color") ??
-            ValidationExtensions.ValidateServerHooks(parameters, "The server edit parameters") ?? ValidationExtensions.ValidateServerInboundDomain(parameters.InboundDomain, "The server edit parameters inbound domain") ??
-            ValidationExtensions.ValidateServerInboundSpamThreshold(parameters.InboundSpamThreshold, "The server edit parameters inbound spam threshold") ??
-            ValidationExtensions.ValidateServerLinkTracking(parameters.TrackLinks, "The server edit parameters link tracking");
+        var validationError = ValidationExtensions.ValidateServerName(parameters.Name, "The server edit parameters name", false);
+        if (validationError is not null)
+            return Result.Failure<ServerRequestModel>(validationError);
 
+        validationError = ValidationExtensions.ValidateServerColor(parameters.Color, "The server edit parameters color");
+        if (validationError is not null)
+            return Result.Failure<ServerRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateServerHooks(parameters, "The server edit parameters");
+        if (validationError is not null)
+            return Result.Failure<ServerRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateServerInboundDomain(parameters.InboundDomain, "The server edit parameters inbound domain");
+        if (validationError is not null)
+            return Result.Failure<ServerRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateServerInboundSpamThreshold(parameters.InboundSpamThreshold, "The server edit parameters inbound spam threshold");
+        if (validationError is not null)
+            return Result.Failure<ServerRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateServerLinkTracking(parameters.TrackLinks, "The server edit parameters link tracking");
         if (validationError is not null)
             return Result.Failure<ServerRequestModel>(validationError);
 
@@ -512,14 +547,14 @@ internal sealed partial class PostKitClient
     {
         var mapped = color switch
         {
-            "Purple" => ServerColor.Purple,
-            "Blue" => ServerColor.Blue,
-            "Turquoise" => ServerColor.Turquoise,
-            "Green" => ServerColor.Green,
-            "Red" => ServerColor.Red,
-            "Yellow" => ServerColor.Yellow,
-            "Grey" => ServerColor.Grey,
-            "Orange" => ServerColor.Orange,
+            _ when string.Equals(color, "Purple", StringComparison.OrdinalIgnoreCase) => ServerColor.Purple,
+            _ when string.Equals(color, "Blue", StringComparison.OrdinalIgnoreCase) => ServerColor.Blue,
+            _ when string.Equals(color, "Turquoise", StringComparison.OrdinalIgnoreCase) => ServerColor.Turquoise,
+            _ when string.Equals(color, "Green", StringComparison.OrdinalIgnoreCase) => ServerColor.Green,
+            _ when string.Equals(color, "Red", StringComparison.OrdinalIgnoreCase) => ServerColor.Red,
+            _ when string.Equals(color, "Yellow", StringComparison.OrdinalIgnoreCase) => ServerColor.Yellow,
+            _ when string.Equals(color, "Grey", StringComparison.OrdinalIgnoreCase) => ServerColor.Grey,
+            _ when string.Equals(color, "Orange", StringComparison.OrdinalIgnoreCase) => ServerColor.Orange,
             _ => (ServerColor?)null
         };
 

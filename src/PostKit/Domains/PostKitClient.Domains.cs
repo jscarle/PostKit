@@ -338,9 +338,11 @@ internal sealed partial class PostKitClient
 
     private static Result<DomainCreateRequestModel> CreateDomainRequest(DomainCreateParameters parameters)
     {
-        var validationError = ValidationExtensions.ValidateDomainName(parameters.Name, "The domain create parameters name", false, false) ??
-                              ValidationExtensions.ValidateDomainName(parameters.ReturnPathDomain, "The domain create parameters return-path domain", true, true);
+        var validationError = ValidationExtensions.ValidateDomainName(parameters.Name, "The domain create parameters name", false, false);
+        if (validationError is not null)
+            return Result.Failure<DomainCreateRequestModel>(validationError);
 
+        validationError = ValidationExtensions.ValidateDomainName(parameters.ReturnPathDomain, "The domain create parameters return-path domain", true, true);
         if (validationError is not null)
             return Result.Failure<DomainCreateRequestModel>(validationError);
 

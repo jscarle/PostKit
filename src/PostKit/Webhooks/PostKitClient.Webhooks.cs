@@ -240,12 +240,23 @@ internal sealed partial class PostKitClient
 
     private static Result<WebhookRequestModel> CreateWebhookRequest(WebhookCreateParameters parameters)
     {
-        var validationError = ValidationExtensions.ValidateWebhookUrl(parameters.Url, "The webhook create parameters URL") ??
-                              ValidationExtensions.ValidateWebhookMessageStream(parameters.MessageStreamId, "The webhook create parameters message stream") ??
-                              ValidationExtensions.ValidateWebhookHttpAuth(parameters.HttpAuth, "The webhook create parameters HTTP auth") ??
-                              ValidationExtensions.ValidateWebhookHeaders(parameters.HttpHeaders, "The webhook create parameters HTTP headers") ??
-                              ValidationExtensions.ValidateWebhookTriggers(parameters.Triggers, "The webhook create parameters triggers");
+        var validationError = ValidationExtensions.ValidateWebhookUrl(parameters.Url, "The webhook create parameters URL");
+        if (validationError is not null)
+            return Result.Failure<WebhookRequestModel>(validationError);
 
+        validationError = ValidationExtensions.ValidateWebhookMessageStream(parameters.MessageStreamId, "The webhook create parameters message stream");
+        if (validationError is not null)
+            return Result.Failure<WebhookRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateWebhookHttpAuth(parameters.HttpAuth, "The webhook create parameters HTTP auth");
+        if (validationError is not null)
+            return Result.Failure<WebhookRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateWebhookHeaders(parameters.HttpHeaders, "The webhook create parameters HTTP headers");
+        if (validationError is not null)
+            return Result.Failure<WebhookRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateWebhookTriggers(parameters.Triggers, "The webhook create parameters triggers");
         if (validationError is not null)
             return Result.Failure<WebhookRequestModel>(validationError);
 
@@ -264,9 +275,19 @@ internal sealed partial class PostKitClient
         if (parameters.Url is null && parameters.HttpAuth is null && parameters.HttpHeaders is null && parameters.Triggers is null)
             return Result.Failure<WebhookRequestModel>("The webhook edit parameters must set Url, HttpAuth, HttpHeaders, or Triggers.");
 
-        var validationError = ValidationExtensions.ValidateWebhookUrl(parameters.Url, "The webhook edit parameters URL") ?? ValidationExtensions.ValidateWebhookHttpAuth(parameters.HttpAuth, "The webhook edit parameters HTTP auth") ??
-            ValidationExtensions.ValidateWebhookHeaders(parameters.HttpHeaders, "The webhook edit parameters HTTP headers") ?? ValidationExtensions.ValidateWebhookTriggers(parameters.Triggers, "The webhook edit parameters triggers");
+        var validationError = ValidationExtensions.ValidateWebhookUrl(parameters.Url, "The webhook edit parameters URL");
+        if (validationError is not null)
+            return Result.Failure<WebhookRequestModel>(validationError);
 
+        validationError = ValidationExtensions.ValidateWebhookHttpAuth(parameters.HttpAuth, "The webhook edit parameters HTTP auth");
+        if (validationError is not null)
+            return Result.Failure<WebhookRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateWebhookHeaders(parameters.HttpHeaders, "The webhook edit parameters HTTP headers");
+        if (validationError is not null)
+            return Result.Failure<WebhookRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateWebhookTriggers(parameters.Triggers, "The webhook edit parameters triggers");
         if (validationError is not null)
             return Result.Failure<WebhookRequestModel>(validationError);
 

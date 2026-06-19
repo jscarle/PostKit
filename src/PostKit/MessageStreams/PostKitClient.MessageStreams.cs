@@ -261,12 +261,23 @@ internal sealed partial class PostKitClient
 
     private static Result<MessageStreamRequestModel> CreateMessageStreamRequest(MessageStreamCreateParameters parameters)
     {
-        var validationError = ValidationExtensions.ValidateClientMessageStreamId(parameters.Id, "The message stream create parameters ID") ??
-                              ValidationExtensions.ValidateRequiredText(parameters.Name, "The message stream create parameters name") ??
-                              ValidationExtensions.ValidateClearableManagementText(parameters.Description, "The message stream create parameters description") ??
-                              ValidationExtensions.ValidateCreateMessageStreamType(parameters.MessageStreamType, "The message stream create parameters type") ??
-                              ValidationExtensions.ValidateMessageStreamSubscriptionManagement(parameters.SubscriptionManagementConfiguration, "The message stream create parameters subscription-management configuration");
+        var validationError = ValidationExtensions.ValidateClientMessageStreamId(parameters.Id, "The message stream create parameters ID");
+        if (validationError is not null)
+            return Result.Failure<MessageStreamRequestModel>(validationError);
 
+        validationError = ValidationExtensions.ValidateRequiredText(parameters.Name, "The message stream create parameters name");
+        if (validationError is not null)
+            return Result.Failure<MessageStreamRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateClearableManagementText(parameters.Description, "The message stream create parameters description");
+        if (validationError is not null)
+            return Result.Failure<MessageStreamRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateCreateMessageStreamType(parameters.MessageStreamType, "The message stream create parameters type");
+        if (validationError is not null)
+            return Result.Failure<MessageStreamRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateMessageStreamSubscriptionManagement(parameters.SubscriptionManagementConfiguration, "The message stream create parameters subscription-management configuration");
         if (validationError is not null)
             return Result.Failure<MessageStreamRequestModel>(validationError);
 
@@ -285,10 +296,15 @@ internal sealed partial class PostKitClient
         if (parameters.Name is null && parameters.Description is null && parameters.SubscriptionManagementConfiguration is null)
             return Result.Failure<MessageStreamRequestModel>("The message stream edit parameters must set Name, Description, or SubscriptionManagementConfiguration.");
 
-        var validationError = ValidationExtensions.ValidateOptionalText(parameters.Name, "The message stream edit parameters name") ??
-                              ValidationExtensions.ValidateClearableManagementText(parameters.Description, "The message stream edit parameters description") ??
-                              ValidationExtensions.ValidateMessageStreamSubscriptionManagement(parameters.SubscriptionManagementConfiguration, "The message stream edit parameters subscription-management configuration");
+        var validationError = ValidationExtensions.ValidateOptionalText(parameters.Name, "The message stream edit parameters name");
+        if (validationError is not null)
+            return Result.Failure<MessageStreamRequestModel>(validationError);
 
+        validationError = ValidationExtensions.ValidateClearableManagementText(parameters.Description, "The message stream edit parameters description");
+        if (validationError is not null)
+            return Result.Failure<MessageStreamRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateMessageStreamSubscriptionManagement(parameters.SubscriptionManagementConfiguration, "The message stream edit parameters subscription-management configuration");
         if (validationError is not null)
             return Result.Failure<MessageStreamRequestModel>(validationError);
 

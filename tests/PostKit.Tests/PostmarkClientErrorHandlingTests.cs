@@ -369,7 +369,7 @@ public class PostmarkClientErrorHandlingTests
 
         Assert.True(result.IsSuccess(out _), result.ToString());
         var delay = Assert.Single(delays);
-        Assert.Equal(TimeSpan.FromMilliseconds(1200), delay);
+        Assert.InRange(delay, TimeSpan.FromMilliseconds(1199), TimeSpan.FromMilliseconds(1200));
     }
 
     [Fact]

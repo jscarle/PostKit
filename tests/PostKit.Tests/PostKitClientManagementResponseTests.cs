@@ -24,7 +24,7 @@ public class PostKitClientManagementResponseTests
                                         "ID": 42,
                                         "Name": "PostKit Testing",
                                         "ApiTokens": ["server-token-a"],
-                                        "Color": "Blue",
+                                        "Color": "blue",
                                         "SmtpApiActivated": true,
                                         "RawEmailEnabled": false,
                                         "DeliveryType": "Sandbox",
@@ -54,7 +54,7 @@ public class PostKitClientManagementResponseTests
                                                 "ID": 42,
                                                 "Name": "PostKit Testing",
                                                 "ApiTokens": ["server-token-a"],
-                                                "Color": "Blue",
+                                                "Color": "blue",
                                                 "SmtpApiActivated": true,
                                                 "RawEmailEnabled": false,
                                                 "DeliveryType": "Sandbox",
@@ -566,15 +566,19 @@ public class PostKitClientManagementResponseTests
     }
 
     [Fact]
-    public async Task EditSenderSignatureAsync_WithNoFields_ReturnsValidationFailureBeforePostmarkCall()
+    public async Task EditSenderSignatureAsync_WithoutName_ReturnsValidationFailureBeforePostmarkCall()
     {
         var postmark = new RecordingPostmarkClient();
         var client = new PostKitClient(postmark, new TestLogger());
 
-        var result = await client.EditSenderSignatureAsync(77, new SenderSignatureEditParameters(), TestContext.Current.CancellationToken);
+        var result = await client.EditSenderSignatureAsync(77, new SenderSignatureEditParameters
+        {
+            Name = null!,
+            ReplyToEmailAddress = "reply@example.com"
+        }, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure(out var error, out _), result.ToString());
-        Assert.Equal("The sender signature edit parameters must set Name, ReplyToEmailAddress, ReturnPathDomain, or ConfirmationPersonalNote.", error.Message);
+        Assert.Equal("The sender signature edit parameters name cannot be null.", error.Message);
         Assert.Null(postmark.LastAccountPutEndpoint);
     }
 

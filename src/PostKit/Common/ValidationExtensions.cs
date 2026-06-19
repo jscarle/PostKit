@@ -470,7 +470,11 @@ internal static partial class ValidationExtensions
                 .IsValidMessageStreamId())
             return FormatMessageStreamIdValidationMessage(messageStream, $"The {operationName} message stream");
 
-        return ValidateMessageTrackingWindow(count, offset, operationName, enforceSearchWindow) ?? ValidateMessageTrackingQuery(query, operationName);
+        var validationError = ValidateMessageTrackingWindow(count, offset, operationName, enforceSearchWindow);
+        if (validationError is not null)
+            return validationError;
+
+        return ValidateMessageTrackingQuery(query, operationName);
     }
 
     public static string? ValidateSingleMessageTrackingRequest(Guid messageId, int count, int offset, string operationName)
@@ -504,16 +508,47 @@ internal static partial class ValidationExtensions
         if (query.Recipient is not null && string.IsNullOrWhiteSpace(query.Recipient.Address))
             return FormatEmptyOptionalFilterMessage($"The {operationName} recipient filter", nameof(MessageTrackingQuery.Recipient), query.Recipient.Address);
 
-        return ValidateMessageTrackingStringFilter(query.Tag, nameof(MessageTrackingQuery.Tag), "tag", operationName) ??
-               ValidateMessageTrackingStringFilter(query.ClientName, nameof(MessageTrackingQuery.ClientName), "client name", operationName) ??
-               ValidateMessageTrackingStringFilter(query.ClientCompany, nameof(MessageTrackingQuery.ClientCompany), "client company", operationName) ??
-               ValidateMessageTrackingStringFilter(query.ClientFamily, nameof(MessageTrackingQuery.ClientFamily), "client family", operationName) ??
-               ValidateMessageTrackingStringFilter(query.OsName, nameof(MessageTrackingQuery.OsName), "operating system name", operationName) ??
-               ValidateMessageTrackingStringFilter(query.OsFamily, nameof(MessageTrackingQuery.OsFamily), "operating system family", operationName) ??
-               ValidateMessageTrackingStringFilter(query.OsCompany, nameof(MessageTrackingQuery.OsCompany), "operating system company", operationName) ??
-               ValidateMessageTrackingStringFilter(query.Platform, nameof(MessageTrackingQuery.Platform), "platform", operationName) ??
-               ValidateMessageTrackingStringFilter(query.Country, nameof(MessageTrackingQuery.Country), "country", operationName) ??
-               ValidateMessageTrackingStringFilter(query.Region, nameof(MessageTrackingQuery.Region), "region", operationName) ?? ValidateMessageTrackingStringFilter(query.City, nameof(MessageTrackingQuery.City), "city", operationName);
+        var validationError = ValidateMessageTrackingStringFilter(query.Tag, nameof(MessageTrackingQuery.Tag), "tag", operationName);
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateMessageTrackingStringFilter(query.ClientName, nameof(MessageTrackingQuery.ClientName), "client name", operationName);
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateMessageTrackingStringFilter(query.ClientCompany, nameof(MessageTrackingQuery.ClientCompany), "client company", operationName);
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateMessageTrackingStringFilter(query.ClientFamily, nameof(MessageTrackingQuery.ClientFamily), "client family", operationName);
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateMessageTrackingStringFilter(query.OsName, nameof(MessageTrackingQuery.OsName), "operating system name", operationName);
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateMessageTrackingStringFilter(query.OsFamily, nameof(MessageTrackingQuery.OsFamily), "operating system family", operationName);
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateMessageTrackingStringFilter(query.OsCompany, nameof(MessageTrackingQuery.OsCompany), "operating system company", operationName);
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateMessageTrackingStringFilter(query.Platform, nameof(MessageTrackingQuery.Platform), "platform", operationName);
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateMessageTrackingStringFilter(query.Country, nameof(MessageTrackingQuery.Country), "country", operationName);
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateMessageTrackingStringFilter(query.Region, nameof(MessageTrackingQuery.Region), "region", operationName);
+        if (validationError is not null)
+            return validationError;
+
+        return ValidateMessageTrackingStringFilter(query.City, nameof(MessageTrackingQuery.City), "city", operationName);
     }
 
     public static string? ValidateMessageTrackingStringFilter(string? value, string propertyName, string filterName, string operationName)
@@ -814,16 +849,44 @@ internal static partial class ValidationExtensions
 
     public static string? ValidateServerHooks(ServerCreateParameters parameters, string subject)
     {
-        return ValidateOptionalUrl(parameters.InboundHookUrl, $"{subject} inbound hook URL") ?? ValidateOptionalUrl(parameters.BounceHookUrl, $"{subject} bounce hook URL") ??
-            ValidateOptionalUrl(parameters.OpenHookUrl, $"{subject} open hook URL") ??
-            ValidateOptionalUrl(parameters.DeliveryHookUrl, $"{subject} delivery hook URL") ?? ValidateOptionalUrl(parameters.ClickHookUrl, $"{subject} click hook URL");
+        var validationError = ValidateOptionalUrl(parameters.InboundHookUrl, $"{subject} inbound hook URL");
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateOptionalUrl(parameters.BounceHookUrl, $"{subject} bounce hook URL");
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateOptionalUrl(parameters.OpenHookUrl, $"{subject} open hook URL");
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateOptionalUrl(parameters.DeliveryHookUrl, $"{subject} delivery hook URL");
+        if (validationError is not null)
+            return validationError;
+
+        return ValidateOptionalUrl(parameters.ClickHookUrl, $"{subject} click hook URL");
     }
 
     public static string? ValidateServerHooks(ServerEditParameters parameters, string subject)
     {
-        return ValidateOptionalUrl(parameters.InboundHookUrl, $"{subject} inbound hook URL") ?? ValidateOptionalUrl(parameters.BounceHookUrl, $"{subject} bounce hook URL") ??
-            ValidateOptionalUrl(parameters.OpenHookUrl, $"{subject} open hook URL") ??
-            ValidateOptionalUrl(parameters.DeliveryHookUrl, $"{subject} delivery hook URL") ?? ValidateOptionalUrl(parameters.ClickHookUrl, $"{subject} click hook URL");
+        var validationError = ValidateOptionalUrl(parameters.InboundHookUrl, $"{subject} inbound hook URL");
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateOptionalUrl(parameters.BounceHookUrl, $"{subject} bounce hook URL");
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateOptionalUrl(parameters.OpenHookUrl, $"{subject} open hook URL");
+        if (validationError is not null)
+            return validationError;
+
+        validationError = ValidateOptionalUrl(parameters.DeliveryHookUrl, $"{subject} delivery hook URL");
+        if (validationError is not null)
+            return validationError;
+
+        return ValidateOptionalUrl(parameters.ClickHookUrl, $"{subject} click hook URL");
     }
 
     public static string? ValidateServerInboundDomain(string? domain, string subject)

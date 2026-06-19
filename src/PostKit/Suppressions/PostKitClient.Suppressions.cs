@@ -41,7 +41,11 @@ internal sealed partial class PostKitClient
         if (messageStream is null)
             throw new ArgumentNullException(nameof(messageStream), "The message stream ID cannot be null.");
 
-        var validationError = ValidationExtensions.ValidateSuppressionMessageStream(messageStream, "The suppression query message stream") ?? ValidationExtensions.ValidateSuppressionQuery(query);
+        var validationError = ValidationExtensions.ValidateSuppressionMessageStream(messageStream, "The suppression query message stream");
+        if (validationError is not null)
+            return Result.Failure<SuppressionDump>(validationError);
+
+        validationError = ValidationExtensions.ValidateSuppressionQuery(query);
         if (validationError is not null)
             return Result.Failure<SuppressionDump>(validationError);
 

@@ -302,11 +302,24 @@ internal sealed partial class PostKitClient
 
     private static Result<SenderSignatureCreateRequestModel> CreateSenderSignatureRequest(SenderSignatureCreateParameters parameters)
     {
-        var validationError = ValidationExtensions.ValidateEmailAddress(parameters.FromEmail, nameof(SenderSignatureCreateParameters.FromEmail), "The sender signature create parameters from email address") ??
-                              ValidationExtensions.ValidateRequiredText(parameters.Name, "The sender signature create parameters name") ?? ValidationExtensions.ValidateOptionalEmailAddress(parameters.ReplyToEmailAddress,
-                                  nameof(SenderSignatureCreateParameters.ReplyToEmailAddress), "The sender signature create parameters reply-to email address") ??
-                              ValidationExtensions.ValidateDomainName(parameters.ReturnPathDomain, "The sender signature create parameters return-path domain", true, true) ??
-                              ValidateSenderSignatureConfirmationPersonalNote(parameters.ConfirmationPersonalNote, "The sender signature create parameters confirmation personal note");
+        var validationError = ValidationExtensions.ValidateEmailAddress(parameters.FromEmail, nameof(SenderSignatureCreateParameters.FromEmail), "The sender signature create parameters from email address");
+        if (validationError is not null)
+            return Result.Failure<SenderSignatureCreateRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateRequiredText(parameters.Name, "The sender signature create parameters name");
+        if (validationError is not null)
+            return Result.Failure<SenderSignatureCreateRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateOptionalEmailAddress(parameters.ReplyToEmailAddress, nameof(SenderSignatureCreateParameters.ReplyToEmailAddress),
+            "The sender signature create parameters reply-to email address");
+        if (validationError is not null)
+            return Result.Failure<SenderSignatureCreateRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateDomainName(parameters.ReturnPathDomain, "The sender signature create parameters return-path domain", true, true);
+        if (validationError is not null)
+            return Result.Failure<SenderSignatureCreateRequestModel>(validationError);
+
+        validationError = ValidateSenderSignatureConfirmationPersonalNote(parameters.ConfirmationPersonalNote, "The sender signature create parameters confirmation personal note");
 
         if (validationError is not null)
             return Result.Failure<SenderSignatureCreateRequestModel>(validationError);
@@ -323,13 +336,20 @@ internal sealed partial class PostKitClient
 
     private static Result<SenderSignatureEditRequestModel> CreateSenderSignatureRequest(SenderSignatureEditParameters parameters)
     {
-        if (parameters.Name is null && parameters.ReplyToEmailAddress is null && parameters.ReturnPathDomain is null && parameters.ConfirmationPersonalNote is null)
-            return Result.Failure<SenderSignatureEditRequestModel>("The sender signature edit parameters must set Name, ReplyToEmailAddress, ReturnPathDomain, or ConfirmationPersonalNote.");
+        var validationError = ValidationExtensions.ValidateRequiredText(parameters.Name, "The sender signature edit parameters name");
+        if (validationError is not null)
+            return Result.Failure<SenderSignatureEditRequestModel>(validationError);
 
-        var validationError = ValidationExtensions.ValidateOptionalText(parameters.Name, "The sender signature edit parameters name") ?? ValidationExtensions.ValidateOptionalEmailAddress(parameters.ReplyToEmailAddress,
-                                  nameof(SenderSignatureEditParameters.ReplyToEmailAddress), "The sender signature edit parameters reply-to email address") ??
-                              ValidationExtensions.ValidateDomainName(parameters.ReturnPathDomain, "The sender signature edit parameters return-path domain", true, true) ??
-                              ValidateSenderSignatureConfirmationPersonalNote(parameters.ConfirmationPersonalNote, "The sender signature edit parameters confirmation personal note");
+        validationError = ValidationExtensions.ValidateOptionalEmailAddress(parameters.ReplyToEmailAddress, nameof(SenderSignatureEditParameters.ReplyToEmailAddress),
+            "The sender signature edit parameters reply-to email address");
+        if (validationError is not null)
+            return Result.Failure<SenderSignatureEditRequestModel>(validationError);
+
+        validationError = ValidationExtensions.ValidateDomainName(parameters.ReturnPathDomain, "The sender signature edit parameters return-path domain", true, true);
+        if (validationError is not null)
+            return Result.Failure<SenderSignatureEditRequestModel>(validationError);
+
+        validationError = ValidateSenderSignatureConfirmationPersonalNote(parameters.ConfirmationPersonalNote, "The sender signature edit parameters confirmation personal note");
 
         if (validationError is not null)
             return Result.Failure<SenderSignatureEditRequestModel>(validationError);

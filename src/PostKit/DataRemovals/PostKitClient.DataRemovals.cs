@@ -89,9 +89,11 @@ internal sealed partial class PostKitClient
 
     private static Result<DataRemovalRequestModel> CreateDataRemovalRequest(DataRemovalCreateParameters parameters)
     {
-        var validationError = ValidationExtensions.ValidateDataRemovalEmailAddress(parameters.RequestedBy, nameof(DataRemovalCreateParameters.RequestedBy), "The data removal create parameters requested-by email address") ??
-                              ValidationExtensions.ValidateDataRemovalEmailAddress(parameters.RequestedFor, nameof(DataRemovalCreateParameters.RequestedFor), "The data removal create parameters requested-for email address");
+        var validationError = ValidationExtensions.ValidateDataRemovalEmailAddress(parameters.RequestedBy, nameof(DataRemovalCreateParameters.RequestedBy), "The data removal create parameters requested-by email address");
+        if (validationError is not null)
+            return Result.Failure<DataRemovalRequestModel>(validationError);
 
+        validationError = ValidationExtensions.ValidateDataRemovalEmailAddress(parameters.RequestedFor, nameof(DataRemovalCreateParameters.RequestedFor), "The data removal create parameters requested-for email address");
         if (validationError is not null)
             return Result.Failure<DataRemovalRequestModel>(validationError);
 
