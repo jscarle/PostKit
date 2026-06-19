@@ -17,20 +17,20 @@
 
     <!-- References -->
     <ItemGroup>
-        <PackageReference Include="JetBrains.Annotations" Version="2025.2.4"/>
+        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0"/>
         <PackageReference Include="LightResults" Version="10.0.3"/>
-        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.8" />
-        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.6.0" />
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" PrivateAssets="All" />
-        <PackageReference Include="MimeKit" Version="4.17.0" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9"/>
+        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.7.0"/>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" PrivateAssets="All"/>
+        <PackageReference Include="MimeKit" Version="4.17.0"/>
     </ItemGroup>
 
     <!-- Output -->
     <PropertyGroup>
         <AssemblyName>PostKit</AssemblyName>
-        <Version>10.1.7</Version>
-        <AssemblyVersion>10.1.7.0</AssemblyVersion>
-        <FileVersion>10.1.7.0</FileVersion>
+        <Version>10.2.0.0</Version>
+        <AssemblyVersion>10.2.0.0</AssemblyVersion>
+        <FileVersion>10.2.0.0</FileVersion>
         <NeutralLanguage>en-US</NeutralLanguage>
         <Optimize>true</Optimize>
         <!--<IsAotCompatible>true</IsAotCompatible>-->
@@ -65,24 +65,6 @@
         <None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false"/>
         <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" Visible="false"/>
         <None Include="..\..\Icon.png" Pack="true" PackagePath="\" Visible="false"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <Compile Update="PostKitClient.Emails.cs">
-            <DependentUpon>PostKitClient.cs</DependentUpon>
-        </Compile>
-        <Compile Update="PostKitClient.Bounces.cs">
-            <DependentUpon>PostKitClient.cs</DependentUpon>
-        </Compile>
-        <Compile Update="PostKitClient.BulkEmails.cs">
-            <DependentUpon>PostKitClient.cs</DependentUpon>
-        </Compile>
-        <Compile Update="PostKitClient.Messages.cs">
-            <DependentUpon>PostKitClient.cs</DependentUpon>
-        </Compile>
-        <Compile Update="PostKitClient.Suppressions.cs">
-            <DependentUpon>PostKitClient.cs</DependentUpon>
-        </Compile>
     </ItemGroup>
 
     <!-- Content -->

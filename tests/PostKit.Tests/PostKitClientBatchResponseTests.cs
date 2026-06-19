@@ -45,7 +45,7 @@ public class PostKitClientBatchResponseTests
 
         var result = await client.SendEmailBatchAsync([templatedEmail, composedEmail], CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("Each email in a batch must either use a template or none may use a template. Found 1 templated and 1 non-templated emails; first templated item index: 0, first non-templated item index: 1.", error.Message);
     }
 
@@ -56,7 +56,7 @@ public class PostKitClientBatchResponseTests
 
         var result = await client.SendEmailBatchAsync([new Email()], CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("Batch item 0 could not be prepared for sending: From is unexpectedly null.", error.Message);
     }
 
@@ -73,16 +73,15 @@ public class PostKitClientBatchResponseTests
             .Build();
 
         var postmark = new RecordingPostmarkClient([
-                new EmailResponse
-                {
-                    MessageId = messageId.ToString("D"),
-                    SubmittedAt = submittedAt,
-                    To = "recipient@postkit.com",
-                    ErrorCode = 0,
-                    Message = "OK",
-                },
-            ]
-        );
+            new EmailResponse
+            {
+                MessageId = messageId.ToString("D"),
+                SubmittedAt = submittedAt,
+                To = "recipient@postkit.com",
+                ErrorCode = 0,
+                Message = "OK"
+            }
+        ]);
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
@@ -113,16 +112,15 @@ public class PostKitClientBatchResponseTests
             .Build();
 
         var postmark = new RecordingPostmarkClient([
-                new EmailResponse
-                {
-                    MessageId = messageId.ToString("D"),
-                    SubmittedAt = DateTimeOffset.UtcNow,
-                    To = "recipient@postkit.com",
-                    ErrorCode = 0,
-                    Message = "OK",
-                },
-            ]
-        );
+            new EmailResponse
+            {
+                MessageId = messageId.ToString("D"),
+                SubmittedAt = DateTimeOffset.UtcNow,
+                To = "recipient@postkit.com",
+                ErrorCode = 0,
+                Message = "OK"
+            }
+        ]);
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
@@ -145,9 +143,8 @@ public class PostKitClientBatchResponseTests
             .Build();
 
         var postmark = new RecordingPostmarkClient([
-                new EmailResponse { ErrorCode = 300, Message = "Invalid email request." },
-            ]
-        );
+            new EmailResponse { ErrorCode = 300, Message = "Invalid email request." }
+        ]);
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
@@ -157,7 +154,7 @@ public class PostKitClientBatchResponseTests
         Assert.False(batchResponse.IsSuccessful);
 
         var itemResult = Assert.Single(batchResponse.Results);
-        Assert.True(itemResult.IsFailure(out var error, out var _), itemResult.ToString());
+        Assert.True(itemResult.IsFailure(out var error, out _), itemResult.ToString());
         var postmarkError = Assert.IsType<PostmarkError>(error);
         Assert.Equal(PostmarkErrorCode.InvalidEmailRequest, postmarkError.ErrorCode);
         Assert.Equal("Invalid email request.", postmarkError.Message);
@@ -174,9 +171,8 @@ public class PostKitClientBatchResponseTests
             .Build();
 
         var postmark = new RecordingPostmarkClient([
-                new EmailResponse { ErrorCode = 999999, Message = "Brand new Postmark error." },
-            ]
-        );
+            new EmailResponse { ErrorCode = 999999, Message = "Brand new Postmark error." }
+        ]);
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
 
@@ -186,7 +182,7 @@ public class PostKitClientBatchResponseTests
         Assert.False(batchResponse.IsSuccessful);
 
         var itemResult = Assert.Single(batchResponse.Results);
-        Assert.True(itemResult.IsFailure(out var error, out var _), itemResult.ToString());
+        Assert.True(itemResult.IsFailure(out var error, out _), itemResult.ToString());
         var postmarkError = Assert.IsType<PostmarkError>(error);
         Assert.Equal((PostmarkErrorCode)999999, postmarkError.ErrorCode);
         Assert.Equal("Brand new Postmark error.", postmarkError.Message);
@@ -205,13 +201,13 @@ public class PostKitClientBatchResponseTests
 
         var result = await client.SendEmailBatchAsync([email], CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("Postmark returned an unexpected number of results for the batch request. Expected 1, received 0.", error.Message);
     }
 
     private sealed class RecordingPostmarkClient(List<EmailResponse> response) : IPostmarkClient
     {
-        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             if (typeof(TResponse) != typeof(List<EmailResponse>))
                 throw new InvalidOperationException("Unexpected response type.");
@@ -219,7 +215,7 @@ public class PostKitClientBatchResponseTests
             return Task.FromResult(Result.Success((TResponse)(object)response));
         }
 
-        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException("GetAsync should not be called in this test.");
         }

@@ -10,5 +10,5 @@ public enum SuppressionStatus
     Suppressed = 1,
 
     /// <summary>The suppression was deleted.</summary>
-    Deleted = 2,
+    Deleted = 2
 }

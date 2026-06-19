@@ -5,6 +5,13 @@ namespace PostKit.Suppressions;
 /// <summary>Represents a per-address suppression create or delete result returned from Postmark.</summary>
 public sealed record SuppressionResult
 {
+    internal SuppressionResult(string emailAddress, SuppressionStatus status, string? message)
+    {
+        EmailAddress = emailAddress;
+        Status = status;
+        Message = message;
+    }
+
     /// <summary>Gets the email address that the suppression change was requested for.</summary>
     public string EmailAddress { [UsedImplicitly] get; }
 
@@ -13,11 +20,4 @@ public sealed record SuppressionResult
 
     /// <summary>Gets the server-provided message for failed changes, if Postmark returned one.</summary>
     public string? Message { [UsedImplicitly] get; }
-
-    internal SuppressionResult(string emailAddress, SuppressionStatus status, string? message)
-    {
-        EmailAddress = emailAddress;
-        Status = status;
-        Message = message;
-    }
 }

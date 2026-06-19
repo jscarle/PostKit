@@ -6,6 +6,25 @@ namespace PostKit.Messages;
 /// <summary>Represents event-specific details returned for an outbound message event.</summary>
 public sealed record OutboundMessageEventDetails
 {
+    internal OutboundMessageEventDetails(IReadOnlyDictionary<string, string> values)
+    {
+        Values = values switch
+        {
+            ReadOnlyDictionary<string, string> dictionary => dictionary,
+            _ => new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(values, StringComparer.Ordinal))
+        };
+
+        Summary = GetValue("Summary");
+        BounceId = GetValue("BounceID");
+        DeliveryMessage = GetValue("DeliveryMessage");
+        DestinationServer = GetValue("DestinationServer");
+        DestinationIp = GetValue("DestinationIP");
+        Origin = GetValue("Origin");
+        SuppressSending = GetValue("SuppressSending");
+        Link = GetValue("Link");
+        ClickLocation = GetValue("ClickLocation");
+    }
+
     /// <summary>Gets the raw event detail values returned by Postmark.</summary>
     public IReadOnlyDictionary<string, string> Values { [UsedImplicitly] get; }
 
@@ -35,25 +54,6 @@ public sealed record OutboundMessageEventDetails
 
     /// <summary>Gets the click location for click events that include one.</summary>
     public string? ClickLocation { [UsedImplicitly] get; }
-
-    internal OutboundMessageEventDetails(IReadOnlyDictionary<string, string> values)
-    {
-        Values = values switch
-        {
-            ReadOnlyDictionary<string, string> dictionary => dictionary,
-            _ => new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(values, StringComparer.Ordinal)),
-        };
-
-        Summary = GetValue("Summary");
-        BounceId = GetValue("BounceID");
-        DeliveryMessage = GetValue("DeliveryMessage");
-        DestinationServer = GetValue("DestinationServer");
-        DestinationIp = GetValue("DestinationIP");
-        Origin = GetValue("Origin");
-        SuppressSending = GetValue("SuppressSending");
-        Link = GetValue("Link");
-        ClickLocation = GetValue("ClickLocation");
-    }
 
     private string? GetValue(string name)
     {

@@ -6,7 +6,8 @@ using PostKit.Configuration;
 namespace PostKit.Postmark;
 
 [UsedImplicitly]
-internal sealed class PostmarkClientFactory(IHttpClientFactory httpClientFactory, IOptions<PostKitOptions> defaultOptions, IOptionsMonitor<PostKitOptions> namedOptions, ILogger<PostmarkClient> logger, PostmarkRateLimiter rateLimiter) : IPostmarkClientFactory
+internal sealed class PostmarkClientFactory(IHttpClientFactory httpClientFactory, IOptions<PostKitOptions> defaultOptions, IOptionsMonitor<PostKitOptions> namedOptions, ILogger<PostmarkClient> logger, PostmarkRateLimiter rateLimiter)
+    : IPostmarkClientFactory
 {
     public PostmarkClient Create(string? key = null)
     {

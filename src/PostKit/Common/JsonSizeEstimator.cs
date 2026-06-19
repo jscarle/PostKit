@@ -6,9 +6,8 @@ namespace PostKit.Common;
 
 internal sealed class CountingBufferWriter(int initialSize = 256) : IBufferWriter<byte>, IDisposable
 {
-    public int BytesWritten { get; private set; }
-
     private byte[] _buffer = ArrayPool<byte>.Shared.Rent(Math.Max(initialSize, 1));
+    public int BytesWritten { get; private set; }
 
     public void Advance(int count)
     {
@@ -28,11 +27,6 @@ internal sealed class CountingBufferWriter(int initialSize = 256) : IBufferWrite
         return _buffer.AsSpan(BytesWritten);
     }
 
-    public void Reset()
-    {
-        BytesWritten = 0;
-    }
-
     public void Dispose()
     {
         if (_buffer.Length == 0)
@@ -40,6 +34,11 @@ internal sealed class CountingBufferWriter(int initialSize = 256) : IBufferWrite
 
         ArrayPool<byte>.Shared.Return(_buffer);
         _buffer = Array.Empty<byte>();
+    }
+
+    public void Reset()
+    {
+        BytesWritten = 0;
     }
 
     private void EnsureCapacity(int sizeHint)

@@ -10,5 +10,5 @@ public enum SuppressionReason
     SpamComplaint = 1,
 
     /// <summary>The recipient was manually suppressed by the recipient, customer, administrator, or API.</summary>
-    ManualSuppression = 2,
+    ManualSuppression = 2
 }

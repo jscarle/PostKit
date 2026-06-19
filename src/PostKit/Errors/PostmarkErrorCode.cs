@@ -280,5 +280,5 @@ public enum PostmarkErrorCode
     InvalidDataRemovalId = 1301,
 
     /// <summary>No Data Removal access. You lack permission for these requests.</summary>
-    NoDataRemovalAccess = 1302,
+    NoDataRemovalAccess = 1302
 }

@@ -21,12 +21,10 @@ public class BulkEmailIntegrationTests
             .TextBody("Hello from PostKit bulk.")
             .AddMessage(BulkEmailMessage.Compose()
                 .To(RequireDevelopmentValue(TestConfiguration.DevelopmentToEmail, nameof(TestConfiguration.DevelopmentToEmail)))
-                .Build()
-            )
+                .Build())
             .AddMessage(BulkEmailMessage.Compose()
                 .Cc(RequireDevelopmentValue(TestConfiguration.DevelopmentCcEmail, nameof(TestConfiguration.DevelopmentCcEmail)))
-                .Build()
-            )
+                .Build())
             .Build();
 
         var result = await _client.SendBulkEmailAsync(bulkEmail, TestContext.Current.CancellationToken);
@@ -49,12 +47,10 @@ public class BulkEmailIntegrationTests
             .UseMessageStream(MessageStream.Broadcast)
             .AddMessage(BulkEmailMessage.Compose()
                 .To(RequireDevelopmentValue(TestConfiguration.DevelopmentToEmail, nameof(TestConfiguration.DevelopmentToEmail)))
-                .Build()
-            )
+                .Build())
             .AddMessage(BulkEmailMessage.Compose()
                 .To(RequireDevelopmentValue(TestConfiguration.DevelopmentCcEmail, nameof(TestConfiguration.DevelopmentCcEmail)))
-                .Build()
-            )
+                .Build())
             .Build();
 
         var sendResult = await _client.SendBulkEmailAsync(bulkEmail, TestContext.Current.CancellationToken);
@@ -94,7 +90,7 @@ public class BulkEmailIntegrationTests
         if (result.IsSuccess(out var response))
             return response;
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
 
         if (ShouldSkip(error))
             Assert.Skip($"Bulk API is not available in this environment: {error.Message}");
@@ -123,7 +119,7 @@ public class BulkEmailIntegrationTests
         if (error is HttpError { StatusCode: HttpStatusCode.NotFound })
             return true;
 
-        return error.Message.Contains("requires activation", StringComparison.OrdinalIgnoreCase)
-               || (error.Message.Contains("bulk api", StringComparison.OrdinalIgnoreCase) && error.Message.Contains("activation", StringComparison.OrdinalIgnoreCase));
+        return error.Message.Contains("requires activation", StringComparison.OrdinalIgnoreCase) ||
+               (error.Message.Contains("bulk api", StringComparison.OrdinalIgnoreCase) && error.Message.Contains("activation", StringComparison.OrdinalIgnoreCase));
     }
 }

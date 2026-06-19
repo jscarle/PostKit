@@ -19,5 +19,5 @@ public enum OutboundMessageEventType
     LinkClicked,
 
     /// <summary>The message bounced.</summary>
-    Bounced,
+    Bounced
 }

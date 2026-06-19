@@ -77,7 +77,7 @@ public class PostKitClientFailureHandlingTests
         var postmark = new RecordingPostmarkClient();
         var client = new PostKitClient(postmark, new TestLogger<PostKitClient>());
 
-        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetSuppressionsAsync(null!, cancellationToken: CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => client.GetSuppressionsAsync(null!, CancellationToken.None));
 
         Assert.Equal("messageStream", exception.ParamName);
         Assert.Equal("The message stream ID cannot be null. (Parameter 'messageStream')", exception.Message);
@@ -106,7 +106,7 @@ public class PostKitClientFailureHandlingTests
 
         var result = await client.SendEmailAsync(new Email(), CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The email could not be prepared for sending: From is unexpectedly null.", error.Message);
         Assert.False(postmark.PostWasCalled);
     }
@@ -119,7 +119,7 @@ public class PostKitClientFailureHandlingTests
 
         var result = await client.SendBulkEmailAsync(new BulkEmail(), CancellationToken.None);
 
-        Assert.True(result.IsFailure(out var error, out var _), result.ToString());
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The bulk email could not be prepared for sending: From is unexpectedly null.", error.Message);
         Assert.False(postmark.PostWasCalled);
     }
@@ -128,13 +128,13 @@ public class PostKitClientFailureHandlingTests
     {
         public bool PostWasCalled { get; private set; }
 
-        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
             PostWasCalled = true;
             throw new InvalidOperationException("PostAsync should not be called in this test.");
         }
 
-        public Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+        public Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException("GetAsync should not be called in this test.");
         }

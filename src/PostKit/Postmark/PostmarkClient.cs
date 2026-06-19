@@ -21,11 +21,14 @@ internal sealed partial class PostmarkClient : IPostmarkClient
     private const double TooManyRequestsJitterRatio = 0.2;
     private static readonly TimeSpan InitialTooManyRequestsRetryDelay = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan MaximumTooManyRequestsRetryDelay = TimeSpan.FromSeconds(30);
+
     private static readonly string Version = typeof(PostmarkClient).Assembly.GetName()
         .Version!.ToString(2);
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<PostmarkClient> _logger;
+
+    private readonly IOptions<PostKitOptions> _options;
     private readonly PostmarkRateLimiter _rateLimiter;
     private readonly Func<double> _tooManyRequestsJitterMultiplierProvider;
 
@@ -36,53 +39,84 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         _rateLimiter = rateLimiter ?? new PostmarkRateLimiter();
         _tooManyRequestsJitterMultiplierProvider = tooManyRequestsJitterMultiplierProvider ?? GetRandomTooManyRequestsJitterMultiplier;
 
-        if (string.IsNullOrWhiteSpace(options.Value.ServerApiToken))
-            throw new InvalidOperationException("The server API token has not been set.");
+        if (!HasAnyApiToken(options.Value))
+            throw new InvalidOperationException("At least one Postmark API token must be set. Set ServerApiToken for server-level endpoints or AccountApiToken for account-level endpoints.");
 
+        _options = options;
         _httpClient.BaseAddress = new Uri("https://api.postmarkapp.com/");
         _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         _httpClient.DefaultRequestHeaders.Add("User-Agent", $"{nameof(PostKit)} {Version}");
-        _httpClient.DefaultRequestHeaders.Add("X-Postmark-Server-Token", options.Value.ServerApiToken);
     }
 
-    public async Task<Result<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, CancellationToken cancellationToken = default)
+    public async Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
+    {
+        return await SendJsonAsync<TRequest, TResponse>(HttpMethod.Post, endpoint, body, tokenScope, cancellationToken);
+    }
+
+    public async Task<Result<TResponse>> PostAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
+    {
+        return await SendEmptyAsync<TResponse>(HttpMethod.Post, endpoint, tokenScope, cancellationToken);
+    }
+
+    public async Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
+    {
+        using var responseMessage = await SendAsync(endpoint, () => new HttpRequestMessage(HttpMethod.Get, endpoint), null, tokenScope, cancellationToken);
+        return await GetResponse<TResponse>(endpoint, responseMessage, tokenScope, cancellationToken);
+    }
+
+    public async Task<Result<TResponse>> PutAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
+    {
+        if (tokenScope == PostmarkTokenScope.Account)
+            return await SendEmptyAsync<TResponse>(HttpMethod.Put, endpoint, tokenScope, cancellationToken);
+
+        const string emptyJsonObject = "{}";
+        using var responseMessage = await SendAsync(endpoint, () =>
+        {
+            var request = new HttpRequestMessage(HttpMethod.Put, endpoint) { Content = new StringContent(emptyJsonObject, Encoding.UTF8, MediaTypeNames.Application.Json) };
+            return request;
+        }, Encoding.UTF8.GetByteCount(emptyJsonObject), tokenScope, cancellationToken);
+        return await GetResponse<TResponse>(endpoint, responseMessage, tokenScope, cancellationToken);
+    }
+
+    public async Task<Result<TResponse>> PutAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
+    {
+        return await SendJsonAsync<TRequest, TResponse>(HttpMethod.Put, endpoint, body, tokenScope, cancellationToken);
+    }
+
+    public async Task<Result<TResponse>> PatchAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
+    {
+        return await SendJsonAsync<TRequest, TResponse>(HttpMethod.Patch, endpoint, body, tokenScope, cancellationToken);
+    }
+
+    public async Task<Result<TResponse>> DeleteAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
+    {
+        using var responseMessage = await SendAsync(endpoint, () => new HttpRequestMessage(HttpMethod.Delete, endpoint), null, tokenScope, cancellationToken);
+        return await GetResponse<TResponse>(endpoint, responseMessage, tokenScope, cancellationToken);
+    }
+
+    private async Task<Result<TResponse>> SendJsonAsync<TRequest, TResponse>(HttpMethod method, string endpoint, TRequest body, PostmarkTokenScope tokenScope, CancellationToken cancellationToken)
     {
         var jsonToSend = JsonSerializer.Serialize(body, PostmarkConfiguration.JsonSerializerOptions);
         var sizeInBytes = Encoding.UTF8.GetByteCount(jsonToSend);
-        using var responseMessage = await SendAsync(endpoint,
-            () =>
-            {
-                var request = new HttpRequestMessage(HttpMethod.Post, endpoint) { Content = new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json) };
-                return request;
-            },
-            sizeInBytes,
-            cancellationToken
-        );
-        return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
+        using var responseMessage = await SendAsync(endpoint, () =>
+        {
+            var request = new HttpRequestMessage(method, endpoint) { Content = new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json) };
+            return request;
+        }, sizeInBytes, tokenScope, cancellationToken);
+        return await GetResponse<TResponse>(endpoint, responseMessage, tokenScope, cancellationToken);
     }
 
-    public async Task<Result<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
+    private async Task<Result<TResponse>> SendEmptyAsync<TResponse>(HttpMethod method, string endpoint, PostmarkTokenScope tokenScope, CancellationToken cancellationToken)
     {
-        using var responseMessage = await SendAsync(endpoint, () => new HttpRequestMessage(HttpMethod.Get, endpoint), null, cancellationToken);
-        return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
+        using var responseMessage = await SendAsync(endpoint, () =>
+        {
+            var request = new HttpRequestMessage(method, endpoint) { Content = new StringContent(string.Empty, Encoding.UTF8, MediaTypeNames.Application.Json) };
+            return request;
+        }, 0, tokenScope, cancellationToken);
+        return await GetResponse<TResponse>(endpoint, responseMessage, tokenScope, cancellationToken);
     }
 
-    public async Task<Result<TResponse>> PutAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default)
-    {
-        const string emptyJsonObject = "{}";
-        using var responseMessage = await SendAsync(endpoint,
-            () =>
-            {
-                var request = new HttpRequestMessage(HttpMethod.Put, endpoint) { Content = new StringContent(emptyJsonObject, Encoding.UTF8, MediaTypeNames.Application.Json) };
-                return request;
-            },
-            Encoding.UTF8.GetByteCount(emptyJsonObject),
-            cancellationToken
-        );
-        return await GetResponse<TResponse>(endpoint, responseMessage, cancellationToken);
-    }
-
-    private async Task<HttpResponseMessage> SendAsync(string endpoint, Func<HttpRequestMessage> createRequest, int? requestSizeInBytes, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> SendAsync(string endpoint, Func<HttpRequestMessage> createRequest, int? requestSizeInBytes, PostmarkTokenScope tokenScope, CancellationToken cancellationToken)
     {
         var nextTooManyRequestsRetryDelay = InitialTooManyRequestsRetryDelay;
         var tooManyRequestsRetryCount = 0;
@@ -94,6 +128,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
                 LogApiRequest(endpoint, requestSizeInBytes.Value);
 
             using var request = createRequest();
+            AddTokenHeader(request, tokenScope);
             var responseMessage = await _httpClient.SendAsync(request, cancellationToken);
             _rateLimiter.ObserveResponse(endpoint, responseMessage.Headers, lease);
 
@@ -108,6 +143,23 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             tooManyRequestsRetryCount++;
             nextTooManyRequestsRetryDelay = GetNextTooManyRequestsRetryDelay(nextTooManyRequestsRetryDelay);
         }
+    }
+
+    private void AddTokenHeader(HttpRequestMessage request, PostmarkTokenScope tokenScope)
+    {
+        var headerName = tokenScope == PostmarkTokenScope.Account ? "X-Postmark-Account-Token" : "X-Postmark-Server-Token";
+        var token = tokenScope == PostmarkTokenScope.Account ? _options.Value.AccountApiToken : _options.Value.ServerApiToken;
+        var tokenDescription = tokenScope == PostmarkTokenScope.Account ? "account" : "server";
+
+        if (string.IsNullOrWhiteSpace(token))
+            throw new InvalidOperationException($"The {tokenDescription} API token has not been set.");
+
+        request.Headers.Add(headerName, token);
+    }
+
+    private static bool HasAnyApiToken(PostKitOptions options)
+    {
+        return !string.IsNullOrWhiteSpace(options.ServerApiToken) || !string.IsNullOrWhiteSpace(options.AccountApiToken);
     }
 
     private TimeSpan ApplyTooManyRequestsJitter(TimeSpan delay)
@@ -127,7 +179,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         return 1 - TooManyRequestsJitterRatio + Random.Shared.NextDouble() * TooManyRequestsJitterRatio * 2;
     }
 
-    private async Task<Result<TResponse>> GetResponse<TResponse>(string endpoint, HttpResponseMessage responseMessage, CancellationToken cancellationToken)
+    private async Task<Result<TResponse>> GetResponse<TResponse>(string endpoint, HttpResponseMessage responseMessage, PostmarkTokenScope tokenScope, CancellationToken cancellationToken)
     {
         if (responseMessage.IsSuccessStatusCode)
         {
@@ -149,10 +201,10 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             return response;
         }
 
-        return await GetRequestFailure<TResponse>(endpoint, responseMessage, cancellationToken);
+        return await GetRequestFailure<TResponse>(endpoint, responseMessage, tokenScope, cancellationToken);
     }
 
-    private async Task<Result<TResponse>> GetRequestFailure<TResponse>(string endpoint, HttpResponseMessage responseMessage, CancellationToken cancellationToken)
+    private async Task<Result<TResponse>> GetRequestFailure<TResponse>(string endpoint, HttpResponseMessage responseMessage, PostmarkTokenScope tokenScope, CancellationToken cancellationToken)
     {
         var parsedErrorResponse = await TryGetPostmarkErrorResponse(endpoint, responseMessage, responseMessage.StatusCode == HttpStatusCode.UnprocessableEntity, cancellationToken);
         if (parsedErrorResponse.IsFailure(out var parseError, out var postmarkErrorResponse))
@@ -166,7 +218,8 @@ internal sealed partial class PostmarkClient : IPostmarkClient
 
         if (responseMessage.StatusCode == HttpStatusCode.Unauthorized)
         {
-            var httpError = new HttpError(HttpStatusCode.Unauthorized, "The server API token is invalid.");
+            var tokenDescription = tokenScope == PostmarkTokenScope.Account ? "account" : "server";
+            var httpError = new HttpError(HttpStatusCode.Unauthorized, $"The {tokenDescription} API token is invalid.");
             return Result.Failure<TResponse>(httpError);
         }
 
@@ -199,8 +252,9 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             var httpError = new HttpError(HttpStatusCode.ServiceUnavailable, "The Postmark API is currently unavailable.");
             return Result.Failure<TResponse>(httpError);
         }
-        var genericHttpError = new HttpError(responseMessage.StatusCode, $"An '{(int)responseMessage.StatusCode} {responseMessage.ReasonPhrase}' error occurred while processing the request to the '{endpoint}' endpoint of the Postmark API."
-        );
+
+        var genericHttpError = new HttpError(responseMessage.StatusCode,
+            $"An '{(int)responseMessage.StatusCode} {responseMessage.ReasonPhrase}' error occurred while processing the request to the '{endpoint}' endpoint of the Postmark API.");
         return Result.Failure<TResponse>(genericHttpError);
     }
 

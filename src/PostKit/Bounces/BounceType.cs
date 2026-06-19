@@ -67,5 +67,5 @@ public enum BounceType
     DmarcPolicy = 100009,
 
     /// <summary>A template rendering failure.</summary>
-    TemplateRenderingFailed = 100010,
+    TemplateRenderingFailed = 100010
 }

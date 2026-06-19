@@ -148,7 +148,7 @@ public class EmailBuilderHeaderTests
         IEnumerable<KeyValuePair<string, string>> headers =
         [
             new("X-First", "value"),
-            new("X-Second", "bad\n value"),
+            new("X-Second", "bad\n value")
         ];
 
         var exception = Assert.Throws<ArgumentException>(() => builder.AddHeader(headers));
@@ -156,8 +156,7 @@ public class EmailBuilderHeaderTests
         Assert.Equal("headers", exception.ParamName);
         Assert.Equal($"The header value at index 1 is invalid. {HeaderValueRuleMessage} Invalid character U+000A at index 3; use CRLF followed by a space or tab for folded lines. (Parameter 'headers')", exception.Message);
         Assert.Null(builder.Build()
-            .Headers
-        );
+            .Headers);
     }
 
     [Fact]
@@ -172,7 +171,7 @@ public class EmailBuilderHeaderTests
         IEnumerable<KeyValuePair<string, string>> headers =
         [
             new("X-New", "value"),
-            new("x-existing", "duplicate"),
+            new("x-existing", "duplicate")
         ];
 
         var exception = Assert.Throws<ArgumentException>(() => builder.AddHeader(headers));
@@ -342,7 +341,7 @@ public class EmailBuilderHeaderTests
         IEnumerable<KeyValuePair<string, string>> headers =
         [
             new("X-First", "value"),
-            new("X-Second", "bad\n value"),
+            new("X-Second", "bad\n value")
         ];
 
         var exception = Assert.Throws<ArgumentException>(() => builder.AddHeader(headers));
@@ -350,7 +349,6 @@ public class EmailBuilderHeaderTests
         Assert.Equal("headers", exception.ParamName);
         Assert.Equal($"The header value at index 1 is invalid. {HeaderValueRuleMessage} Invalid character U+000A at index 3; use CRLF followed by a space or tab for folded lines. (Parameter 'headers')", exception.Message);
         Assert.Null(builder.Build()
-            .Headers
-        );
+            .Headers);
     }
 }

@@ -7,14 +7,14 @@ namespace PostKit.BulkEmails;
 
 internal sealed class DraftBulkEmailMessage
 {
-    private IList<MailboxAddress>? _to;
-    private IList<MailboxAddress>? _cc;
     private IList<MailboxAddress>? _bcc;
-    private object? _templateModel;
-    private JsonNode? _templateModelSnapshot;
-    private int _templateModelSizeInBytes;
-    private Dictionary<string, string>? _metadata;
+    private IList<MailboxAddress>? _cc;
     private Dictionary<string, string>? _headers;
+    private Dictionary<string, string>? _metadata;
+    private object? _templateModel;
+    private int _templateModelSizeInBytes;
+    private JsonNode? _templateModelSnapshot;
+    private IList<MailboxAddress>? _to;
 
     public DraftBulkEmailMessage To(string address)
     {
@@ -207,7 +207,8 @@ internal sealed class DraftBulkEmailMessage
             throw new InvalidOperationException("At least one recipient is required before building the bulk email message. Call To(...), Cc(...), or Bcc(...).");
 
         if (totalRecipients > 50)
-            throw new InvalidOperationException($"There are too many recipients. Postmark implements a limit of 50 recipients per message. The recipient count includes all To, Cc, and Bcc recipients combined. Actual recipient count: {totalRecipients}.");
+            throw new InvalidOperationException(
+                $"There are too many recipients. Postmark implements a limit of 50 recipients per message. The recipient count includes all To, Cc, and Bcc recipients combined. Actual recipient count: {totalRecipients}.");
 
         return new BulkEmailMessage
         {
@@ -218,7 +219,7 @@ internal sealed class DraftBulkEmailMessage
             TemplateModelNode = _templateModelSnapshot?.DeepClone(),
             TemplateModelSizeInBytes = _templateModelSizeInBytes,
             Metadata = _metadata?.SnapshotReadOnly(),
-            Headers = _headers?.SnapshotReadOnly(),
+            Headers = _headers?.SnapshotReadOnly()
         };
     }
 
@@ -266,5 +267,4 @@ internal sealed class DraftBulkEmailMessage
 
         (_headers ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)).Add(name, value);
     }
-
 }

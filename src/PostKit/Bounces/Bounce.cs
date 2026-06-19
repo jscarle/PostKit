@@ -5,6 +5,28 @@ namespace PostKit.Bounces;
 /// <summary>Represents bounce metadata returned from Postmark bounce endpoints.</summary>
 public record Bounce
 {
+    internal Bounce(string recordType, long id, BounceType type, string name, string tag, Guid messageId, long serverId, string messageStream, string description, string details, string email, string? from, DateTimeOffset bouncedAt,
+        bool dumpAvailable, bool inactive, bool canActivate, string subject)
+    {
+        RecordType = recordType;
+        Id = id;
+        Type = type;
+        Name = name;
+        Tag = tag;
+        MessageId = messageId;
+        ServerId = serverId;
+        MessageStream = messageStream;
+        Description = description;
+        Details = details;
+        Email = email;
+        From = from;
+        BouncedAt = bouncedAt;
+        DumpAvailable = dumpAvailable;
+        Inactive = inactive;
+        CanActivate = canActivate;
+        Subject = subject;
+    }
+
     /// <summary>Gets the record type returned by Postmark.</summary>
     public string RecordType { [UsedImplicitly] get; }
 
@@ -55,43 +77,4 @@ public record Bounce
 
     /// <summary>Gets the subject of the bounced email.</summary>
     public string Subject { [UsedImplicitly] get; }
-
-    internal Bounce(
-        string recordType,
-        long id,
-        BounceType type,
-        string name,
-        string tag,
-        Guid messageId,
-        long serverId,
-        string messageStream,
-        string description,
-        string details,
-        string email,
-        string? from,
-        DateTimeOffset bouncedAt,
-        bool dumpAvailable,
-        bool inactive,
-        bool canActivate,
-        string subject
-    )
-    {
-        RecordType = recordType;
-        Id = id;
-        Type = type;
-        Name = name;
-        Tag = tag;
-        MessageId = messageId;
-        ServerId = serverId;
-        MessageStream = messageStream;
-        Description = description;
-        Details = details;
-        Email = email;
-        From = from;
-        BouncedAt = bouncedAt;
-        DumpAvailable = dumpAvailable;
-        Inactive = inactive;
-        CanActivate = canActivate;
-        Subject = subject;
-    }
 }

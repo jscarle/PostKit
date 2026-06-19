@@ -5,6 +5,14 @@ namespace PostKit.Messages;
 /// <summary>Represents an event recorded for an outbound message.</summary>
 public sealed record OutboundMessageEvent
 {
+    internal OutboundMessageEvent(string recipient, OutboundMessageEventType type, DateTimeOffset receivedAt, OutboundMessageEventDetails details)
+    {
+        Recipient = recipient;
+        Type = type;
+        ReceivedAt = receivedAt;
+        Details = details;
+    }
+
     /// <summary>Gets the recipient associated with the event.</summary>
     public string Recipient { [UsedImplicitly] get; }
 
@@ -16,12 +24,4 @@ public sealed record OutboundMessageEvent
 
     /// <summary>Gets the event-specific details returned by Postmark.</summary>
     public OutboundMessageEventDetails Details { [UsedImplicitly] get; }
-
-    internal OutboundMessageEvent(string recipient, OutboundMessageEventType type, DateTimeOffset receivedAt, OutboundMessageEventDetails details)
-    {
-        Recipient = recipient;
-        Type = type;
-        ReceivedAt = receivedAt;
-        Details = details;
-    }
 }

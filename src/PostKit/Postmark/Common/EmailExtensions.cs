@@ -16,15 +16,12 @@ internal static class EmailExtensions
         var to = email.To is not null ? string.Join(",", email.To.Select(x => x.ToString(true))) : null;
         var cc = email.Cc is not null ? string.Join(",", email.Cc.Select(x => x.ToString(true))) : null;
         var bcc = email.Bcc is not null ? string.Join(",", email.Bcc.Select(x => x.ToString(true))) : null;
-        IReadOnlyList<EmailRequestAttachment>? attachments = email.Attachments
-            ?.Select(attachment => new EmailRequestAttachment
-                {
-                    Name = attachment.Name, ContentType = attachment.ContentType, Content = attachment.Content, ContentId = attachment.ContentId,
-                }
-            )
+        IReadOnlyList<EmailRequestAttachment>? attachments = email.Attachments?.Select(attachment => new EmailRequestAttachment
+            {
+                Name = attachment.Name, ContentType = attachment.ContentType, Content = attachment.Content, ContentId = attachment.ContentId
+            })
             .ToList();
-        IReadOnlyList<EmailRequestHeader>? headers = email.Headers
-            ?.Select(x => new EmailRequestHeader { Name = x.Key, Value = x.Value })
+        IReadOnlyList<EmailRequestHeader>? headers = email.Headers?.Select(x => new EmailRequestHeader { Name = x.Key, Value = x.Value })
             .ToList();
         IReadOnlyDictionary<string, string>? metadata = email.Metadata?.ToDictionary();
         var trackLinks = email.LinkTracking is not null
@@ -34,7 +31,7 @@ internal static class EmailExtensions
                 LinkTracking.HtmlAndText => "HtmlAndText",
                 LinkTracking.HtmlOnly => "HtmlOnly",
                 LinkTracking.TextOnly => "TextOnly",
-                _ => throw new UnreachableException($"Enum value of '{nameof(LinkTracking)}.{email.LinkTracking}' has not been handled."),
+                _ => throw new UnreachableException($"Enum value of '{nameof(LinkTracking)}.{email.LinkTracking}' has not been handled.")
             }
             : null;
 
@@ -58,7 +55,7 @@ internal static class EmailExtensions
             Metadata = metadata,
             TrackOpens = email.OpenTracking,
             TrackLinks = trackLinks,
-            MessageStream = email.MessageStream,
+            MessageStream = email.MessageStream
         };
 
         return request;

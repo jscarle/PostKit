@@ -2,7 +2,7 @@ using MimeKit;
 
 namespace PostKit.BulkEmails;
 
-/// <summary>Provides a fluent interface for composing a <see cref="BulkEmailMessage"/> without a template model.</summary>
+/// <summary>Provides a fluent interface for composing a <see cref="BulkEmailMessage" /> without a template model.</summary>
 public sealed class ComposedBulkEmailMessageBuilder
 {
     private readonly DraftBulkEmailMessage _draft = new();
@@ -250,7 +250,7 @@ public sealed class ComposedBulkEmailMessageBuilder
         return this;
     }
 
-    /// <summary>Creates the configured <see cref="BulkEmailMessage"/>.</summary>
+    /// <summary>Creates the configured <see cref="BulkEmailMessage" />.</summary>
     /// <returns>The configured bulk email message.</returns>
     public BulkEmailMessage Build()
     {

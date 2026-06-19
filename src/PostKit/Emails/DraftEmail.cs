@@ -51,7 +51,7 @@ internal sealed partial class DraftEmail
 
         ValidateFrom(mailboxAddress, nameof(address));
 
-        _from = mailboxAddress;
+        _from = mailboxAddress.Snapshot();
 
         return this;
     }
@@ -65,7 +65,7 @@ internal sealed partial class DraftEmail
 
         ValidateFrom(mailboxAddress, nameof(address));
 
-        _from = mailboxAddress;
+        _from = mailboxAddress.Snapshot();
 
         return this;
     }
@@ -79,7 +79,7 @@ internal sealed partial class DraftEmail
 
         ValidateFrom(mailboxAddress, nameof(mailboxAddress));
 
-        _from = mailboxAddress;
+        _from = mailboxAddress.Snapshot();
 
         return this;
     }
@@ -418,7 +418,7 @@ internal sealed partial class DraftEmail
         {
             MessageStream.Transactional => "outbound",
             MessageStream.Broadcast => "broadcast",
-            _ => throw new UnreachableException($"Enum value of '{nameof(MessageStream)}.{messageStream}' has not been handled."),
+            _ => throw new UnreachableException($"Enum value of '{nameof(MessageStream)}.{messageStream}' has not been handled.")
         };
 
         return this;
@@ -472,7 +472,8 @@ internal sealed partial class DraftEmail
 #if NET9_0_OR_GREATER
         if (!TemplateAliasRegex.IsMatch(templateAlias))
 #else
-        if (!TemplateAliasRegex().IsMatch(templateAlias))
+        if (!TemplateAliasRegex()
+                .IsMatch(templateAlias))
 #endif
             throw new ArgumentException($"The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters. {GetTemplateAliasValidationDetail(templateAlias)}", nameof(templateAlias));
 
@@ -505,7 +506,8 @@ internal sealed partial class DraftEmail
             throw new InvalidOperationException("At least one recipient is required before building the email. Call To(...), Cc(...), or Bcc(...).");
 
         if (totalRecipients > 50)
-            throw new InvalidOperationException($"There are too many recipients. Postmark implements a limit of 50 recipients per message. The recipient count includes all To, Cc, and Bcc recipients combined. Actual recipient count: {totalRecipients}.");
+            throw new InvalidOperationException(
+                $"There are too many recipients. Postmark implements a limit of 50 recipients per message. The recipient count includes all To, Cc, and Bcc recipients combined. Actual recipient count: {totalRecipients}.");
 
         if (_subject is null && !_templateId.HasValue && _templateAlias is null)
             throw new InvalidOperationException("Subject is required before building the email. Call Subject(...).");
@@ -514,7 +516,8 @@ internal sealed partial class DraftEmail
             throw new InvalidOperationException("Message content is required before building the email. Call TextBody(...) or HtmlBody(...).");
 
         if ((_htmlBody is not null || _textBody is not null || _subject is not null) && (_templateId.HasValue || _templateAlias is not null))
-            throw new InvalidOperationException("Template emails cannot also set Subject, TextBody, or HtmlBody. Use either template fields (TemplateId or TemplateAlias with TemplateModel) or content fields (Subject with TextBody or HtmlBody).");
+            throw new InvalidOperationException(
+                "Template emails cannot also set Subject, TextBody, or HtmlBody. Use either template fields (TemplateId or TemplateAlias with TemplateModel) or content fields (Subject with TextBody or HtmlBody).");
 
         if ((_templateId.HasValue || _templateAlias is not null) && _templateModel is null)
             throw new InvalidOperationException("TemplateModel is required when TemplateId or TemplateAlias is set. Call WithModel(...).");
@@ -555,7 +558,7 @@ internal sealed partial class DraftEmail
             TemplateModel = _templateModelSnapshot?.DeepClone(),
             TemplateModelNode = _templateModelSnapshot?.DeepClone(),
             TemplateModelSizeInBytes = _templateModelSizeInBytes,
-            InlineCss = _inlineCss,
+            InlineCss = _inlineCss
         };
 
         return email;
@@ -572,13 +575,13 @@ internal sealed partial class DraftEmail
 
     private static string GetTemplateAliasValidationDetail(string templateAlias)
     {
-        if (templateAlias[0] is not ((>= 'A' and <= 'Z') or (>= 'a' and <= 'z')))
+        if (templateAlias[0] is not (>= 'A' and <= 'Z' or >= 'a' and <= 'z'))
             return $"First character must be a letter. Received {ValidationExtensions.FormatCharacter(templateAlias[0])} at index 0.";
 
         for (var index = 1; index < templateAlias.Length; index++)
         {
             var current = templateAlias[index];
-            var isLetter = current is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z');
+            var isLetter = current is >= 'A' and <= 'Z' or >= 'a' and <= 'z';
             var isDigit = current is >= '0' and <= '9';
             var isAllowedPunctuation = current is '-' or '_' or '.';
             if (!isLetter && !isDigit && !isAllowedPunctuation)

@@ -50,21 +50,21 @@ var email = Email.Compose()
 
 Method replacements:
 
-| 10.0.3 | 10.1.0 |
-|---|---|
-| `Email.CreateBuilder()` | `Email.Compose()` or `Email.FromTemplate(...)` |
-| `WithSubject(...)` | `Subject(...)` |
-| `WithHtmlBody(...)` | `HtmlBody(...)` |
-| `WithTextBody(...)` | `TextBody(...)` |
-| `WithAttachment(...)`, `WithAttachments(...)` | `AddAttachment(...)` |
-| `WithHeader(...)`, `WithHeaders(...)` | `AddHeader(...)` |
-| `WithMetadata(...)` | `AddMetadata(...)` |
-| `WithLinkTracking(...)` | `UseLinkTracking(...)` |
-| `UsingMessageStream(...)` | `UseMessageStream(...)` |
-| `WithOpenTracking()` / `WithOpenTracking(true)` | `EnableOpenTracking()` |
-| `WithOpenTracking(false)` | Omit the call; there is no explicit false setter in `10.1.0` |
-| `WithTemplate(idOrAlias, model, inlineCss)` | `Email.FromTemplate(idOrAlias, inlineCss).WithModel(model)` |
-| `AlsoTo(...)`, `AlsoCc(...)`, `AlsoBcc(...)`, `AlsoReplyTo(...)` | Repeat `To(...)`, `Cc(...)`, `Bcc(...)`, or `ReplyTo(...)` |
+| 10.0.3                                                           | 10.1.0                                                       |
+|------------------------------------------------------------------|--------------------------------------------------------------|
+| `Email.CreateBuilder()`                                          | `Email.Compose()` or `Email.FromTemplate(...)`               |
+| `WithSubject(...)`                                               | `Subject(...)`                                               |
+| `WithHtmlBody(...)`                                              | `HtmlBody(...)`                                              |
+| `WithTextBody(...)`                                              | `TextBody(...)`                                              |
+| `WithAttachment(...)`, `WithAttachments(...)`                    | `AddAttachment(...)`                                         |
+| `WithHeader(...)`, `WithHeaders(...)`                            | `AddHeader(...)`                                             |
+| `WithMetadata(...)`                                              | `AddMetadata(...)`                                           |
+| `WithLinkTracking(...)`                                          | `UseLinkTracking(...)`                                       |
+| `UsingMessageStream(...)`                                        | `UseMessageStream(...)`                                      |
+| `WithOpenTracking()` / `WithOpenTracking(true)`                  | `EnableOpenTracking()`                                       |
+| `WithOpenTracking(false)`                                        | Omit the call; there is no explicit false setter in `10.1.0` |
+| `WithTemplate(idOrAlias, model, inlineCss)`                      | `Email.FromTemplate(idOrAlias, inlineCss).WithModel(model)`  |
+| `AlsoTo(...)`, `AlsoCc(...)`, `AlsoBcc(...)`, `AlsoReplyTo(...)` | Repeat `To(...)`, `Cc(...)`, `Bcc(...)`, or `ReplyTo(...)`   |
 
 Display name overloads are address-first in `10.1.0`. Use `.From("sender@example.com", "Sender Name")`, `.To("recipient@example.com", "Recipient Name")`, and the same order for `ReplyTo`, `Cc`, and `Bcc`.
 
@@ -85,11 +85,12 @@ Built emails also snapshot addresses, headers, metadata, attachments, and templa
 
 ### Interface And DI Changes
 
-`IPostKitClient` now includes outbound message methods: `SearchOutboundMessagesAsync`, `GetOutboundMessageDetailsAsync`, and `GetOutboundMessageDumpAsync`. Code that implements `IPostKitClient` directly, including hand-written test doubles, must implement these methods.
+`IPostKitClient` now includes Postmark API methods beyond sending email, including messages, templates, webhooks, inbound rules, stats, suppressions, and data removals. Code that implements `IPostKitClient` directly, including hand-written
+test doubles, must implement these methods.
 
-PostKit service registration now validates `ServerApiToken`. `AddPostKit()` and `AddKeyedPostKit()` still exist, but missing tokens can fail during startup or first resolution, and the explicit configuration overloads throw immediately
-when a required configuration section is missing. Default and keyed registrations also replace existing PostKit client/options registrations for the same service/key, so register custom replacements after calling PostKit's registration
-helpers.
+PostKit service registration now validates that the selected configuration section defines at least one Postmark API token. `AddPostKit()` and `AddKeyedPostKit()` still exist, but missing tokens can fail during startup or first
+resolution, and the explicit configuration overloads throw immediately when a required configuration section is missing. Default and keyed registrations also replace existing PostKit client/options registrations for the same service/key,
+so register custom replacements after calling PostKit's registration helpers.
 
 ### Validation Changes
 
@@ -142,10 +143,13 @@ Configure your Postmark Server API Token in `appsettings.json`:
 ```json
 {
   "PostKit": {
-    "ServerApiToken": "your-postmark-server-token-here"
+    "ServerApiToken": "your-postmark-server-token-here",
+    "AccountApiToken": "your-postmark-account-token-here"
   }
 }
 ```
+
+`AccountApiToken` is optional unless you call account-level endpoints such as template push or data removal.
 
 Or set it via environment variables:
 
@@ -190,7 +194,8 @@ builder.Services.AddKeyedPostKit(PostmarkServer.Production, builder.Configuratio
 }
 ```
 
-PostKit validates that the selected configuration section defines `ServerApiToken`. When you use the explicit configuration overloads above, missing sections fail immediately and missing tokens fail during startup or first resolution.
+PostKit validates that the selected configuration section defines `ServerApiToken`, `AccountApiToken`, or both. When you use the explicit configuration overloads above, missing sections fail immediately and missing tokens fail during
+startup or first resolution. Server-level endpoints still require `ServerApiToken`; account-level endpoints still require `AccountApiToken`.
 
 Resolve keyed clients with the standard keyed DI APIs:
 
@@ -208,7 +213,8 @@ using PostKit.Common;
 using PostKit.Emails;
 ```
 
-Add `using PostKit.BulkEmails;` when working with the Bulk Email API, `using PostKit.Bounces;` when working with bounce queries and responses, `using PostKit.Messages;` when searching outbound messages, and `using PostKit.Suppressions;` when working with message stream suppressions.
+Add the endpoint namespace you need when working outside basic email sending: `PostKit.BulkEmails`, `PostKit.Bounces`, `PostKit.DataRemovals`, `PostKit.Domains`, `PostKit.InboundRules`, `PostKit.MessageStreams`, `PostKit.Messages`,
+`PostKit.SenderSignatures`, `PostKit.Servers`, `PostKit.Stats`, `PostKit.Suppressions`, `PostKit.Templates`, or `PostKit.Webhooks`.
 
 PostKit uses a fluent builder pattern with the following capabilities:
 
@@ -499,8 +505,63 @@ if (messagesResult.IsSuccess(out var page))
 }
 ```
 
-Outbound message date filters accept `DateTimeOffset` values and are converted to Postmark's US Eastern time before the request is made. Postmark currently supports one metadata filter per outbound message search.
-Outbound message details expose nullable `TextBody`, `HtmlBody`, and `Body` properties because Postmark can omit content variants or the raw source on the details response. Use `GetOutboundMessageDumpAsync` when you specifically need the raw source.
+Outbound and inbound message date filters accept `DateTimeOffset` values and are converted to Postmark's US Eastern time before the request is made. Postmark currently supports one metadata filter per outbound message search.
+Outbound message details expose nullable `TextBody`, `HtmlBody`, and `Body` properties because Postmark can omit content variants or the raw source on the details response. Use `GetOutboundMessageDumpAsync` when you specifically need the
+raw source. The Messages API also includes `SearchInboundMessagesAsync`, `GetInboundMessageDetailsAsync`, `BypassInboundMessageRulesAsync`, `RetryInboundMessageAsync`, `SearchMessageOpensAsync`, `GetMessageOpensAsync`,
+`SearchMessageClicksAsync`, and `GetMessageClicksAsync`.
+
+### Templates, Webhooks, Stats, And Account APIs
+
+```csharp
+using PostKit.DataRemovals;
+using PostKit.Domains;
+using PostKit.InboundRules;
+using PostKit.MessageStreams;
+using PostKit.SenderSignatures;
+using PostKit.Servers;
+using PostKit.Stats;
+using PostKit.Templates;
+using PostKit.Webhooks;
+
+var template = await _postKitClient.CreateTemplateAsync(new TemplateCreateParameters
+{
+    Name = "Welcome",
+    Alias = "welcome-v1",
+    Subject = "Welcome",
+    HtmlBody = "<h1>Hello {{name}}</h1>",
+});
+
+var webhook = await _postKitClient.CreateWebhookAsync(new WebhookCreateParameters
+{
+    Url = "https://example.com/postmark/webhook",
+    MessageStreamId = "outbound",
+    Triggers = new WebhookTriggers { Bounce = new WebhookContentTrigger { Enabled = true, IncludeContent = false } },
+});
+
+var stats = await _postKitClient.GetOutboundStatsOverviewAsync(new OutboundStatsQuery
+{
+    FromDate = new DateOnly(2026, 1, 1),
+    ToDate = new DateOnly(2026, 1, 31),
+    MessageStreamId = "outbound",
+});
+
+var inboundRule = await _postKitClient.CreateInboundRuleTriggerAsync("blocked-sender@example.com");
+
+var dataRemoval = await _postKitClient.CreateDataRemovalAsync(new DataRemovalCreateParameters
+{
+    RequestedBy = "privacy@example.com",
+    RequestedFor = "recipient@example.com",
+    NotifyWhenCompleted = true,
+});
+
+var servers = await _postKitClient.ListServersAsync(query: new ServerQuery { Name = "Marketing" });
+var streams = await _postKitClient.ListMessageStreamsAsync(new MessageStreamQuery { IncludeArchivedStreams = true });
+var domains = await _postKitClient.ListDomainsAsync();
+var signatures = await _postKitClient.ListSenderSignaturesAsync();
+```
+
+Template CRUD, webhooks, inbound rules, stats, and message streams use server API tokens. `PushTemplatesAsync`, server management by ID, domains, sender signatures, and data-removal calls use Postmark account-level endpoints and require
+`PostKit:AccountApiToken`.
 
 ### Suppressions
 
@@ -729,157 +790,157 @@ The following tables track development progress and map the different Postmark A
 
 ## Templates API
 
-|    | Endpoint                                                                                                                 | Implementation                       |
-|----|--------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| ✅  | [Send email with template](https://postmarkapp.com/developer/api/templates-api#send-email-with-template)                 | `IPostKitClient.SendEmailAsync`      |
-| ✅  | [Send batch with templates](https://postmarkapp.com/developer/api/templates-api#send-batch-with-templates)               | `IPostKitClient.SendEmailBatchAsync` |
-| ✏️ | [Push templates to another server](https://postmarkapp.com/developer/api/templates-api#push-templates-to-another-server) |                                      |
-| ✏️ | [Get a template](https://postmarkapp.com/developer/api/templates-api#get-a-template)                                     |                                      |
-| ✏️ | [Create a template](https://postmarkapp.com/developer/api/templates-api#create-a-template)                               |                                      |
-| ✏️ | [Edit a template](https://postmarkapp.com/developer/api/templates-api#edit-a-template)                                   |                                      |
-| ✏️ | [List templates](https://postmarkapp.com/developer/api/templates-api#list-templates)                                     |                                      |
-| ✏️ | [Delete a template](https://postmarkapp.com/developer/api/templates-api#delete-a-template)                               |                                      |
-| ✏️ | [Validate a template](https://postmarkapp.com/developer/api/templates-api#validate-a-template)                           |                                      |
+|   | Endpoint                                                                                                                 | Implementation                         |
+|---|--------------------------------------------------------------------------------------------------------------------------|----------------------------------------|
+| ✅ | [Send email with template](https://postmarkapp.com/developer/api/templates-api#send-email-with-template)                 | `IPostKitClient.SendEmailAsync`        |
+| ✅ | [Send batch with templates](https://postmarkapp.com/developer/api/templates-api#send-batch-with-templates)               | `IPostKitClient.SendEmailBatchAsync`   |
+| ✅ | [Push templates to another server](https://postmarkapp.com/developer/api/templates-api#push-templates-to-another-server) | `IPostKitClient.PushTemplatesAsync`    |
+| ✅ | [Get a template](https://postmarkapp.com/developer/api/templates-api#get-a-template)                                     | `IPostKitClient.GetTemplateAsync`      |
+| ✅ | [Create a template](https://postmarkapp.com/developer/api/templates-api#create-a-template)                               | `IPostKitClient.CreateTemplateAsync`   |
+| ✅ | [Edit a template](https://postmarkapp.com/developer/api/templates-api#edit-a-template)                                   | `IPostKitClient.EditTemplateAsync`     |
+| ✅ | [List templates](https://postmarkapp.com/developer/api/templates-api#list-templates)                                     | `IPostKitClient.ListTemplatesAsync`    |
+| ✅ | [Delete a template](https://postmarkapp.com/developer/api/templates-api#delete-a-template)                               | `IPostKitClient.DeleteTemplateAsync`   |
+| ✅ | [Validate a template](https://postmarkapp.com/developer/api/templates-api#validate-a-template)                           | `IPostKitClient.ValidateTemplateAsync` |
 
 ---
 
 ## Server API
 
-|    | Endpoint                                                                            | Implementation |
-|----|-------------------------------------------------------------------------------------|----------------|
-| ✏️ | [Get the server](https://postmarkapp.com/developer/api/server-api#get-the-server)   |                |
-| ✏️ | [Edit the server](https://postmarkapp.com/developer/api/server-api#edit-the-server) |                |
+|   | Endpoint                                                                            | Implementation                   |
+|---|-------------------------------------------------------------------------------------|----------------------------------|
+| ✅ | [Get the server](https://postmarkapp.com/developer/api/server-api#get-the-server)   | `IPostKitClient.GetServerAsync`  |
+| ✅ | [Edit the server](https://postmarkapp.com/developer/api/server-api#edit-the-server) | `IPostKitClient.EditServerAsync` |
 
 ---
 
 ## Servers API
 
-|    | Endpoint                                                                             | Implementation |
-|----|--------------------------------------------------------------------------------------|----------------|
-| ✏️ | [Get a server](https://postmarkapp.com/developer/api/servers-api#get-a-server)       |                |
-| ✏️ | [Create a server](https://postmarkapp.com/developer/api/servers-api#create-a-server) |                |
-| ✏️ | [Edit a server](https://postmarkapp.com/developer/api/servers-api#edit-a-server)     |                |
-| ✏️ | [List servers](https://postmarkapp.com/developer/api/servers-api#list-servers)       |                |
-| ✏️ | [Delete a server](https://postmarkapp.com/developer/api/servers-api#delete-a-server) |                |
+|   | Endpoint                                                                             | Implementation                     |
+|---|--------------------------------------------------------------------------------------|------------------------------------|
+| ✅ | [Get a server](https://postmarkapp.com/developer/api/servers-api#get-a-server)       | `IPostKitClient.GetServerAsync`    |
+| ✅ | [Create a server](https://postmarkapp.com/developer/api/servers-api#create-a-server) | `IPostKitClient.CreateServerAsync` |
+| ✅ | [Edit a server](https://postmarkapp.com/developer/api/servers-api#edit-a-server)     | `IPostKitClient.EditServerAsync`   |
+| ✅ | [List servers](https://postmarkapp.com/developer/api/servers-api#list-servers)       | `IPostKitClient.ListServersAsync`  |
+| ✅ | [Delete a server](https://postmarkapp.com/developer/api/servers-api#delete-a-server) | `IPostKitClient.DeleteServerAsync` |
 
 ---
 
 ## Message Streams API
 
-|    | Endpoint                                                                                                           | Implementation |
-|----|--------------------------------------------------------------------------------------------------------------------|----------------|
-| ✏️ | [List message streams](https://postmarkapp.com/developer/api/message-streams-api#list-message-streams)             |                |
-| ✏️ | [Get a message stream](https://postmarkapp.com/developer/api/message-streams-api#get-a-message-stream)             |                |
-| ✏️ | [Edit a message stream](https://postmarkapp.com/developer/api/message-streams-api#edit-a-message-stream)           |                |
-| ✏️ | [Create a message stream](https://postmarkapp.com/developer/api/message-streams-api#create-a-message-stream)       |                |
-| ✏️ | [Archive a message stream](https://postmarkapp.com/developer/api/message-streams-api#archive-a-message-stream)     |                |
-| ✏️ | [Unarchive a message stream](https://postmarkapp.com/developer/api/message-streams-api#unarchive-a-message-stream) |                |
+|   | Endpoint                                                                                                           | Implementation                               |
+|---|--------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
+| ✅ | [List message streams](https://postmarkapp.com/developer/api/message-streams-api#list-message-streams)             | `IPostKitClient.ListMessageStreamsAsync`     |
+| ✅ | [Get a message stream](https://postmarkapp.com/developer/api/message-streams-api#get-a-message-stream)             | `IPostKitClient.GetMessageStreamAsync`       |
+| ✅ | [Edit a message stream](https://postmarkapp.com/developer/api/message-streams-api#edit-a-message-stream)           | `IPostKitClient.EditMessageStreamAsync`      |
+| ✅ | [Create a message stream](https://postmarkapp.com/developer/api/message-streams-api#create-a-message-stream)       | `IPostKitClient.CreateMessageStreamAsync`    |
+| ✅ | [Archive a message stream](https://postmarkapp.com/developer/api/message-streams-api#archive-a-message-stream)     | `IPostKitClient.ArchiveMessageStreamAsync`   |
+| ✅ | [Unarchive a message stream](https://postmarkapp.com/developer/api/message-streams-api#unarchive-a-message-stream) | `IPostKitClient.UnarchiveMessageStreamAsync` |
 
 ---
 
 ## Messages API
 
-|    | Endpoint                                                                                                                                          | Implementation |
-|----|---------------------------------------------------------------------------------------------------------------------------------------------------|----------------|
-| ✅ | [Outbound message search](https://postmarkapp.com/developer/api/messages-api#outbound-message-search)                                             | `IPostKitClient.SearchOutboundMessagesAsync` |
+|   | Endpoint                                                                                                                                          | Implementation                                  |
+|---|---------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------|
+| ✅ | [Outbound message search](https://postmarkapp.com/developer/api/messages-api#outbound-message-search)                                             | `IPostKitClient.SearchOutboundMessagesAsync`    |
 | ✅ | [Outbound message details](https://postmarkapp.com/developer/api/messages-api#outbound-message-details)                                           | `IPostKitClient.GetOutboundMessageDetailsAsync` |
-| ✅ | [Outbound message dump](https://postmarkapp.com/developer/api/messages-api#outbound-message-dump)                                                 | `IPostKitClient.GetOutboundMessageDumpAsync` |
-| ✏️ | [Inbound message search](https://postmarkapp.com/developer/api/messages-api#inbound-message-search)                                               |                |
-| ✏️ | [Inbound message details](https://postmarkapp.com/developer/api/messages-api#inbound-message-details)                                             |                |
-| ✏️ | [Bypass rules for a blocked inbound message](https://postmarkapp.com/developer/api/messages-api#bypass-rules-for-a-blocked-inbound-message)       |                |
-| ✏️ | [Retry a failed inbound message for processing](https://postmarkapp.com/developer/api/messages-api#retry-a-failed-inbound-message-for-processing) |                |
-| ✏️ | [Message opens](https://postmarkapp.com/developer/api/messages-api#message-opens)                                                                 |                |
-| ✏️ | [Opens for a single message](https://postmarkapp.com/developer/api/messages-api#opens-for-a-single-message)                                       |                |
-| ✏️ | [Message clicks](https://postmarkapp.com/developer/api/messages-api#message-clicks)                                                               |                |
-| ✏️ | [Clicks for a single message](https://postmarkapp.com/developer/api/messages-api#clicks-for-a-single-message)                                     |                |
+| ✅ | [Outbound message dump](https://postmarkapp.com/developer/api/messages-api#outbound-message-dump)                                                 | `IPostKitClient.GetOutboundMessageDumpAsync`    |
+| ✅ | [Inbound message search](https://postmarkapp.com/developer/api/messages-api#inbound-message-search)                                               | `IPostKitClient.SearchInboundMessagesAsync`     |
+| ✅ | [Inbound message details](https://postmarkapp.com/developer/api/messages-api#inbound-message-details)                                             | `IPostKitClient.GetInboundMessageDetailsAsync`  |
+| ✅ | [Bypass rules for a blocked inbound message](https://postmarkapp.com/developer/api/messages-api#bypass-rules-for-a-blocked-inbound-message)       | `IPostKitClient.BypassInboundMessageRulesAsync` |
+| ✅ | [Retry a failed inbound message for processing](https://postmarkapp.com/developer/api/messages-api#retry-a-failed-inbound-message-for-processing) | `IPostKitClient.RetryInboundMessageAsync`       |
+| ✅ | [Message opens](https://postmarkapp.com/developer/api/messages-api#message-opens)                                                                 | `IPostKitClient.SearchMessageOpensAsync`        |
+| ✅ | [Opens for a single message](https://postmarkapp.com/developer/api/messages-api#opens-for-a-single-message)                                       | `IPostKitClient.GetMessageOpensAsync`           |
+| ✅ | [Message clicks](https://postmarkapp.com/developer/api/messages-api#message-clicks)                                                               | `IPostKitClient.SearchMessageClicksAsync`       |
+| ✅ | [Clicks for a single message](https://postmarkapp.com/developer/api/messages-api#clicks-for-a-single-message)                                     | `IPostKitClient.GetMessageClicksAsync`          |
 
 ---
 
 ## Domains API
 
-|    | Endpoint                                                                                       | Implementation |
-|----|------------------------------------------------------------------------------------------------|----------------|
-| ✏️ | [List domains](https://postmarkapp.com/developer/api/domains-api#list-domains)                 |                |
-| ✏️ | [Get domain details](https://postmarkapp.com/developer/api/domains-api#get-domain-details)     |                |
-| ✏️ | [Create domain](https://postmarkapp.com/developer/api/domains-api#create-domain)               |                |
-| ✏️ | [Edit domain](https://postmarkapp.com/developer/api/domains-api#edit-domain)                   |                |
-| ✏️ | [Delete domain](https://postmarkapp.com/developer/api/domains-api#delete-domain)               |                |
-| ✏️ | [Verify DKIM](https://postmarkapp.com/developer/api/domains-api#verify-dkim)                   |                |
-| ✏️ | [Verify Return-Path](https://postmarkapp.com/developer/api/domains-api#verify-return-path)     |                |
-| ✏️ | [Verify an SPF record](https://postmarkapp.com/developer/api/domains-api#verify-an-spf-record) |                |
-| ✏️ | [Rotate DKIM keys](https://postmarkapp.com/developer/api/domains-api#rotate-dkim-keys)         |                |
+|   | Endpoint                                                                                       | Implementation                               |
+|---|------------------------------------------------------------------------------------------------|----------------------------------------------|
+| ✅ | [List domains](https://postmarkapp.com/developer/api/domains-api#list-domains)                 | `IPostKitClient.ListDomainsAsync`            |
+| ✅ | [Get domain details](https://postmarkapp.com/developer/api/domains-api#get-domain-details)     | `IPostKitClient.GetDomainAsync`              |
+| ✅ | [Create domain](https://postmarkapp.com/developer/api/domains-api#create-domain)               | `IPostKitClient.CreateDomainAsync`           |
+| ✅ | [Edit domain](https://postmarkapp.com/developer/api/domains-api#edit-domain)                   | `IPostKitClient.EditDomainAsync`             |
+| ✅ | [Delete domain](https://postmarkapp.com/developer/api/domains-api#delete-domain)               | `IPostKitClient.DeleteDomainAsync`           |
+| ✅ | [Verify DKIM](https://postmarkapp.com/developer/api/domains-api#verify-dkim)                   | `IPostKitClient.VerifyDomainDkimAsync`       |
+| ✅ | [Verify Return-Path](https://postmarkapp.com/developer/api/domains-api#verify-return-path)     | `IPostKitClient.VerifyDomainReturnPathAsync` |
+| ✅ | [Verify an SPF record](https://postmarkapp.com/developer/api/domains-api#verify-an-spf-record) | `IPostKitClient.VerifyDomainSpfAsync`        |
+| ✅ | [Rotate DKIM keys](https://postmarkapp.com/developer/api/domains-api#rotate-dkim-keys)         | `IPostKitClient.RotateDomainDkimAsync`       |
 
 ---
 
 ## Sender signatures API
 
-|    | Endpoint                                                                                              | Implementation |
-|----|-------------------------------------------------------------------------------------------------------|----------------|
-| ✏️ | [List sender signatures](https://postmarkapp.com/developer/api/signatures-api#list-sender-signatures) |                |
-| ✏️ | [Get sender signature](https://postmarkapp.com/developer/api/signatures-api#get-sender-signature)     |                |
-| ✏️ | [Create a signature](https://postmarkapp.com/developer/api/signatures-api#create-a-signature)         |                |
-| ✏️ | [Edit a signature](https://postmarkapp.com/developer/api/signatures-api#edit-a-signature)             |                |
-| ✏️ | [Delete a signature](https://postmarkapp.com/developer/api/signatures-api#delete-a-signature)         |                |
-| ✏️ | [Resend a confirmation](https://postmarkapp.com/developer/api/signatures-api#resend-a-confirmation)   |                |
-| ✏️ | [Verify an SPF record](https://postmarkapp.com/developer/api/signatures-api#verify-an-spf-record)     |                |
-| ✏️ | [Request a new DKIM](https://postmarkapp.com/developer/api/signatures-api#request-a-new-dkim)         |                |
+|   | Endpoint                                                                                              | Implementation                                          |
+|---|-------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
+| ✅ | [List sender signatures](https://postmarkapp.com/developer/api/signatures-api#list-sender-signatures) | `IPostKitClient.ListSenderSignaturesAsync`              |
+| ✅ | [Get sender signature](https://postmarkapp.com/developer/api/signatures-api#get-sender-signature)     | `IPostKitClient.GetSenderSignatureAsync`                |
+| ✅ | [Create a signature](https://postmarkapp.com/developer/api/signatures-api#create-a-signature)         | `IPostKitClient.CreateSenderSignatureAsync`             |
+| ✅ | [Edit a signature](https://postmarkapp.com/developer/api/signatures-api#edit-a-signature)             | `IPostKitClient.EditSenderSignatureAsync`               |
+| ✅ | [Delete a signature](https://postmarkapp.com/developer/api/signatures-api#delete-a-signature)         | `IPostKitClient.DeleteSenderSignatureAsync`             |
+| ✅ | [Resend a confirmation](https://postmarkapp.com/developer/api/signatures-api#resend-a-confirmation)   | `IPostKitClient.ResendSenderSignatureConfirmationAsync` |
+| ✅ | [Verify an SPF record](https://postmarkapp.com/developer/api/signatures-api#verify-an-spf-record)     | `IPostKitClient.VerifySenderSignatureSpfAsync`          |
+| ✅ | [Request a new DKIM](https://postmarkapp.com/developer/api/signatures-api#request-a-new-dkim)         | `IPostKitClient.RequestNewDkimForSenderSignatureAsync`  |
 
 ---
 
 ## Stats API
 
-|    | Endpoint                                                                                                 | Implementation |
-|----|----------------------------------------------------------------------------------------------------------|----------------|
-| ✏️ | [Get outbound overview](https://postmarkapp.com/developer/api/stats-api#get-outbound-overview)           |                |
-| ✏️ | [Get sent counts](https://postmarkapp.com/developer/api/stats-api#get-sent-counts)                       |                |
-| ✏️ | [Get bounce counts](https://postmarkapp.com/developer/api/stats-api#get-bounce-counts)                   |                |
-| ✏️ | [Get spam complaints](https://postmarkapp.com/developer/api/stats-api#get-spam-complaints)               |                |
-| ✏️ | [Get tracked email counts](https://postmarkapp.com/developer/api/stats-api#get-tracked-email-counts)     |                |
-| ✏️ | [Get email open counts](https://postmarkapp.com/developer/api/stats-api#get-email-open-counts)           |                |
-| ✏️ | [Get email platform usage](https://postmarkapp.com/developer/api/stats-api#get-email-platform-usage)     |                |
-| ✏️ | [Get email client usage](https://postmarkapp.com/developer/api/stats-api#get-email-client-usage)         |                |
-| ✏️ | [Get click counts](https://postmarkapp.com/developer/api/stats-api#get-click-counts)                     |                |
-| ✏️ | [Get browser usage](https://postmarkapp.com/developer/api/stats-api#get-browser-usage)                   |                |
-| ✏️ | [Get browser platform usage](https://postmarkapp.com/developer/api/stats-api#get-browser-platform-usage) |                |
-| ✏️ | [Get click location](https://postmarkapp.com/developer/api/stats-api#get-click-location)                 |                |
+|   | Endpoint                                                                                                 | Implementation                                      |
+|---|----------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
+| ✅ | [Get outbound overview](https://postmarkapp.com/developer/api/stats-api#get-outbound-overview)           | `IPostKitClient.GetOutboundStatsOverviewAsync`      |
+| ✅ | [Get sent counts](https://postmarkapp.com/developer/api/stats-api#get-sent-counts)                       | `IPostKitClient.GetOutboundSentStatsAsync`          |
+| ✅ | [Get bounce counts](https://postmarkapp.com/developer/api/stats-api#get-bounce-counts)                   | `IPostKitClient.GetOutboundBounceStatsAsync`        |
+| ✅ | [Get spam complaints](https://postmarkapp.com/developer/api/stats-api#get-spam-complaints)               | `IPostKitClient.GetOutboundSpamComplaintStatsAsync` |
+| ✅ | [Get tracked email counts](https://postmarkapp.com/developer/api/stats-api#get-tracked-email-counts)     | `IPostKitClient.GetOutboundTrackedEmailStatsAsync`  |
+| ✅ | [Get email open counts](https://postmarkapp.com/developer/api/stats-api#get-email-open-counts)           | `IPostKitClient.GetOutboundOpenStatsAsync`          |
+| ✅ | [Get email platform usage](https://postmarkapp.com/developer/api/stats-api#get-email-platform-usage)     | `IPostKitClient.GetOutboundEmailPlatformStatsAsync` |
+| ✅ | [Get email client usage](https://postmarkapp.com/developer/api/stats-api#get-email-client-usage)         | `IPostKitClient.GetOutboundEmailClientStatsAsync`   |
+| ✅ | [Get click counts](https://postmarkapp.com/developer/api/stats-api#get-click-counts)                     | `IPostKitClient.GetOutboundClickStatsAsync`         |
+| ✅ | [Get browser usage](https://postmarkapp.com/developer/api/stats-api#get-browser-usage)                   | `IPostKitClient.GetOutboundClickBrowserStatsAsync`  |
+| ✅ | [Get browser platform usage](https://postmarkapp.com/developer/api/stats-api#get-browser-platform-usage) | `IPostKitClient.GetOutboundClickPlatformStatsAsync` |
+| ✅ | [Get click location](https://postmarkapp.com/developer/api/stats-api#get-click-location)                 | `IPostKitClient.GetOutboundClickLocationStatsAsync` |
 
 ---
 
 ## Triggers: Inbound rules
 
-|    | Endpoint                                                                                                                          | Implementation |
-|----|-----------------------------------------------------------------------------------------------------------------------------------|----------------|
-| ✏️ | [List inbound rule triggers](https://postmarkapp.com/developer/api/inbound-rules-triggers-api#list-inbound-rule-triggers)         |                |
-| ✏️ | [Create an inbound rule trigger](https://postmarkapp.com/developer/api/inbound-rules-triggers-api#create-an-inbound-rule-trigger) |                |
-| ✏️ | [Delete a single trigger](https://postmarkapp.com/developer/api/inbound-rules-triggers-api#delete-a-single-trigger)               |                |
+|   | Endpoint                                                                                                                          | Implementation                                 |
+|---|-----------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|
+| ✅ | [List inbound rule triggers](https://postmarkapp.com/developer/api/inbound-rules-triggers-api#list-inbound-rule-triggers)         | `IPostKitClient.ListInboundRuleTriggersAsync`  |
+| ✅ | [Create an inbound rule trigger](https://postmarkapp.com/developer/api/inbound-rules-triggers-api#create-an-inbound-rule-trigger) | `IPostKitClient.CreateInboundRuleTriggerAsync` |
+| ✅ | [Delete a single trigger](https://postmarkapp.com/developer/api/inbound-rules-triggers-api#delete-a-single-trigger)               | `IPostKitClient.DeleteInboundRuleTriggerAsync` |
 
 ---
 
 ## Webhooks API
 
-|    | Endpoint                                                                                | Implementation |
-|----|-----------------------------------------------------------------------------------------|----------------|
-| ✏️ | [List webhooks](https://postmarkapp.com/developer/api/webhooks-api#list-webhooks)       |                |
-| ✏️ | [Get a webhook](https://postmarkapp.com/developer/api/webhooks-api#get-a-webhook)       |                |
-| ✏️ | [Create a webhook](https://postmarkapp.com/developer/api/webhooks-api#create-a-webhook) |                |
-| ✏️ | [Edit a webhook](https://postmarkapp.com/developer/api/webhooks-api#edit-a-webhook)     |                |
-| ✏️ | [Delete a webhook](https://postmarkapp.com/developer/api/webhooks-api#delete-a-webhook) |                |
+|   | Endpoint                                                                                | Implementation                      |
+|---|-----------------------------------------------------------------------------------------|-------------------------------------|
+| ✅ | [List webhooks](https://postmarkapp.com/developer/api/webhooks-api#list-webhooks)       | `IPostKitClient.ListWebhooksAsync`  |
+| ✅ | [Get a webhook](https://postmarkapp.com/developer/api/webhooks-api#get-a-webhook)       | `IPostKitClient.GetWebhookAsync`    |
+| ✅ | [Create a webhook](https://postmarkapp.com/developer/api/webhooks-api#create-a-webhook) | `IPostKitClient.CreateWebhookAsync` |
+| ✅ | [Edit a webhook](https://postmarkapp.com/developer/api/webhooks-api#edit-a-webhook)     | `IPostKitClient.EditWebhookAsync`   |
+| ✅ | [Delete a webhook](https://postmarkapp.com/developer/api/webhooks-api#delete-a-webhook) | `IPostKitClient.DeleteWebhookAsync` |
 
 ---
 
 ## Suppressions API
 
-|   | Endpoint                                                                                            | Implementation                                |
-|---|-----------------------------------------------------------------------------------------------------|-----------------------------------------------|
-| ✅ | [Suppression dump](https://postmarkapp.com/developer/api/suppressions-api#suppression-dump)         | `IPostKitClient.GetSuppressionsAsync`         |
-| ✅ | [Create a Suppression](https://postmarkapp.com/developer/api/suppressions-api#create-a-suppression) | `IPostKitClient.CreateSuppressionsAsync`      |
-| ✅ | [Delete a Suppression](https://postmarkapp.com/developer/api/suppressions-api#delete-a-suppression) | `IPostKitClient.DeleteSuppressionsAsync`      |
+|   | Endpoint                                                                                            | Implementation                           |
+|---|-----------------------------------------------------------------------------------------------------|------------------------------------------|
+| ✅ | [Suppression dump](https://postmarkapp.com/developer/api/suppressions-api#suppression-dump)         | `IPostKitClient.GetSuppressionsAsync`    |
+| ✅ | [Create a Suppression](https://postmarkapp.com/developer/api/suppressions-api#create-a-suppression) | `IPostKitClient.CreateSuppressionsAsync` |
+| ✅ | [Delete a Suppression](https://postmarkapp.com/developer/api/suppressions-api#delete-a-suppression) | `IPostKitClient.DeleteSuppressionsAsync` |
 
 ---
 
 ## Data Removal API
 
-|    | Endpoint                                                                                                                           | Implementation |
-|----|------------------------------------------------------------------------------------------------------------------------------------|----------------|
-| ✏️ | [Create a Data Removal request](https://postmarkapp.com/developer/api/data-removals-api#create-a-data-removal-request)             |                |
-| ✏️ | [Check a Data Removal request status](https://postmarkapp.com/developer/api/data-removals-api#check-a-data-removal-request-status) |                |
+|   | Endpoint                                                                                                                           | Implementation                          |
+|---|------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------|
+| ✅ | [Create a Data Removal request](https://postmarkapp.com/developer/api/data-removals-api#create-a-data-removal-request)             | `IPostKitClient.CreateDataRemovalAsync` |
+| ✅ | [Check a Data Removal request status](https://postmarkapp.com/developer/api/data-removals-api#check-a-data-removal-request-status) | `IPostKitClient.GetDataRemovalAsync`    |

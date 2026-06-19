@@ -44,7 +44,7 @@ internal sealed partial class DraftBulkEmail
 
         ValidateFrom(mailboxAddress, nameof(address));
 
-        _from = mailboxAddress;
+        _from = mailboxAddress.Snapshot();
 
         return this;
     }
@@ -58,7 +58,7 @@ internal sealed partial class DraftBulkEmail
 
         ValidateFrom(mailboxAddress, nameof(address));
 
-        _from = mailboxAddress;
+        _from = mailboxAddress.Snapshot();
 
         return this;
     }
@@ -72,7 +72,7 @@ internal sealed partial class DraftBulkEmail
 
         ValidateFrom(mailboxAddress, nameof(mailboxAddress));
 
-        _from = mailboxAddress;
+        _from = mailboxAddress.Snapshot();
 
         return this;
     }
@@ -275,7 +275,7 @@ internal sealed partial class DraftBulkEmail
         {
             MessageStream.Broadcast => "broadcast",
             MessageStream.Transactional => throw new ArgumentException("Bulk sends require a broadcast message stream. Received MessageStream.Transactional; use MessageStream.Broadcast or a broadcast stream ID.", nameof(messageStream)),
-            _ => throw new UnreachableException($"Enum value of '{nameof(MessageStream)}.{messageStream}' has not been handled."),
+            _ => throw new UnreachableException($"Enum value of '{nameof(MessageStream)}.{messageStream}' has not been handled.")
         };
 
         return this;
@@ -406,7 +406,8 @@ internal sealed partial class DraftBulkEmail
 #if NET9_0_OR_GREATER
         if (!TemplateAliasRegex.IsMatch(templateAlias))
 #else
-        if (!TemplateAliasRegex().IsMatch(templateAlias))
+        if (!TemplateAliasRegex()
+                .IsMatch(templateAlias))
 #endif
             throw new ArgumentException($"The template alias must start with a letter and may only contain letters, numbers, '-', '_', or '.' characters. {GetTemplateAliasValidationDetail(templateAlias)}", nameof(templateAlias));
 
@@ -465,7 +466,7 @@ internal sealed partial class DraftBulkEmail
             TemplateAlias = _templateAlias,
             InlineCss = _inlineCss,
             Messages = _messages.ToList()
-                .AsReadOnly(),
+                .AsReadOnly()
         };
 
         var estimatedTotal = PostmarkSizeEstimator.EstimateBulkEmailPayloadSizeLowerBound(bulkEmail);
@@ -486,13 +487,13 @@ internal sealed partial class DraftBulkEmail
 
     private static string GetTemplateAliasValidationDetail(string templateAlias)
     {
-        if (templateAlias[0] is not ((>= 'A' and <= 'Z') or (>= 'a' and <= 'z')))
+        if (templateAlias[0] is not (>= 'A' and <= 'Z' or >= 'a' and <= 'z'))
             return $"First character must be a letter. Received {ValidationExtensions.FormatCharacter(templateAlias[0])} at index 0.";
 
         for (var index = 1; index < templateAlias.Length; index++)
         {
             var current = templateAlias[index];
-            var isLetter = current is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z');
+            var isLetter = current is >= 'A' and <= 'Z' or >= 'a' and <= 'z';
             var isDigit = current is >= '0' and <= '9';
             var isAllowedPunctuation = current is '-' or '_' or '.';
             if (!isLetter && !isDigit && !isAllowedPunctuation)
@@ -554,7 +555,8 @@ internal sealed partial class DraftBulkEmail
             var message = _messages[index];
             var projectedTotal = sharedContentSize + message.TemplateModelSizeInBytes + PostmarkSizeEstimator.EstimateHeaderSizeLowerBound(message.Headers);
             if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-                throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage($"Estimated message content for bulk message at index {index} exceeds Postmark's 10 MB limit.", projectedTotal, PostmarkSizeEstimator.MessageSizeLimitInBytes));
+                throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage($"Estimated message content for bulk message at index {index} exceeds Postmark's 10 MB limit.", projectedTotal,
+                    PostmarkSizeEstimator.MessageSizeLimitInBytes));
         }
     }
 
@@ -569,14 +571,14 @@ internal sealed partial class DraftBulkEmail
             if (message.Metadata is not null)
             {
                 foreach (var entry in message.Metadata)
-                {
                     if (ValidationExtensions.TryGetExistingKey(_metadata, entry.Key, out var existingName))
-                        throw new InvalidOperationException($"Cannot use duplicate metadata names for bulk message at index {messageIndex} after combining request-level and message-level metadata. Metadata name '{entry.Key}' duplicates request-level metadata name '{existingName}'. Metadata names are compared case-insensitively.");
-                }
+                        throw new InvalidOperationException(
+                            $"Cannot use duplicate metadata names for bulk message at index {messageIndex} after combining request-level and message-level metadata. Metadata name '{entry.Key}' duplicates request-level metadata name '{existingName}'. Metadata names are compared case-insensitively.");
 
                 var mergedMetadataCount = _metadata.Count + message.Metadata.Count;
                 if (mergedMetadataCount > 10)
-                    throw new InvalidOperationException($"Cannot set more than 10 metadata fields for bulk message at index {messageIndex} after combining request-level and message-level metadata. Request-level count: {_metadata.Count}; message-level count: {message.Metadata.Count}; combined count: {mergedMetadataCount}.");
+                    throw new InvalidOperationException(
+                        $"Cannot set more than 10 metadata fields for bulk message at index {messageIndex} after combining request-level and message-level metadata. Request-level count: {_metadata.Count}; message-level count: {message.Metadata.Count}; combined count: {mergedMetadataCount}.");
             }
         }
     }
@@ -593,10 +595,9 @@ internal sealed partial class DraftBulkEmail
                 continue;
 
             foreach (var entry in message.Headers)
-            {
                 if (ValidationExtensions.TryGetExistingKey(_headers, entry.Key, out var existingName))
-                    throw new InvalidOperationException($"Cannot use duplicate header names for bulk message at index {messageIndex} after combining request-level and message-level headers. Header name '{entry.Key}' duplicates request-level header name '{existingName}'. Header names are compared case-insensitively.");
-            }
+                    throw new InvalidOperationException(
+                        $"Cannot use duplicate header names for bulk message at index {messageIndex} after combining request-level and message-level headers. Header name '{entry.Key}' duplicates request-level header name '{existingName}'. Header names are compared case-insensitively.");
         }
     }
 }

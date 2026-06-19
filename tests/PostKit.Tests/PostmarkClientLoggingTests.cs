@@ -50,10 +50,10 @@ public class PostmarkClientLoggingTests
             Metadata = null,
             TrackOpens = null,
             TrackLinks = null,
-            MessageStream = null,
+            MessageStream = null
         };
 
-        var result = await client.PostAsync<EmailRequest, EmailResponse>("/email", request, CancellationToken.None);
+        var result = await client.PostAsync<EmailRequest, EmailResponse>(PostmarkTokenScope.Server, "/email", request, CancellationToken.None);
 
         Assert.True(result.IsSuccess(out _), result.ToString());
         Assert.Contains(logger.Messages, static message => message.Contains("Postmark API request to /email with", StringComparison.Ordinal));
