@@ -129,7 +129,7 @@ public class PostKitClientMessageResponseTests
     public async Task SearchOutboundMessagesAsync_UsesOutboundMessageSearchEndpointAndMapsResponse()
     {
         const string endpoint =
-            "/messages/outbound?count=50&offset=0&recipient=john.doe%40yahoo.com&fromemail=joe%40domain.com&tag=welcome&status=sent&todate=2015-01-12&fromdate=2015-01-01&subject=staging%20%2B%20prod&messagestream=outbound&metadata_color=blue";
+            "/messages/outbound?count=50&offset=0&recipient=john.doe%40yahoo.com&fromemail=joe%40domain.com&tag=welcome&status=sent&fromdate=2015-01-01&todate=2015-01-12&subject=staging%20%2B%20prod&messagestream=outbound&metadata_color=blue";
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = SuccessfulResponseJson });
         var client = new PostKitClient(postmark, new TestLogger());
         var query = new OutboundMessageQuery
@@ -384,7 +384,7 @@ public class PostKitClientMessageResponseTests
                                     }
                                     """;
 
-        const string endpoint = "/messages/outbound?count=10&offset=0&todate=2026-01-15T13%3A59%3A59&fromdate=2026-01-15T13%3A00%3A00&messagestream=outbound";
+        const string endpoint = "/messages/outbound?count=10&offset=0&fromdate=2026-01-15T13%3A00%3A00&todate=2026-01-15T13%3A59%3A59&messagestream=outbound";
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
         var client = new PostKitClient(postmark, new TestLogger());
         var query = new OutboundMessageQuery { FromDate = new DateTimeOffset(2026, 1, 15, 18, 0, 0, TimeSpan.Zero), ToDate = new DateTimeOffset(2026, 1, 15, 18, 59, 59, TimeSpan.Zero) };

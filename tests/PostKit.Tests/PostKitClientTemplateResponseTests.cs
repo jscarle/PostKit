@@ -264,6 +264,43 @@ public class PostKitClientTemplateResponseTests
     }
 
     [Fact]
+    public async Task CreateTemplateAsync_WithLayoutTemplateOnLayoutTemplate_ReturnsValidationFailureBeforePostmarkCall()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        var result = await client.CreateTemplateAsync(new TemplateCreateParameters
+        {
+            Name = "Main Layout",
+            HtmlBody = "<html>{{{@content}}}</html>",
+            TemplateType = TemplateType.Layout,
+            LayoutTemplate = "main-layout"
+        }, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        Assert.Equal("The template create parameters layout template cannot be set for a layout template. Set LayoutTemplate to null for layout templates.", error.Message);
+        Assert.Null(postmark.LastPostEndpoint);
+    }
+
+    [Fact]
+    public async Task ValidateTemplateAsync_WithLayoutTemplateOnLayoutTemplate_ReturnsValidationFailureBeforePostmarkCall()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        var result = await client.ValidateTemplateAsync(new TemplateValidationParameters
+        {
+            HtmlBody = "<html>{{{@content}}}</html>",
+            TemplateType = TemplateType.Layout,
+            LayoutTemplate = "main-layout"
+        }, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        Assert.Equal("The template validation parameters layout template cannot be set for a layout template. Set LayoutTemplate to null for layout templates.", error.Message);
+        Assert.Null(postmark.LastPostEndpoint);
+    }
+
+    [Fact]
     public async Task ListTemplatesAsync_WithWhitespaceLayoutFilter_ReturnsValidationFailureBeforePostmarkCall()
     {
         var postmark = new RecordingPostmarkClient();

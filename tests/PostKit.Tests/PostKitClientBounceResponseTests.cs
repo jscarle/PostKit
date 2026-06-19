@@ -45,7 +45,7 @@ public class PostKitClientBounceResponseTests
 
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string>
         {
-            ["/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&todate=2026-03-11T13%3A59%3A59&fromdate=2026-03-11T13%3A00%3A00&messagestream=outbound"] =
+            ["/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&fromdate=2026-03-11T13%3A00%3A00&todate=2026-03-11T13%3A59%3A59&messagestream=outbound"] =
                 responseJson
         });
         var logger = new TestLogger();
@@ -65,7 +65,7 @@ public class PostKitClientBounceResponseTests
 
         Assert.True(result.IsSuccess(out var response), result.ToString());
         Assert.Equal(
-            "/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&todate=2026-03-11T13%3A59%3A59&fromdate=2026-03-11T13%3A00%3A00&messagestream=outbound",
+            "/bounces?count=25&offset=10&type=HardBounce&inactive=true&emailFilter=HardBounce%40bounce-testing.postmarkapp.com&messageID=69ce4784-c202-41c6-a1a9-91757022b25e&tag=ops%2Balerts&fromdate=2026-03-11T13%3A00%3A00&todate=2026-03-11T13%3A59%3A59&messagestream=outbound",
             postmark.LastEndpoint);
 
         Assert.Equal(1, response.TotalCount);
@@ -92,7 +92,7 @@ public class PostKitClientBounceResponseTests
                                     }
                                     """;
 
-        const string endpoint = "/bounces?count=10&offset=0&todate=2026-01-15T13%3A59%3A59&fromdate=2026-01-15T13%3A00%3A00&messagestream=outbound";
+        const string endpoint = "/bounces?count=10&offset=0&fromdate=2026-01-15T13%3A00%3A00&todate=2026-01-15T13%3A59%3A59&messagestream=outbound";
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);
@@ -137,7 +137,7 @@ public class PostKitClientBounceResponseTests
                                     }
                                     """;
 
-        const string endpoint = "/bounces?count=10&offset=0&todate=2026-01-14&fromdate=2026-01-14&messagestream=outbound";
+        const string endpoint = "/bounces?count=10&offset=0&fromdate=2026-01-14&todate=2026-01-14&messagestream=outbound";
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string> { [endpoint] = responseJson });
         var logger = new TestLogger();
         var client = new PostKitClient(postmark, logger);

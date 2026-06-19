@@ -396,6 +396,19 @@ public class PostKitClientManagementResponseTests
     }
 
     [Fact]
+    public async Task CreateDomainAsync_WithSurroundingWhitespaceName_ReturnsValidationFailureBeforePostmarkCall()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        var result = await client.CreateDomainAsync(new DomainCreateParameters { Name = " example.com " }, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        Assert.Equal("The domain create parameters name cannot start or end with whitespace. Pass a domain name like 'example.com' without surrounding whitespace. Actual length: 13.", error.Message);
+        Assert.Null(postmark.LastAccountPostEndpoint);
+    }
+
+    [Fact]
     public async Task VerifyDomainDkimAsync_UsesAccountPutWithoutBody()
     {
         var postmark = new RecordingPostmarkClient(accountEmptyPutResponses: new Dictionary<string, string> { ["/domains/12/verifyDkim"] = DomainJson });
@@ -562,6 +575,23 @@ public class PostKitClientManagementResponseTests
 
         Assert.True(result.IsFailure(out var error, out _), result.ToString());
         Assert.Equal("The sender signature create parameters confirmation personal note must not exceed 400 characters. Actual length: 401.", error.Message);
+        Assert.Null(postmark.LastAccountPostEndpoint);
+    }
+
+    [Fact]
+    public async Task CreateSenderSignatureAsync_WithSurroundingWhitespaceFromEmail_ReturnsValidationFailureBeforePostmarkCall()
+    {
+        var postmark = new RecordingPostmarkClient();
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        var result = await client.CreateSenderSignatureAsync(new SenderSignatureCreateParameters
+        {
+            FromEmail = "sender@example.com ",
+            Name = "Sender"
+        }, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        Assert.Equal("The sender signature create parameters from email address cannot start or end with whitespace. Set FromEmail to an address like 'sender@example.com' without surrounding whitespace. Actual length: 19.", error.Message);
         Assert.Null(postmark.LastAccountPostEndpoint);
     }
 

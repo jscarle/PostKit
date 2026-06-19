@@ -193,6 +193,9 @@ internal static partial class ValidationExtensions
         if (string.IsNullOrWhiteSpace(value))
             return allowEmpty ? $"{subject} cannot be whitespace. Use an empty string to clear it or null to omit it. Actual length: {value.Length}." : $"{subject} cannot be empty or whitespace. Actual length: {value.Length}.";
 
+        if (char.IsWhiteSpace(value[0]) || char.IsWhiteSpace(value[^1]))
+            return $"{subject} cannot start or end with whitespace. Pass a domain name like 'example.com' without surrounding whitespace. Actual length: {value.Length}.";
+
         if (!LooksLikeDomainName(value))
             return $"{subject} must be a domain name like 'example.com'.";
 
@@ -211,6 +214,9 @@ internal static partial class ValidationExtensions
 
         if (string.IsNullOrWhiteSpace(value))
             return $"{subject} cannot be whitespace. Use an empty string to clear it or null to omit it. Actual length: {value.Length}.";
+
+        if (char.IsWhiteSpace(value[0]) || char.IsWhiteSpace(value[^1]))
+            return $"{subject} cannot start or end with whitespace. Set {propertyName} to an address like 'sender@example.com' without surrounding whitespace. Actual length: {value.Length}.";
 
         if (!LooksLikePostmarkEmailAddress(value))
             return $"{subject} must be a valid email address. Set {propertyName} to an address like 'sender@example.com'.";
@@ -654,6 +660,9 @@ internal static partial class ValidationExtensions
         var effectiveTemplateType = templateType ?? TemplateType.Standard;
         if (effectiveTemplateType == TemplateType.Layout)
         {
+            if (layoutTemplate is not null)
+                return $"The template {operationName} parameters layout template cannot be set for a layout template. Set LayoutTemplate to null for layout templates.";
+
             if (subject is not null)
                 return $"The template {operationName} parameters subject cannot be set for a layout template. Set Subject to null for layout templates.";
         }
@@ -675,6 +684,9 @@ internal static partial class ValidationExtensions
 
         if (parameters.TemplateType.HasValue && !Enum.IsDefined(parameters.TemplateType.Value))
             return $"The template validation parameters template type must be TemplateType.Standard or TemplateType.Layout. Received {(int)parameters.TemplateType.Value}.";
+
+        if (parameters.TemplateType == TemplateType.Layout && parameters.LayoutTemplate is not null)
+            return "The template validation parameters layout template cannot be set for a layout template. Set LayoutTemplate to null for layout templates.";
 
         if (parameters.LayoutTemplate is not null)
         {
@@ -1289,6 +1301,9 @@ internal static partial class ValidationExtensions
         if (string.IsNullOrWhiteSpace(value))
             return $"{subject} cannot be empty or whitespace. Actual length: {value.Length}.";
 
+        if (char.IsWhiteSpace(value[0]) || char.IsWhiteSpace(value[^1]))
+            return $"{subject} cannot start or end with whitespace. Set {propertyName} to an address like '{exampleAddress}' without surrounding whitespace. Actual length: {value.Length}.";
+
         if (!LooksLikePostmarkEmailAddress(value))
             return $"{subject} must be a valid email address. Set {propertyName} to an address like '{exampleAddress}'.";
 
@@ -1297,8 +1312,7 @@ internal static partial class ValidationExtensions
 
     private static bool LooksLikeDomainName(string value)
     {
-        var span = value.AsSpan()
-            .Trim();
+        var span = value.AsSpan();
         if (span.Length < 3 || span[0] == '.' || span[^1] == '.')
             return false;
 
@@ -1330,8 +1344,7 @@ internal static partial class ValidationExtensions
 
     private static bool LooksLikePostmarkEmailAddress(string value)
     {
-        var span = value.AsSpan()
-            .Trim();
+        var span = value.AsSpan();
         var atIndex = span.IndexOf('@');
         if (atIndex <= 0 || atIndex >= span.Length - 1)
             return false;

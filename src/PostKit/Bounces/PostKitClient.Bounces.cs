@@ -326,11 +326,11 @@ internal sealed partial class PostKitClient
         if (query?.Tag is not null)
             parameters.Add($"tag={Uri.EscapeDataString(query.Tag)}");
 
-        if (query?.ToDate.HasValue == true)
-            parameters.Add($"todate={Uri.EscapeDataString(FormatPostmarkDateQueryValue(query.ToDate.Value))}");
-
         if (query?.FromDate.HasValue == true)
             parameters.Add($"fromdate={Uri.EscapeDataString(FormatPostmarkDateQueryValue(query.FromDate.Value))}");
+
+        if (query?.ToDate.HasValue == true)
+            parameters.Add($"todate={Uri.EscapeDataString(FormatPostmarkDateQueryValue(query.ToDate.Value))}");
 
         parameters.Add($"messagestream={Uri.EscapeDataString(messageStream)}");
 
