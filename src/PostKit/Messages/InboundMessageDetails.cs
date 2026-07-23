@@ -5,8 +5,7 @@ namespace PostKit.Messages;
 /// <summary>Represents inbound message details.</summary>
 public sealed record InboundMessageDetails : InboundMessage
 {
-    internal InboundMessageDetails(InboundMessage message, string? textBody, string? htmlBody, IReadOnlyList<InboundMessageHeader> headers, string? blockedReason) : base(message.From, message.FromName, message.FromFull, message.To,
-        message.ToFull, message.CcFull, message.Cc, message.ReplyTo, message.OriginalRecipient, message.Subject, message.Date, message.MailboxHash, message.Tag, message.Attachments, message.MessageId, message.Status)
+    internal InboundMessageDetails(InboundMessage message, string? textBody, string? htmlBody, IReadOnlyList<InboundMessageHeader> headers, string? blockedReason) : base(message)
     {
         TextBody = textBody;
         HtmlBody = htmlBody;

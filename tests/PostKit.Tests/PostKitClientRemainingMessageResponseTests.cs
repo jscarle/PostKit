@@ -64,12 +64,18 @@ public class PostKitClientRemainingMessageResponseTests
         Assert.Equal(endpoint, postmark.LastGetEndpoint);
         Assert.Equal(1, page.TotalCount);
         var message = Assert.Single(page.Messages);
-        Assert.Equal("sender@example.com", message.From);
+        Assert.Equal("sender@example.com", message.FromFull.Email);
+        Assert.Equal("Sender", message.FromFull.Name);
         Assert.Equal("Sender", message.FromName);
-        Assert.Equal("inbound@example.com", message.To);
         Assert.Equal("inbound@example.com", Assert.Single(message.ToFull)
             .Email);
-        Assert.Null(message.Cc);
+        Assert.Empty(message.CcFull);
+        Assert.Equal("sender@example.com", typeof(InboundMessage).GetProperty("From")!
+            .GetValue(message));
+        Assert.Equal("inbound@example.com", typeof(InboundMessage).GetProperty("To")!
+            .GetValue(message));
+        Assert.Null(typeof(InboundMessage).GetProperty("Cc")!
+            .GetValue(message));
         Assert.Null(message.ReplyTo);
         Assert.Equal("abc123", message.MailboxHash);
         Assert.Equal("welcome", message.Tag);
@@ -91,13 +97,10 @@ public class PostKitClientRemainingMessageResponseTests
         {
             [endpoint] = """
                          {
-                           "From": "sender@example.com",
                            "FromName": "Sender",
                            "FromFull": { "Email": "sender@example.com", "Name": "Sender" },
-                           "To": "inbound@example.com",
                            "ToFull": [{ "Email": "inbound@example.com", "Name": "" }],
                            "CcFull": [],
-                           "Cc": "",
                            "ReplyTo": "",
                            "OriginalRecipient": "inbound@example.com",
                            "Subject": "Hello there",
@@ -123,12 +126,60 @@ public class PostKitClientRemainingMessageResponseTests
         Assert.Equal("Text body", details.TextBody);
         Assert.Equal("<p>Text body</p>", details.HtmlBody);
         Assert.Equal("Blocked by rule.", details.BlockedReason);
+        Assert.Equal("sender@example.com", details.FromFull.Email);
+        Assert.Equal("inbound@example.com", Assert.Single(details.ToFull)
+            .Email);
+        Assert.Empty(details.CcFull);
         var header = Assert.Single(details.Headers);
         Assert.Equal("X-Spam-Status", header.Name);
         Assert.Equal("No", header.Value);
         Assert.Equal(InboundMessageStatus.Processed, details.Status);
         Assert.Null(details.MailboxHash);
         Assert.Null(details.Tag);
+    }
+
+    [Theory]
+    [InlineData("From", "Use FromFull instead.")]
+    [InlineData("To", "Use ToFull instead.")]
+    [InlineData("Cc", "Use CcFull instead.")]
+    public void InboundMessage_LegacyContactProperty_IsObsolete(string propertyName, string expectedMessage)
+    {
+        var property = typeof(InboundMessage).GetProperty(propertyName);
+
+        Assert.NotNull(property);
+        var attribute = Assert.IsType<ObsoleteAttribute>(Assert.Single(property.GetCustomAttributes(typeof(ObsoleteAttribute), false)));
+        Assert.Equal(expectedMessage, attribute.Message);
+        Assert.False(attribute.IsError);
+    }
+
+    [Fact]
+    public async Task SearchInboundMessagesAsync_WithoutFromFull_ReturnsFailure()
+    {
+        const string endpoint = "/messages/inbound?count=500&offset=0";
+        var postmark = new RecordingPostmarkClient(new Dictionary<string, string>
+        {
+            [endpoint] = """
+                         {
+                           "TotalCount": 1,
+                           "InboundMessages": [
+                             {
+                               "ToFull": [],
+                               "CcFull": [],
+                               "OriginalRecipient": "inbound@example.com",
+                               "Attachments": [],
+                               "MessageID": "cc5727a0-ea30-4e79-baea-aa43c9628ac4",
+                               "Status": "Processed"
+                             }
+                           ]
+                         }
+                         """
+        });
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        var result = await client.SearchInboundMessagesAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        Assert.Equal("Inbound message item 0 could not be mapped: FromFull was not returned from the Postmark Messages API.", error.Message);
     }
 
     [Fact]
