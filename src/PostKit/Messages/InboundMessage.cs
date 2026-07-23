@@ -5,16 +5,20 @@ namespace PostKit.Messages;
 /// <summary>Represents a summary of an inbound message.</summary>
 public record InboundMessage
 {
-    internal InboundMessage(string from, string? fromName, InboundMessageAddress? fromFull, string to, IReadOnlyList<InboundMessageAddress> toFull, IReadOnlyList<InboundMessageAddress> ccFull, string? cc, string? replyTo,
-        string originalRecipient, string? subject, string? date, string? mailboxHash, string? tag, IReadOnlyList<InboundMessageAttachment> attachments, Guid messageId, InboundMessageStatus status)
+    private readonly string? _legacyFrom;
+    private readonly string? _legacyTo;
+    private readonly string? _legacyCc;
+
+    internal InboundMessage(InboundMessageAddress fromFull, IReadOnlyList<InboundMessageAddress> toFull, IReadOnlyList<InboundMessageAddress> ccFull, string? from, string? fromName, string? to, string? cc,
+        string? replyTo, string originalRecipient, string? subject, string? date, string? mailboxHash, string? tag, IReadOnlyList<InboundMessageAttachment> attachments, Guid messageId, InboundMessageStatus status)
     {
-        From = from;
-        FromName = fromName;
         FromFull = fromFull;
-        To = to;
         ToFull = toFull;
         CcFull = ccFull;
-        Cc = cc;
+        _legacyFrom = from;
+        FromName = fromName;
+        _legacyTo = to;
+        _legacyCc = cc;
         ReplyTo = replyTo;
         OriginalRecipient = originalRecipient;
         Subject = subject;
@@ -26,17 +30,8 @@ public record InboundMessage
         Status = status;
     }
 
-    /// <summary>Gets the sender email address string.</summary>
-    public string From { [UsedImplicitly] get; }
-
-    /// <summary>Gets the sender name.</summary>
-    public string? FromName { [UsedImplicitly] get; }
-
-    /// <summary>Gets the parsed sender details.</summary>
-    public InboundMessageAddress? FromFull { [UsedImplicitly] get; }
-
-    /// <summary>Gets the recipient string.</summary>
-    public string To { [UsedImplicitly] get; }
+    /// <summary>Gets the sender details.</summary>
+    public InboundMessageAddress FromFull { [UsedImplicitly] get; }
 
     /// <summary>Gets the full To recipients.</summary>
     public IReadOnlyList<InboundMessageAddress> ToFull { [UsedImplicitly] get; }
@@ -44,8 +39,23 @@ public record InboundMessage
     /// <summary>Gets the full Cc recipients.</summary>
     public IReadOnlyList<InboundMessageAddress> CcFull { [UsedImplicitly] get; }
 
-    /// <summary>Gets the Cc recipient string.</summary>
-    public string? Cc { [UsedImplicitly] get; }
+    /// <summary>Gets the legacy sender contact string, when returned by Postmark.</summary>
+    [Obsolete("Use FromFull instead.")]
+    [UsedImplicitly]
+    public string? From => _legacyFrom;
+
+    /// <summary>Gets the sender name.</summary>
+    public string? FromName { [UsedImplicitly] get; }
+
+    /// <summary>Gets the legacy To contact string, when returned by Postmark.</summary>
+    [Obsolete("Use ToFull instead.")]
+    [UsedImplicitly]
+    public string? To => _legacyTo;
+
+    /// <summary>Gets the legacy Cc contact string, when returned by Postmark.</summary>
+    [Obsolete("Use CcFull instead.")]
+    [UsedImplicitly]
+    public string? Cc => _legacyCc;
 
     /// <summary>Gets the reply-to string.</summary>
     public string? ReplyTo { [UsedImplicitly] get; }

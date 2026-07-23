@@ -207,7 +207,7 @@ internal sealed partial class PostKitClient
         if (mappedCore.IsFailure(out var error, out var core))
             return Result.Failure<InboundMessage>(error);
 
-        return Result.Success(new InboundMessage(core.From, core.FromName, core.FromFull, core.To, core.ToFull, core.CcFull, core.Cc, core.ReplyTo, core.OriginalRecipient, core.Subject, core.Date, core.MailboxHash, core.Tag,
+        return Result.Success(new InboundMessage(core.FromFull, core.ToFull, core.CcFull, core.From, core.FromName, core.To, core.Cc, core.ReplyTo, core.OriginalRecipient, core.Subject, core.Date, core.MailboxHash, core.Tag,
             core.Attachments, core.MessageId, core.Status));
     }
 
@@ -229,15 +229,12 @@ internal sealed partial class PostKitClient
 
     private static Result<InboundMessageCore> CreateInboundMessageCore(InboundMessageModel response)
     {
-        if (string.IsNullOrWhiteSpace(response.From))
-            return Result.Failure<InboundMessageCore>("From was not returned from the Postmark Messages API.");
+        if (response.FromFull is null)
+            return Result.Failure<InboundMessageCore>("FromFull was not returned from the Postmark Messages API.");
 
         var fromFull = CreateInboundMessageAddress(response.FromFull, "FromFull");
         if (fromFull.IsFailure(out var fromFullError, out var mappedFromFull))
             return Result.Failure<InboundMessageCore>(fromFullError);
-
-        if (string.IsNullOrWhiteSpace(response.To))
-            return Result.Failure<InboundMessageCore>("To was not returned from the Postmark Messages API.");
 
         if (response.ToFull is null)
             return Result.Failure<InboundMessageCore>("ToFull was not returned from the Postmark Messages API.");
@@ -276,20 +273,17 @@ internal sealed partial class PostKitClient
         if (status.IsFailure(out var statusError, out var mappedStatus))
             return Result.Failure<InboundMessageCore>(statusError);
 
-        return Result.Success(new InboundMessageCore(response.From, NormalizeOptionalInboundString(response.FromName), mappedFromFull, response.To, mappedToFull, mappedCcFull, NormalizeOptionalInboundString(response.Cc),
-            NormalizeOptionalInboundString(response.ReplyTo), response.OriginalRecipient, response.Subject, response.Date, NormalizeOptionalInboundString(response.MailboxHash), NormalizeOptionalInboundString(response.Tag),
-            mappedAttachments, messageId, mappedStatus));
+        return Result.Success(new InboundMessageCore(mappedFromFull, mappedToFull, mappedCcFull, NormalizeOptionalInboundString(response.From), NormalizeOptionalInboundString(response.FromName),
+            NormalizeOptionalInboundString(response.To), NormalizeOptionalInboundString(response.Cc), NormalizeOptionalInboundString(response.ReplyTo), response.OriginalRecipient, response.Subject, response.Date,
+            NormalizeOptionalInboundString(response.MailboxHash), NormalizeOptionalInboundString(response.Tag), mappedAttachments, messageId, mappedStatus));
     }
 
-    private static Result<InboundMessageAddress?> CreateInboundMessageAddress(InboundAddressModel? response, string propertyName)
+    private static Result<InboundMessageAddress> CreateInboundMessageAddress(InboundAddressModel response, string propertyName)
     {
-        if (response is null)
-            return Result.Success<InboundMessageAddress?>(null);
-
         if (string.IsNullOrWhiteSpace(response.Email))
-            return Result.Failure<InboundMessageAddress?>($"Email was not returned from the Postmark Messages API for {propertyName}.");
+            return Result.Failure<InboundMessageAddress>($"Email was not returned from the Postmark Messages API for {propertyName}.");
 
-        return Result.Success<InboundMessageAddress?>(new InboundMessageAddress { Email = response.Email, Name = NormalizeOptionalInboundString(response.Name) });
+        return Result.Success(new InboundMessageAddress { Email = response.Email, Name = NormalizeOptionalInboundString(response.Name) });
     }
 
     private static Result<IReadOnlyList<InboundMessageAddress>> CreateInboundMessageAddresses(List<InboundAddressModel?> response, string propertyName)
@@ -297,12 +291,13 @@ internal sealed partial class PostKitClient
         var addresses = new List<InboundMessageAddress>(response.Count);
         for (var index = 0; index < response.Count; index++)
         {
-            var mappedAddress = CreateInboundMessageAddress(response[index], $"{propertyName} item {index}");
+            var addressResponse = response[index];
+            if (addressResponse is null)
+                return Result.Failure<IReadOnlyList<InboundMessageAddress>>($"{propertyName} item {index} returned from the Postmark Messages API was null.");
+
+            var mappedAddress = CreateInboundMessageAddress(addressResponse, $"{propertyName} item {index}");
             if (mappedAddress.IsFailure(out var error, out var address))
                 return Result.Failure<IReadOnlyList<InboundMessageAddress>>(error);
-
-            if (address is null)
-                return Result.Failure<IReadOnlyList<InboundMessageAddress>>($"{propertyName} item {index} returned from the Postmark Messages API was null.");
 
             addresses.Add(address);
         }
@@ -434,12 +429,12 @@ internal sealed partial class PostKitClient
     private partial void LogRetryInboundMessageError(string message, [LogProperties] IError error);
 
     private readonly record struct InboundMessageCore(
-        string From,
-        string? FromName,
-        InboundMessageAddress? FromFull,
-        string To,
+        InboundMessageAddress FromFull,
         IReadOnlyList<InboundMessageAddress> ToFull,
         IReadOnlyList<InboundMessageAddress> CcFull,
+        string? From,
+        string? FromName,
+        string? To,
         string? Cc,
         string? ReplyTo,
         string OriginalRecipient,
