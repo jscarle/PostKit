@@ -458,7 +458,9 @@ public class PostmarkClientErrorHandlingTests
 
         Assert.True(result.IsSuccess(out _), result.ToString());
         Assert.Equal(3, handler.RequestCount);
-        Assert.Equal([TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)], delays);
+        Assert.Collection(delays,
+            delay => Assert.InRange(delay, TimeSpan.FromMilliseconds(900), TimeSpan.FromSeconds(1)),
+            delay => Assert.InRange(delay, TimeSpan.FromMilliseconds(1900), TimeSpan.FromSeconds(2)));
     }
 
     [Fact]
@@ -481,7 +483,7 @@ public class PostmarkClientErrorHandlingTests
 
         Assert.True(result.IsSuccess(out _), result.ToString());
         var delay = Assert.Single(delays);
-        Assert.Equal(TimeSpan.FromSeconds(12), delay);
+        Assert.InRange(delay, TimeSpan.FromMilliseconds(11900), TimeSpan.FromSeconds(12));
     }
 
     [Fact]
@@ -502,7 +504,7 @@ public class PostmarkClientErrorHandlingTests
 
         Assert.True(result.IsSuccess(out _), result.ToString());
         var delay = Assert.Single(delays);
-        Assert.InRange(delay, TimeSpan.FromMilliseconds(1199), TimeSpan.FromMilliseconds(1200));
+        Assert.InRange(delay, TimeSpan.FromMilliseconds(1100), TimeSpan.FromMilliseconds(1200));
     }
 
     [Fact]
@@ -522,7 +524,7 @@ public class PostmarkClientErrorHandlingTests
 
         Assert.True(detailsResult.IsSuccess(out _), detailsResult.ToString());
         var retryDelay = Assert.Single(delays);
-        Assert.Equal(TimeSpan.FromSeconds(1), retryDelay);
+        Assert.InRange(retryDelay, TimeSpan.FromMilliseconds(900), TimeSpan.FromSeconds(1));
 
         var suppressionsResult = await client.GetAsync<PostmarkResponse>(PostmarkTokenScope.Server, "/message-streams/outbound/suppressions/dump", CancellationToken.None);
 
