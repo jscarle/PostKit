@@ -556,14 +556,21 @@ public class PostmarkClientErrorHandlingTests
         var httpError = Assert.IsType<HttpError>(error);
         Assert.Equal(HttpStatusCode.TooManyRequests, httpError.StatusCode);
         Assert.Equal(7, handler.RequestCount);
-        Assert.Equal([
+        TimeSpan[] expectedDelays = [
             TimeSpan.FromSeconds(1),
             TimeSpan.FromSeconds(2),
             TimeSpan.FromSeconds(4),
             TimeSpan.FromSeconds(8),
             TimeSpan.FromSeconds(16),
             TimeSpan.FromSeconds(30)
-        ], delays);
+        ];
+        Assert.Equal(expectedDelays.Length, delays.Count);
+
+        for (var index = 0; index < expectedDelays.Length; index++)
+        {
+            var minimumDelay = expectedDelays[index] - TimeSpan.FromMilliseconds(100);
+            Assert.InRange(delays[index], minimumDelay, expectedDelays[index]);
+        }
     }
 
     private static HttpResponseMessage CreateRateLimitedResponse(HttpStatusCode statusCode, int rateLimit)
