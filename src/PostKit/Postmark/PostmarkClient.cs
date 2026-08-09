@@ -63,8 +63,16 @@ internal sealed partial class PostmarkClient : IPostmarkClient
 
     public async Task<Result<TResponse>> GetAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
     {
-        using var responseMessage = await SendAsync(endpoint, () => new HttpRequestMessage(HttpMethod.Get, endpoint), null, tokenScope, cancellationToken);
-        return await GetResponse<TResponse>(HttpMethod.Get, endpoint, responseMessage, tokenScope, cancellationToken);
+        try
+        {
+            using var responseMessage = await SendAsync(endpoint, () => new HttpRequestMessage(HttpMethod.Get, endpoint), null, tokenScope, cancellationToken);
+            return await GetResponse<TResponse>(HttpMethod.Get, endpoint, responseMessage, tokenScope, cancellationToken);
+        }
+        catch (PostmarkUnknownOutcomeException exception)
+        {
+            var error = new PostmarkUnknownOutcomeError(exception.Method, exception.Endpoint, exception.InnerException ?? exception);
+            return Result.Failure<TResponse>(error);
+        }
     }
 
     public async Task<Result<TResponse>> PutAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
@@ -82,9 +90,9 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             }, Encoding.UTF8.GetByteCount(emptyJsonObject), tokenScope, cancellationToken);
             return await GetResponse<TResponse>(HttpMethod.Put, endpoint, responseMessage, tokenScope, cancellationToken);
         }
-        catch (PostmarkIndeterminateRequestException exception)
+        catch (PostmarkUnknownOutcomeException exception)
         {
-            var error = new PostmarkIndeterminateError(exception.Method, exception.Endpoint, "The transport failed before a conclusive response was received.", exception.InnerException ?? exception);
+            var error = new PostmarkUnknownOutcomeError(exception.Method, exception.Endpoint, exception.InnerException ?? exception);
             return Result.Failure<TResponse>(error);
         }
     }
@@ -106,9 +114,9 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             using var responseMessage = await SendAsync(endpoint, () => new HttpRequestMessage(HttpMethod.Delete, endpoint), null, tokenScope, cancellationToken);
             return await GetResponse<TResponse>(HttpMethod.Delete, endpoint, responseMessage, tokenScope, cancellationToken);
         }
-        catch (PostmarkIndeterminateRequestException exception)
+        catch (PostmarkUnknownOutcomeException exception)
         {
-            var error = new PostmarkIndeterminateError(exception.Method, exception.Endpoint, "The transport failed before a conclusive response was received.", exception.InnerException ?? exception);
+            var error = new PostmarkUnknownOutcomeError(exception.Method, exception.Endpoint, exception.InnerException ?? exception);
             return Result.Failure<TResponse>(error);
         }
     }
@@ -126,9 +134,9 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             }, sizeInBytes, tokenScope, cancellationToken);
             return await GetResponse<TResponse>(method, endpoint, responseMessage, tokenScope, cancellationToken);
         }
-        catch (PostmarkIndeterminateRequestException exception)
+        catch (PostmarkUnknownOutcomeException exception)
         {
-            var error = new PostmarkIndeterminateError(exception.Method, exception.Endpoint, "The transport failed before a conclusive response was received.", exception.InnerException ?? exception);
+            var error = new PostmarkUnknownOutcomeError(exception.Method, exception.Endpoint, exception.InnerException ?? exception);
             return Result.Failure<TResponse>(error);
         }
     }
@@ -144,9 +152,9 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             }, 0, tokenScope, cancellationToken);
             return await GetResponse<TResponse>(method, endpoint, responseMessage, tokenScope, cancellationToken);
         }
-        catch (PostmarkIndeterminateRequestException exception)
+        catch (PostmarkUnknownOutcomeException exception)
         {
-            var error = new PostmarkIndeterminateError(exception.Method, exception.Endpoint, "The transport failed before a conclusive response was received.", exception.InnerException ?? exception);
+            var error = new PostmarkUnknownOutcomeError(exception.Method, exception.Endpoint, exception.InnerException ?? exception);
             return Result.Failure<TResponse>(error);
         }
     }
@@ -173,9 +181,9 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             {
                 throw;
             }
-            catch (Exception exception) when (!IsSafe(request.Method))
+            catch (Exception exception)
             {
-                throw new PostmarkIndeterminateRequestException(request.Method, endpoint, exception);
+                throw new PostmarkUnknownOutcomeException(request.Method, endpoint, exception);
             }
             _rateLimiter.ObserveResponse(endpoint, responseMessage.Headers, lease);
 
@@ -239,38 +247,28 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             {
                 response = JsonSerializer.Deserialize<TResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
             }
-            catch (JsonException)
+            catch (JsonException exception)
             {
-                if (!IsSafe(method))
-                {
-                    var error = new PostmarkIndeterminateError(method, endpoint, "Postmark returned a successful HTTP status with invalid response JSON.");
-                    return Result.Failure<TResponse>(error);
-                }
-
-                return Result.Failure<TResponse>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized because the response JSON was invalid.");
+                var error = new PostmarkInvalidResponseError(method, endpoint, "The successful response JSON could not be deserialized.", responseMessage.StatusCode, exception);
+                return Result.Failure<TResponse>(error);
             }
 
             if (response is null)
             {
-                if (!IsSafe(method))
-                {
-                    var error = new PostmarkIndeterminateError(method, endpoint, "Postmark returned a successful HTTP status with an empty or unexpected response body.");
-                    return Result.Failure<TResponse>(error);
-                }
-
-                return Result.Failure<TResponse>($"The response from the '{endpoint}' endpoint of the Postmark API could not be deserialized because the response JSON was empty or did not match the expected shape.");
+                var error = new PostmarkInvalidResponseError(method, endpoint, "The successful response JSON was empty or did not match the expected shape.", responseMessage.StatusCode);
+                return Result.Failure<TResponse>(error);
             }
 
             return response;
         }
 
-        return await GetRequestFailure<TResponse>(endpoint, responseMessage, tokenScope, cancellationToken);
+        return await GetRequestFailure<TResponse>(method, endpoint, responseMessage, tokenScope, cancellationToken);
     }
 
-    private async Task<Result<TResponse>> GetRequestFailure<TResponse>(string endpoint, HttpResponseMessage responseMessage, PostmarkTokenScope tokenScope, CancellationToken cancellationToken)
+    private async Task<Result<TResponse>> GetRequestFailure<TResponse>(HttpMethod method, string endpoint, HttpResponseMessage responseMessage, PostmarkTokenScope tokenScope, CancellationToken cancellationToken)
     {
         var retryAfter = GetRetryAfter(responseMessage);
-        var parsedErrorResponse = await TryGetPostmarkErrorResponse(endpoint, responseMessage, responseMessage.StatusCode == HttpStatusCode.UnprocessableEntity, cancellationToken);
+        var parsedErrorResponse = await TryGetPostmarkErrorResponse(method, endpoint, responseMessage, responseMessage.StatusCode == HttpStatusCode.UnprocessableEntity, cancellationToken);
         if (parsedErrorResponse.IsFailure(out var parseError, out var postmarkErrorResponse))
             return Result.Failure<TResponse>(parseError);
 
@@ -322,11 +320,19 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         return Result.Failure<TResponse>(genericHttpError);
     }
 
-    private async Task<Result<PostmarkResponse?>> TryGetPostmarkErrorResponse(string endpoint, HttpResponseMessage responseMessage, bool strict, CancellationToken cancellationToken)
+    private async Task<Result<PostmarkResponse?>> TryGetPostmarkErrorResponse(HttpMethod method, string endpoint, HttpResponseMessage responseMessage, bool strict, CancellationToken cancellationToken)
     {
         var receivedContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
         if (string.IsNullOrWhiteSpace(receivedContent))
+        {
+            if (strict)
+            {
+                var error = new PostmarkInvalidResponseError(method, endpoint, "The error response body was empty.", responseMessage.StatusCode);
+                return Result.Failure<PostmarkResponse?>(error);
+            }
+
             return Result.Success<PostmarkResponse?>(null);
+        }
 
         LogApiResponse(endpoint, Encoding.UTF8.GetByteCount(receivedContent));
 
@@ -334,7 +340,10 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         {
             var response = JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
             if (response is null && strict)
-                return Result.Failure<PostmarkResponse?>($"The error response from the '{endpoint}' endpoint of the Postmark API could not be deserialized because the response JSON was empty or did not match the expected shape.");
+            {
+                var error = new PostmarkInvalidResponseError(method, endpoint, "The error response JSON was empty or did not match the expected Postmark error shape.", responseMessage.StatusCode);
+                return Result.Failure<PostmarkResponse?>(error);
+            }
 
             return Result.Success(response);
         }
@@ -342,9 +351,10 @@ internal sealed partial class PostmarkClient : IPostmarkClient
         {
             return Result.Success<PostmarkResponse?>(null);
         }
-        catch (JsonException)
+        catch (JsonException exception)
         {
-            return Result.Failure<PostmarkResponse?>($"The error response from the '{endpoint}' endpoint of the Postmark API could not be deserialized because the response JSON was invalid.");
+            var error = new PostmarkInvalidResponseError(method, endpoint, "The error response JSON could not be deserialized as a Postmark error.", responseMessage.StatusCode, exception);
+            return Result.Failure<PostmarkResponse?>(error);
         }
     }
 
@@ -375,7 +385,7 @@ internal sealed partial class PostmarkClient : IPostmarkClient
     [LoggerMessage(LogLevel.Warning, "Retrying safe Postmark {Method} request to {Endpoint} after HTTP 429. Retry {RetryAttempt} of {RetryCount} in {DelayMilliseconds} ms.")]
     private partial void LogRateLimitRetry(string method, string endpoint, int retryAttempt, int retryCount, long delayMilliseconds);
 
-    private sealed class PostmarkIndeterminateRequestException(HttpMethod method, string endpoint, Exception innerException) : Exception("The Postmark request outcome is indeterminate.", innerException)
+    private sealed class PostmarkUnknownOutcomeException(HttpMethod method, string endpoint, Exception innerException) : Exception("The Postmark request outcome is unknown.", innerException)
     {
         public HttpMethod Method { get; } = method;
         public string Endpoint { get; } = endpoint;

@@ -4,7 +4,7 @@ using PostKit.Postmark.Email;
 
 namespace PostKit.Errors;
 
-/// <summary>Represents an error returned by the Postmark API.</summary>
+/// <summary>Represents a valid, structured error returned by the Postmark API.</summary>
 public sealed class PostmarkError : HttpError
 {
     internal PostmarkError(PostmarkResponse response) : this(HttpStatusCode.UnprocessableEntity, response)

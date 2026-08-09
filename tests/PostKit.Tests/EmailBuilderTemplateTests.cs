@@ -291,10 +291,11 @@ public class EmailBuilderTemplateTests
         var result = await client.SendEmailAsync(email, CancellationToken.None);
 
         Assert.True(result.IsFailure(out var error, out _), result.ToString());
-        var indeterminateError = Assert.IsType<PostmarkIndeterminateError>(error);
-        Assert.Equal(HttpMethod.Post, indeterminateError.Method);
-        Assert.Equal("/email/withTemplate", indeterminateError.Endpoint);
-        Assert.Contains("accepted submission time", indeterminateError.Message, StringComparison.Ordinal);
+        var invalidResponseError = Assert.IsType<PostmarkInvalidResponseError>(error);
+        Assert.Equal(HttpMethod.Post, invalidResponseError.Method);
+        Assert.Equal("/email/withTemplate", invalidResponseError.Endpoint);
+        Assert.Contains("accepted submission time", invalidResponseError.Message, StringComparison.Ordinal);
+        Assert.Contains("https://github.com/jscarle/PostKit/issues", invalidResponseError.Message, StringComparison.Ordinal);
     }
 
     private sealed class RecordingPostmarkClient(EmailResponse response) : IPostmarkClient

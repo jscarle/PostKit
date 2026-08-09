@@ -84,7 +84,7 @@ public class PostmarkClientErrorHandlingTests
     }
 
     [Fact]
-    public async Task PostAsync_WithMalformedSuccessfulJson_ReturnsIndeterminateError()
+    public async Task PostAsync_WithMalformedSuccessfulJson_ReturnsInvalidResponseError()
     {
         using var httpClient = new HttpClient(new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -95,14 +95,18 @@ public class PostmarkClientErrorHandlingTests
         var result = await client.PostAsync<object, EmailResponse>(PostmarkTokenScope.Server, "/email", new { Name = "Alice" }, CancellationToken.None);
 
         Assert.True(result.IsFailure(out var error, out _), result.ToString());
-        var indeterminateError = Assert.IsType<PostmarkIndeterminateError>(error);
-        Assert.Equal(HttpMethod.Post, indeterminateError.Method);
-        Assert.Equal("/email", indeterminateError.Endpoint);
-        Assert.Contains("successful HTTP status with invalid response JSON", indeterminateError.Message, StringComparison.Ordinal);
+        var invalidResponseError = Assert.IsType<PostmarkInvalidResponseError>(error);
+        Assert.Equal(HttpMethod.Post, invalidResponseError.Method);
+        Assert.Equal("/email", invalidResponseError.Endpoint);
+        Assert.Equal(HttpStatusCode.OK, invalidResponseError.StatusCode);
+        Assert.IsType<System.Text.Json.JsonException>(invalidResponseError.Exception);
+        Assert.Contains("successful response JSON could not be deserialized", invalidResponseError.Message, StringComparison.Ordinal);
+        Assert.Contains("most likely indicates a change in the Postmark API", invalidResponseError.Message, StringComparison.Ordinal);
+        Assert.Contains("https://github.com/jscarle/PostKit/issues", invalidResponseError.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task PostAsync_WithMalformedStrictErrorJson_ReturnsHelpfulFailure()
+    public async Task PostAsync_WithMalformedStrictErrorJson_ReturnsInvalidResponseError()
     {
         using var httpClient = new HttpClient(new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.UnprocessableEntity)
         {
@@ -113,7 +117,31 @@ public class PostmarkClientErrorHandlingTests
         var result = await client.PostAsync<object, EmailResponse>(PostmarkTokenScope.Server, "/email", new { Name = "Alice" }, CancellationToken.None);
 
         Assert.True(result.IsFailure(out var error, out _), result.ToString());
-        Assert.Equal("The error response from the '/email' endpoint of the Postmark API could not be deserialized because the response JSON was invalid.", error.Message);
+        var invalidResponseError = Assert.IsType<PostmarkInvalidResponseError>(error);
+        Assert.Equal(HttpMethod.Post, invalidResponseError.Method);
+        Assert.Equal("/email", invalidResponseError.Endpoint);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, invalidResponseError.StatusCode);
+        Assert.IsType<System.Text.Json.JsonException>(invalidResponseError.Exception);
+        Assert.Contains("error response JSON could not be deserialized as a Postmark error", invalidResponseError.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithEmptyStrictErrorBody_ReturnsInvalidResponseError()
+    {
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.UnprocessableEntity)
+        {
+            Content = new StringContent(string.Empty)
+        }));
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>());
+
+        var result = await client.PostAsync<object, EmailResponse>(PostmarkTokenScope.Server, "/email", new { Name = "Alice" }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        var invalidResponseError = Assert.IsType<PostmarkInvalidResponseError>(error);
+        Assert.Equal(HttpMethod.Post, invalidResponseError.Method);
+        Assert.Equal("/email", invalidResponseError.Endpoint);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, invalidResponseError.StatusCode);
+        Assert.Contains("error response body was empty", invalidResponseError.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -333,7 +361,7 @@ public class PostmarkClientErrorHandlingTests
     }
 
     [Fact]
-    public async Task PostAsync_WithTransportFailure_ReturnsIndeterminateError()
+    public async Task PostAsync_WithTransportFailure_ReturnsUnknownOutcomeError()
     {
         var requestException = new HttpRequestException("The response was lost.");
         using var httpClient = new HttpClient(new ThrowingHttpMessageHandler(requestException));
@@ -342,11 +370,30 @@ public class PostmarkClientErrorHandlingTests
         var result = await client.PostAsync<object, PostmarkResponse>(PostmarkTokenScope.Server, "/email", new { }, CancellationToken.None);
 
         Assert.True(result.IsFailure(out var error, out _), result.ToString());
-        var indeterminateError = Assert.IsType<PostmarkIndeterminateError>(error);
-        Assert.Equal(HttpMethod.Post, indeterminateError.Method);
-        Assert.Equal("/email", indeterminateError.Endpoint);
-        Assert.Same(requestException, indeterminateError.Exception);
-        Assert.Contains("Do not retry", indeterminateError.Message, StringComparison.Ordinal);
+        var unknownOutcomeError = Assert.IsType<PostmarkUnknownOutcomeError>(error);
+        Assert.Equal(HttpMethod.Post, unknownOutcomeError.Method);
+        Assert.Equal("/email", unknownOutcomeError.Endpoint);
+        Assert.False(unknownOutcomeError.IsRetrySafe);
+        Assert.Same(requestException, unknownOutcomeError.Exception);
+        Assert.Contains("Do not retry", unknownOutcomeError.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithTransportFailure_ReturnsRetrySafeUnknownOutcomeError()
+    {
+        var requestException = new HttpRequestException("The response was lost.");
+        using var httpClient = new HttpClient(new ThrowingHttpMessageHandler(requestException));
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>());
+
+        var result = await client.GetAsync<PostmarkResponse>(PostmarkTokenScope.Server, "/bounces?count=1&offset=0", CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        var unknownOutcomeError = Assert.IsType<PostmarkUnknownOutcomeError>(error);
+        Assert.Equal(HttpMethod.Get, unknownOutcomeError.Method);
+        Assert.Equal("/bounces?count=1&offset=0", unknownOutcomeError.Endpoint);
+        Assert.True(unknownOutcomeError.IsRetrySafe);
+        Assert.Same(requestException, unknownOutcomeError.Exception);
+        Assert.Contains("can be retried without duplicate effects", unknownOutcomeError.Message, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -63,20 +63,20 @@ internal sealed partial class PostKitClient
 
         if (emailResponse.MessageId is null)
         {
-            var indeterminateError = new PostmarkIndeterminateError(HttpMethod.Post, endpoint, "Postmark did not return the accepted message identifier.");
-            return Result.Failure<EmailSubmission>(indeterminateError);
+            var invalidResponseError = new PostmarkInvalidResponseError(HttpMethod.Post, endpoint, "The successful response did not include the accepted message identifier.");
+            return Result.Failure<EmailSubmission>(invalidResponseError);
         }
 
         if (!Guid.TryParse(emailResponse.MessageId, out var parsedMessageId))
         {
-            var indeterminateError = new PostmarkIndeterminateError(HttpMethod.Post, endpoint, "Postmark returned an invalid accepted message identifier.");
-            return Result.Failure<EmailSubmission>(indeterminateError);
+            var invalidResponseError = new PostmarkInvalidResponseError(HttpMethod.Post, endpoint, $"The successful response contained an invalid accepted message identifier: '{emailResponse.MessageId}'.");
+            return Result.Failure<EmailSubmission>(invalidResponseError);
         }
 
         if (emailResponse.SubmittedAt is null)
         {
-            var indeterminateError = new PostmarkIndeterminateError(HttpMethod.Post, endpoint, "Postmark did not return the accepted submission time.");
-            return Result.Failure<EmailSubmission>(indeterminateError);
+            var invalidResponseError = new PostmarkInvalidResponseError(HttpMethod.Post, endpoint, "The successful response did not include the accepted submission time.");
+            return Result.Failure<EmailSubmission>(invalidResponseError);
         }
 
         var internetMessageId = EmailSubmission.ResolveInternetMessageId(parsedMessageId, email.Headers, true);
@@ -175,9 +175,9 @@ internal sealed partial class PostKitClient
 
         if (emailResponses.Count != emailList.Count)
         {
-            var details = $"Postmark returned an unexpected number of batch results. Expected {emailList.Count}, received {emailResponses.Count}.";
-            var indeterminateError = new PostmarkIndeterminateError(HttpMethod.Post, endpoint, details);
-            return Result.Failure<EmailBatchSubmission>(indeterminateError);
+            var details = $"The successful response contained an unexpected number of batch results. Expected {emailList.Count}, received {emailResponses.Count}.";
+            var invalidResponseError = new PostmarkInvalidResponseError(HttpMethod.Post, endpoint, details);
+            return Result.Failure<EmailBatchSubmission>(invalidResponseError);
         }
 
         var batchResults = new List<Result<EmailSubmission>>(emailResponses.Count);
@@ -191,20 +191,21 @@ internal sealed partial class PostKitClient
             {
                 if (emailResponse.MessageId is null)
                 {
-                    var indeterminateError = new PostmarkIndeterminateError(HttpMethod.Post, endpoint, $"Postmark did not return the accepted message identifier for batch item {index}.");
-                    return Result.Failure<EmailBatchSubmission>(indeterminateError);
+                    var invalidResponseError = new PostmarkInvalidResponseError(HttpMethod.Post, endpoint, $"The successful response did not include the accepted message identifier for batch item {index}.");
+                    return Result.Failure<EmailBatchSubmission>(invalidResponseError);
                 }
 
                 if (!Guid.TryParse(emailResponse.MessageId, out var parsedMessageId))
                 {
-                    var indeterminateError = new PostmarkIndeterminateError(HttpMethod.Post, endpoint, $"Postmark returned an invalid accepted message identifier for batch item {index}.");
-                    return Result.Failure<EmailBatchSubmission>(indeterminateError);
+                    var invalidResponseError = new PostmarkInvalidResponseError(HttpMethod.Post, endpoint,
+                        $"The successful response contained an invalid accepted message identifier for batch item {index}: '{emailResponse.MessageId}'.");
+                    return Result.Failure<EmailBatchSubmission>(invalidResponseError);
                 }
 
                 if (emailResponse.SubmittedAt is null)
                 {
-                    var indeterminateError = new PostmarkIndeterminateError(HttpMethod.Post, endpoint, $"Postmark did not return the accepted submission time for batch item {index}.");
-                    return Result.Failure<EmailBatchSubmission>(indeterminateError);
+                    var invalidResponseError = new PostmarkInvalidResponseError(HttpMethod.Post, endpoint, $"The successful response did not include the accepted submission time for batch item {index}.");
+                    return Result.Failure<EmailBatchSubmission>(invalidResponseError);
                 }
 
                 if (email.To is not null)

@@ -11,7 +11,7 @@ A MimeKit infused implementation of the Postmark API.
 ## Version 10.3.0 Retry Safety Changes
 
 PostKit now limits automatic `429 Too Many Requests` retries to safe HTTP methods. Unsafe requests such as email submissions are returned to the caller after the first response so the application can decide whether its business operation can be
-retried without producing duplicate effects. Successful unsafe requests whose response cannot be confirmed return `PostmarkIndeterminateError`.
+retried without producing duplicate effects. Requests that do not receive a conclusive HTTP response return `PostmarkUnknownOutcomeError`. Responses that do not match Postmark's documented contract return `PostmarkInvalidResponseError`.
 
 Applications that add HTTP resilience globally should configure PostKit's HTTP client after calling `AddPostKit` and disable transport retries for unsafe methods. See [HTTP Resilience And Retry Safety](#http-resilience-and-retry-safety) for the recommended
 configuration.
@@ -240,7 +240,7 @@ This preserves standard timeouts, circuit breaking, rate limiting, and retries f
 with its shared Postmark rate-limit buckets.
 
 The application remains responsible for business-level idempotency. For security emails, billing notifications, and other sensitive operations, use a stable application operation ID and durable or process-local delivery state appropriate to the workflow.
-Do not blindly retry a `PostmarkIndeterminateError`.
+Do not blindly retry an unsafe request that returns `PostmarkUnknownOutcomeError` or a successful unsafe request that returns `PostmarkInvalidResponseError`.
 
 PostKit validates that the selected configuration section defines `ServerApiToken`, `AccountApiToken`, or both. When you use the explicit configuration overloads above, missing sections fail immediately and missing tokens fail during
 startup or first resolution. Server-level endpoints still require `ServerApiToken`; account-level endpoints still require `AccountApiToken`.
@@ -704,29 +704,35 @@ else
 
 PostKit may return different types of errors depending on the failure scenario:
 
-**HttpError** - Returned when Postmark supplies a non-success HTTP response. `RetryAfter` contains the requested delay when Postmark provides a valid `Retry-After` header:
+**PostmarkUnknownOutcomeError** - Returned when PostKit does not receive a conclusive HTTP response because of a transport failure or timeout. `IsRetrySafe` identifies safe methods such as `GET`. For unsafe methods, Postmark may have processed the operation,
+so the application must not retry unless it can prevent duplicate effects:
 
 ```csharp
-if (error is HttpError httpError)
+if (error is PostmarkUnknownOutcomeError unknownOutcomeError)
 {
-    Console.WriteLine($"HTTP error: {httpError.StatusCode} - {httpError.Message}");
-    Console.WriteLine($"Retry after: {httpError.RetryAfter}");
+    Console.WriteLine($"Unknown outcome: {unknownOutcomeError.Method} {unknownOutcomeError.Endpoint}");
+
+    if (!unknownOutcomeError.IsRetrySafe)
+    {
+        // Reconcile the operation through application delivery state before retrying.
+    }
 }
 ```
 
-**PostmarkIndeterminateError** - Returned when an unsafe request may have succeeded but PostKit cannot confirm its outcome. This includes transport failures and successful responses with invalid or missing acceptance data:
+**PostmarkInvalidResponseError** - Returned when Postmark supplies a response that cannot be deserialized or does not match the documented response contract. Examples include malformed JSON, missing acceptance fields, invalid message identifiers, and mismatched
+batch result counts. Repeated occurrences most likely indicate a change in the Postmark API, and the error message directs the developer to [open an issue in the PostKit repository](https://github.com/jscarle/PostKit/issues):
 
 ```csharp
-if (error is PostmarkIndeterminateError indeterminateError)
+if (error is PostmarkInvalidResponseError invalidResponseError)
 {
-    Console.WriteLine($"Unconfirmed request: {indeterminateError.Method} {indeterminateError.Endpoint}");
-    // Do not retry unless the application can prevent duplicate effects.
+    Console.WriteLine($"Invalid response: {invalidResponseError.Method} {invalidResponseError.Endpoint}");
+    Console.WriteLine($"HTTP status: {invalidResponseError.StatusCode}");
 }
 ```
 
-Caller-requested cancellation continues to throw `OperationCanceledException`. If cancellation happens after an unsafe request was dispatched, its outcome can also be unknown, so cancellation should not trigger an unconditional retry.
+When an invalid response follows a successful unsafe request, the operation may already have been processed and must not be blindly retried.
 
-**PostmarkError** - Returned for Postmark API validation errors (422 status code), and for per-email failures inside a successful batch request:
+**PostmarkError** - Returned when Postmark supplies a valid, structured Postmark error payload. This includes Postmark API validation errors and per-email failures inside a successfully processed batch request:
 
 ```csharp
 if (error is PostmarkError postmarkError)
@@ -748,6 +754,18 @@ if (error is PostmarkError postmarkError)
     }
 }
 ```
+
+**HttpError** - Returned when Postmark or an intermediary supplies a non-success HTTP response without a recognized structured Postmark error. `RetryAfter` contains the requested delay when the response provides a valid `Retry-After` header:
+
+```csharp
+if (error is HttpError httpError)
+{
+    Console.WriteLine($"HTTP error: {httpError.StatusCode} - {httpError.Message}");
+    Console.WriteLine($"Retry after: {httpError.RetryAfter}");
+}
+```
+
+Caller-requested cancellation continues to throw `OperationCanceledException`. If cancellation happens after an unsafe request was dispatched, its outcome can also be unknown, so cancellation should not trigger an unconditional retry.
 
 **BulkEmailValidationError** - Returned when the Bulk Email API accepts a request but reports unprocessable messages:
 

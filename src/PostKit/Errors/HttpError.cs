@@ -3,7 +3,7 @@ using LightResults;
 
 namespace PostKit.Errors;
 
-/// <summary>Represents an error returned by the HTTP client.</summary>
+/// <summary>Represents a conclusive non-success HTTP response.</summary>
 public class HttpError : Error
 {
     internal HttpError(HttpStatusCode httpStatusCode, TimeSpan? retryAfter = null)

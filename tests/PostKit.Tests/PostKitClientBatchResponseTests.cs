@@ -202,10 +202,11 @@ public class PostKitClientBatchResponseTests
         var result = await client.SendEmailBatchAsync([email], CancellationToken.None);
 
         Assert.True(result.IsFailure(out var error, out _), result.ToString());
-        var indeterminateError = Assert.IsType<PostmarkIndeterminateError>(error);
-        Assert.Equal(HttpMethod.Post, indeterminateError.Method);
-        Assert.Equal("/email/batch", indeterminateError.Endpoint);
-        Assert.Contains("Expected 1, received 0", indeterminateError.Message, StringComparison.Ordinal);
+        var invalidResponseError = Assert.IsType<PostmarkInvalidResponseError>(error);
+        Assert.Equal(HttpMethod.Post, invalidResponseError.Method);
+        Assert.Equal("/email/batch", invalidResponseError.Endpoint);
+        Assert.Contains("Expected 1, received 0", invalidResponseError.Message, StringComparison.Ordinal);
+        Assert.Contains("https://github.com/jscarle/PostKit/issues", invalidResponseError.Message, StringComparison.Ordinal);
     }
 
     private sealed class RecordingPostmarkClient(List<EmailResponse> response) : IPostmarkClient
