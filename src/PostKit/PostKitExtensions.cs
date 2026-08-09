@@ -1,7 +1,9 @@
+using System.Net;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PostKit.Configuration;
@@ -152,7 +154,7 @@ public static class PostKitExtensions
     /// <param name="services">The service collection containing the PostKit registration.</param>
     /// <param name="configure">The HTTP client builder configuration to apply.</param>
     /// <returns>The same <paramref name="services" /> instance so calls can be chained.</returns>
-    /// <remarks>Call this method after registering PostKit so the supplied configuration can replace inherited HTTP client defaults when necessary.</remarks>
+    /// <remarks>Call this method after all PostKit registrations so the supplied configuration can extend or replace PostKit's default HTTP resilience pipeline.</remarks>
     public static IServiceCollection ConfigurePostKitHttpClient(this IServiceCollection services, Action<IHttpClientBuilder> configure)
     {
         if (services is null)
@@ -209,7 +211,24 @@ public static class PostKitExtensions
 
     private static void RegisterCommonServices(IServiceCollection services)
     {
-        services.AddHttpClient(PostmarkHttpClientName);
+        var httpClientBuilder = services.AddHttpClient(PostmarkHttpClientName);
+#pragma warning disable EXTEXP0001 // PostKit replaces inherited resilience handlers so unsafe Postmark requests are not retried.
+        httpClientBuilder.RemoveAllResilienceHandlers();
+#pragma warning restore EXTEXP0001
+        httpClientBuilder.AddStandardResilienceHandler(options =>
+        {
+            options.Retry.DisableForUnsafeHttpMethods();
+
+            var retryShouldHandle = options.Retry.ShouldHandle;
+            options.Retry.ShouldHandle = arguments => arguments.Outcome.Result?.StatusCode == HttpStatusCode.TooManyRequests
+                ? ValueTask.FromResult(false)
+                : retryShouldHandle(arguments);
+
+            var circuitBreakerShouldHandle = options.CircuitBreaker.ShouldHandle;
+            options.CircuitBreaker.ShouldHandle = arguments => arguments.Outcome.Result?.StatusCode == HttpStatusCode.TooManyRequests
+                ? ValueTask.FromResult(false)
+                : circuitBreakerShouldHandle(arguments);
+        });
         services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
         services.TryAddSingleton<PostmarkRateLimiter>();
     }

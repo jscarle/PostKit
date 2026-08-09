@@ -13,8 +13,8 @@ A MimeKit infused implementation of the Postmark API.
 PostKit now limits automatic `429 Too Many Requests` retries to safe HTTP methods. Unsafe requests such as email submissions are returned to the caller after the first response so the application can decide whether its business operation can be
 retried without producing duplicate effects. Requests that do not receive a conclusive HTTP response return `PostmarkUnknownOutcomeError`. Responses that do not match Postmark's documented contract return `PostmarkInvalidResponseError`.
 
-Applications that add HTTP resilience globally should configure PostKit's HTTP client after calling `AddPostKit` and disable transport retries for unsafe methods. See [HTTP Resilience And Retry Safety](#http-resilience-and-retry-safety) for the recommended
-configuration.
+PostKit removes inherited resilience handlers from its named HTTP client and installs a safe default pipeline. Applications can still customize or replace that pipeline after completing all PostKit registrations. See
+[HTTP Resilience And Retry Safety](#http-resilience-and-retry-safety) for details.
 
 ## Version 10.1.0 Breaking Changes Since v10.0.3
 
@@ -210,34 +210,29 @@ them as deduplication keys.
 PostKit proactively paces all requests against known or observed Postmark rate limits. When Postmark returns `429 Too Many Requests`, PostKit honors `Retry-After` when present and otherwise uses bounded exponential backoff with jitter, but it retries only
 safe methods such as `GET`. Unsafe methods (`POST`, `PUT`, `PATCH`, and `DELETE`) return the first response without an automatic retry.
 
-An `HttpClient` resilience handler added by the application runs inside PostKit's request and can retry before PostKit observes the result. The .NET standard resilience handler retries unsafe methods by default. If an application uses
-`Microsoft.Extensions.Http.Resilience`, configure PostKit after registration and replace inherited handlers with a method-aware pipeline:
+An `HttpClient` resilience handler runs inside PostKit's request and can retry before PostKit observes the result. Because the .NET standard resilience handler retries unsafe methods by default, PostKit's named HTTP client removes resilience handlers
+registered earlier and installs a PostKit-owned standard pipeline. The default pipeline:
+
+- retains standard rate limiting, total and attempt timeouts, safe-method retries, and circuit breaking;
+- disables retries for unsafe methods; and
+- excludes `429 Too Many Requests` from transport retry and circuit breaking so PostKit's shared rate-limit buckets remain the sole owner of `429` backoff.
+
+Register application-wide HTTP client defaults before calling `AddPostKit`. No additional configuration is required for the safe default. To customize the named client, call `ConfigurePostKitHttpClient` after every `AddPostKit` and `AddKeyedPostKit`
+registration:
 
 ```csharp
-using System.Net;
-using Microsoft.Extensions.Http.Resilience;
 using PostKit;
 
 builder.Services.AddPostKit(builder.Configuration);
 
 builder.Services.ConfigurePostKitHttpClient(httpClient =>
 {
-    httpClient.RemoveAllResilienceHandlers();
-    httpClient.AddStandardResilienceHandler(options =>
-    {
-        options.Retry.DisableForUnsafeHttpMethods();
-
-        var shouldHandle = options.Retry.ShouldHandle;
-        options.Retry.ShouldHandle = arguments =>
-            arguments.Outcome.Result?.StatusCode == HttpStatusCode.TooManyRequests
-                ? ValueTask.FromResult(false)
-                : shouldHandle(arguments);
-    });
+    httpClient.SetHandlerLifetime(TimeSpan.FromMinutes(10));
 });
 ```
 
-This preserves standard timeouts, circuit breaking, rate limiting, and retries for safe methods while preventing automatic replay of unsafe Postmark operations. Configure only one retry owner for `429` responses; PostKit already coordinates those retries
-with its shared Postmark rate-limit buckets.
+Configurations added through this hook extend the existing named client. Adding another resilience handler without first removing PostKit's handler creates nested pipelines. A caller that replaces the default pipeline or re-enables unsafe retries assumes
+responsibility for duplicate effects and for ensuring that PostKit remains the sole owner of `429` retries.
 
 The application remains responsible for business-level idempotency. For security emails, billing notifications, and other sensitive operations, use a stable application operation ID and durable or process-local delivery state appropriate to the workflow.
 Do not blindly retry an unsafe request that returns `PostmarkUnknownOutcomeError` or a successful unsafe request that returns `PostmarkInvalidResponseError`.
