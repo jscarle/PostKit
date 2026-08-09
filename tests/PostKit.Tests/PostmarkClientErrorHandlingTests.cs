@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -83,7 +84,7 @@ public class PostmarkClientErrorHandlingTests
     }
 
     [Fact]
-    public async Task PostAsync_WithMalformedSuccessfulJson_ReturnsFailure()
+    public async Task PostAsync_WithMalformedSuccessfulJson_ReturnsIndeterminateError()
     {
         using var httpClient = new HttpClient(new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -94,7 +95,10 @@ public class PostmarkClientErrorHandlingTests
         var result = await client.PostAsync<object, EmailResponse>(PostmarkTokenScope.Server, "/email", new { Name = "Alice" }, CancellationToken.None);
 
         Assert.True(result.IsFailure(out var error, out _), result.ToString());
-        Assert.Equal("The response from the '/email' endpoint of the Postmark API could not be deserialized because the response JSON was invalid.", error.Message);
+        var indeterminateError = Assert.IsType<PostmarkIndeterminateError>(error);
+        Assert.Equal(HttpMethod.Post, indeterminateError.Method);
+        Assert.Equal("/email", indeterminateError.Endpoint);
+        Assert.Contains("successful HTTP status with invalid response JSON", indeterminateError.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -310,6 +314,42 @@ public class PostmarkClientErrorHandlingTests
     }
 
     [Fact]
+    public async Task PostAsync_WithTooManyRequests_DoesNotRetryUnsafeRequest()
+    {
+        using var tooManyRequestsResponse = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        tooManyRequestsResponse.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(9));
+        using var handler = new SequenceHttpMessageHandler(tooManyRequestsResponse,
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"ErrorCode":0,"Message":"OK"}""", Encoding.UTF8, MediaTypeNames.Application.Json) });
+        using var httpClient = new HttpClient(handler);
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>());
+
+        var result = await client.PostAsync<object, PostmarkResponse>(PostmarkTokenScope.Server, "/email", new { }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        var httpError = Assert.IsType<HttpError>(error);
+        Assert.Equal(HttpStatusCode.TooManyRequests, httpError.StatusCode);
+        Assert.Equal(TimeSpan.FromSeconds(9), httpError.RetryAfter);
+        Assert.Equal(1, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithTransportFailure_ReturnsIndeterminateError()
+    {
+        var requestException = new HttpRequestException("The response was lost.");
+        using var httpClient = new HttpClient(new ThrowingHttpMessageHandler(requestException));
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>());
+
+        var result = await client.PostAsync<object, PostmarkResponse>(PostmarkTokenScope.Server, "/email", new { }, CancellationToken.None);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        var indeterminateError = Assert.IsType<PostmarkIndeterminateError>(error);
+        Assert.Equal(HttpMethod.Post, indeterminateError.Method);
+        Assert.Equal("/email", indeterminateError.Endpoint);
+        Assert.Same(requestException, indeterminateError.Exception);
+        Assert.Contains("Do not retry", indeterminateError.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task GetAsync_WithRateLimitHeaders_DelaysSuccessiveCallsInLearnedBucket()
     {
         var delays = new List<TimeSpan>();
@@ -372,6 +412,29 @@ public class PostmarkClientErrorHandlingTests
         Assert.True(result.IsSuccess(out _), result.ToString());
         Assert.Equal(3, handler.RequestCount);
         Assert.Equal([TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)], delays);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithTooManyRequests_HonorsRetryAfter()
+    {
+        var delays = new List<TimeSpan>();
+        var tooManyRequestsResponse = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        tooManyRequestsResponse.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(12));
+        using var handler = new SequenceHttpMessageHandler(tooManyRequestsResponse,
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"ErrorCode":0,"Message":"OK"}""", Encoding.UTF8, MediaTypeNames.Application.Json) });
+        using var httpClient = new HttpClient(handler);
+        var rateLimiter = new PostmarkRateLimiter((delay, _) =>
+        {
+            delays.Add(delay);
+            return Task.CompletedTask;
+        });
+        var client = new PostmarkClient(httpClient, Options.Create(new PostKitOptions { ServerApiToken = "token" }), new TestLogger<PostmarkClient>(), rateLimiter, NoJitter);
+
+        var result = await client.GetAsync<PostmarkResponse>(PostmarkTokenScope.Server, "/bounces?count=1&offset=0", CancellationToken.None);
+
+        Assert.True(result.IsSuccess(out _), result.ToString());
+        var delay = Assert.Single(delays);
+        Assert.Equal(TimeSpan.FromSeconds(12), delay);
     }
 
     [Fact]
@@ -487,6 +550,14 @@ public class PostmarkClientErrorHandlingTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             return Task.FromResult(responseMessage);
+        }
+    }
+
+    private sealed class ThrowingHttpMessageHandler(Exception exception) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            return Task.FromException<HttpResponseMessage>(exception);
         }
     }
 

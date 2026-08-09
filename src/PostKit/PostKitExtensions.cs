@@ -13,6 +13,7 @@ namespace PostKit;
 public static class PostKitExtensions
 {
     private const string ConfigurationSectionName = "PostKit";
+    private const string PostmarkHttpClientName = "Postmark";
 
     private static readonly string RequiredTokenMessage = $"must define '{nameof(PostKitOptions.ServerApiToken)}' or '{nameof(PostKitOptions.AccountApiToken)}'.";
 
@@ -147,6 +148,25 @@ public static class PostKitExtensions
         return AddKeyedPostKitRegistration(services, serviceKey, GetOptionsName(configurationSection), false, optionsBuilder => optionsBuilder.Configure(configurationSection.Bind));
     }
 
+    /// <summary>Configures the HTTP client used for all Postmark API requests.</summary>
+    /// <param name="services">The service collection containing the PostKit registration.</param>
+    /// <param name="configure">The HTTP client builder configuration to apply.</param>
+    /// <returns>The same <paramref name="services" /> instance so calls can be chained.</returns>
+    /// <remarks>Call this method after registering PostKit so the supplied configuration can replace inherited HTTP client defaults when necessary.</remarks>
+    public static IServiceCollection ConfigurePostKitHttpClient(this IServiceCollection services, Action<IHttpClientBuilder> configure)
+    {
+        if (services is null)
+            throw new ArgumentNullException(nameof(services), "The service collection cannot be null.");
+
+        if (configure is null)
+            throw new ArgumentNullException(nameof(configure), "The HTTP client configuration cannot be null.");
+
+        var httpClientBuilder = services.AddHttpClient(PostmarkHttpClientName);
+        configure(httpClientBuilder);
+
+        return services;
+    }
+
     private static IServiceCollection AddDefaultPostKitRegistration(IServiceCollection services, string optionsName, bool validateConfigurationSectionFromServices, Action<OptionsBuilder<PostKitOptions>> configureOptions)
     {
         RegisterCommonServices(services);
@@ -189,7 +209,7 @@ public static class PostKitExtensions
 
     private static void RegisterCommonServices(IServiceCollection services)
     {
-        services.AddHttpClient("Postmark");
+        services.AddHttpClient(PostmarkHttpClientName);
         services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
         services.TryAddSingleton<PostmarkRateLimiter>();
     }

@@ -48,6 +48,42 @@ public class PostKitExtensionsTests
     }
 
     [Fact]
+    public void ConfigurePostKitHttpClient_AfterRegistration_ExposesSupportedNamedClientBuilder()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:ServerApiToken"] = "root-token" })
+            .Build();
+        var configuredClientName = string.Empty;
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddPostKit(configuration);
+        var returnedServices = services.ConfigurePostKitHttpClient(httpClient => configuredClientName = httpClient.Name);
+
+        Assert.Same(services, returnedServices);
+        Assert.Equal("Postmark", configuredClientName);
+    }
+
+    [Fact]
+    public void ConfigurePostKitHttpClient_WithNullServices_ThrowsHelpfulException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => PostKitExtensions.ConfigurePostKitHttpClient(null!, _ => { }));
+
+        Assert.Equal("services", exception.ParamName);
+        Assert.Equal("The service collection cannot be null. (Parameter 'services')", exception.Message);
+    }
+
+    [Fact]
+    public void ConfigurePostKitHttpClient_WithNullConfiguration_ThrowsHelpfulException()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => services.ConfigurePostKitHttpClient(null!));
+
+        Assert.Equal("configure", exception.ParamName);
+        Assert.Equal("The HTTP client configuration cannot be null. (Parameter 'configure')", exception.Message);
+    }
+
+    [Fact]
     public void AddPostKit_WithConfigurationSection_BindsProvidedSectionWithoutIConfigurationRegistration()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Tenants:Marketing:ServerApiToken"] = "marketing-token", ["Tenants:Marketing:AccountApiToken"] = "marketing-account" })

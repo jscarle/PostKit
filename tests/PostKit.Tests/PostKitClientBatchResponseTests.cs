@@ -202,7 +202,10 @@ public class PostKitClientBatchResponseTests
         var result = await client.SendEmailBatchAsync([email], CancellationToken.None);
 
         Assert.True(result.IsFailure(out var error, out _), result.ToString());
-        Assert.Equal("Postmark returned an unexpected number of results for the batch request. Expected 1, received 0.", error.Message);
+        var indeterminateError = Assert.IsType<PostmarkIndeterminateError>(error);
+        Assert.Equal(HttpMethod.Post, indeterminateError.Method);
+        Assert.Equal("/email/batch", indeterminateError.Endpoint);
+        Assert.Contains("Expected 1, received 0", indeterminateError.Message, StringComparison.Ordinal);
     }
 
     private sealed class RecordingPostmarkClient(List<EmailResponse> response) : IPostmarkClient

@@ -5,6 +5,7 @@ using JetBrains.Annotations;
 using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.Emails;
+using PostKit.Errors;
 using PostKit.Postmark;
 using PostKit.Postmark.Common;
 using PostKit.Postmark.Email;
@@ -289,8 +290,11 @@ public class EmailBuilderTemplateTests
 
         var result = await client.SendEmailAsync(email, CancellationToken.None);
 
-        Assert.True(result.IsFailure(), result.ToString());
-        Assert.Contains("SubmittedAt was not returned", result.ToString(), StringComparison.Ordinal);
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        var indeterminateError = Assert.IsType<PostmarkIndeterminateError>(error);
+        Assert.Equal(HttpMethod.Post, indeterminateError.Method);
+        Assert.Equal("/email/withTemplate", indeterminateError.Endpoint);
+        Assert.Contains("accepted submission time", indeterminateError.Message, StringComparison.Ordinal);
     }
 
     private sealed class RecordingPostmarkClient(EmailResponse response) : IPostmarkClient
