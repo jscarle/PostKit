@@ -10,6 +10,8 @@ retried without producing duplicate effects. Requests that do not receive a conc
 PostKit removes inherited resilience handlers from its named HTTP client and installs a safe default pipeline. Applications can still customize or replace that pipeline after completing all PostKit registrations. See
 [HTTP Resilience And Retry Safety](README.md#http-resilience-and-retry-safety) for details.
 
+Direct package dependencies and test infrastructure packages were updated to their latest stable releases available for this version.
+
 ## Version 10.1.0 Breaking Changes Since v10.0.3
 
 Upgrading from `10.0.3` to `10.1.0` requires source changes for the email builders, response models, and some namespaces.

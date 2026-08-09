@@ -8,7 +8,7 @@ A MimeKit infused implementation of the Postmark API.
 [![nuget](https://img.shields.io/nuget/v/PostKit)](https://www.nuget.org/packages/PostKit)
 [![downloads](https://img.shields.io/nuget/dt/PostKit)](https://www.nuget.org/packages/PostKit)
 
-Release notes and upgrade guidance are maintained in [CHANGES.md](CHANGES.md).
+Release notes and upgrade guidance are maintained in [CHANGES.md](https://github.com/jscarle/PostKit/blob/develop/CHANGES.md).
 
 ## Quickstart
 

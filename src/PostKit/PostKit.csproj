@@ -18,11 +18,11 @@
     <!-- References -->
     <ItemGroup>
         <PackageReference Include="JetBrains.Annotations" Version="2026.2.0"/>
-        <PackageReference Include="LightResults" Version="10.0.3"/>
-        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9"/>
-        <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.1.0"/>
-        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.7.0"/>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" PrivateAssets="All"/>
+        <PackageReference Include="LightResults" Version="10.0.4"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10"/>
+        <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0"/>
+        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.8.0"/>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.301" PrivateAssets="All"/>
         <PackageReference Include="MimeKit" Version="4.17.0"/>
     </ItemGroup>
 
