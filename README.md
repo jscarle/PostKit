@@ -8,98 +8,7 @@ A MimeKit infused implementation of the Postmark API.
 [![nuget](https://img.shields.io/nuget/v/PostKit)](https://www.nuget.org/packages/PostKit)
 [![downloads](https://img.shields.io/nuget/dt/PostKit)](https://www.nuget.org/packages/PostKit)
 
-## Version 10.1.0 Breaking Changes Since v10.0.3
-
-Upgrading from `10.0.3` to `10.1.0` requires source changes for the email builders, response models, and some namespaces.
-
-Typical upgrade imports:
-
-```csharp
-using PostKit;
-using PostKit.Common;
-using PostKit.Emails;
-```
-
-### Namespace Changes
-
-- `Email`, `ComposedEmailBuilder`, `TemplatedEmailBuilder`, `EmailSubmission`, and `EmailBatchSubmission` live in `PostKit.Emails`.
-- `Attachment`, `LinkTracking`, and `MessageStream` live in `PostKit.Common`.
-- The old `PostKit.Responses` namespace was removed. Use `PostKit.Emails.EmailSubmission` and `PostKit.Emails.EmailBatchSubmission`.
-
-### Builder API Changes
-
-`Email.CreateBuilder()` and the old `EmailBuilder` / `IEmail*Builder` interfaces were removed. Use `Email.Compose()` for body-based messages and `Email.FromTemplate(...)` for template messages.
-
-```csharp
-// 10.0.3
-var email = Email.CreateBuilder()
-    .From("Sender", "sender@example.com")
-    .To("Recipient", "recipient@example.com")
-    .WithSubject("Hello")
-    .WithTextBody("Hello")
-    .Build();
-
-// 10.1.0
-var email = Email.Compose()
-    .From("sender@example.com", "Sender")
-    .To("recipient@example.com", "Recipient")
-    .Subject("Hello")
-    .TextBody("Hello")
-    .Build();
-```
-
-Method replacements:
-
-| 10.0.3                                                           | 10.1.0                                                       |
-|------------------------------------------------------------------|--------------------------------------------------------------|
-| `Email.CreateBuilder()`                                          | `Email.Compose()` or `Email.FromTemplate(...)`               |
-| `WithSubject(...)`                                               | `Subject(...)`                                               |
-| `WithHtmlBody(...)`                                              | `HtmlBody(...)`                                              |
-| `WithTextBody(...)`                                              | `TextBody(...)`                                              |
-| `WithAttachment(...)`, `WithAttachments(...)`                    | `AddAttachment(...)`                                         |
-| `WithHeader(...)`, `WithHeaders(...)`                            | `AddHeader(...)`                                             |
-| `WithMetadata(...)`                                              | `AddMetadata(...)`                                           |
-| `WithLinkTracking(...)`                                          | `UseLinkTracking(...)`                                       |
-| `UsingMessageStream(...)`                                        | `UseMessageStream(...)`                                      |
-| `WithOpenTracking()` / `WithOpenTracking(true)`                  | `EnableOpenTracking()`                                       |
-| `WithOpenTracking(false)`                                        | Omit the call; there is no explicit false setter in `10.1.0` |
-| `WithTemplate(idOrAlias, model, inlineCss)`                      | `Email.FromTemplate(idOrAlias, inlineCss).WithModel(model)`  |
-| `AlsoTo(...)`, `AlsoCc(...)`, `AlsoBcc(...)`, `AlsoReplyTo(...)` | Repeat `To(...)`, `Cc(...)`, `Bcc(...)`, or `ReplyTo(...)`   |
-
-Display name overloads are address-first in `10.1.0`. Use `.From("sender@example.com", "Sender Name")`, `.To("recipient@example.com", "Recipient Name")`, and the same order for `ReplyTo`, `Cc`, and `Bcc`.
-
-Template emails now require a model before `Build()`. The model is serialized and snapshotted when `WithModel(...)` is called, must serialize to a JSON object, and uses `PostKitTemplateModelSerialization.DefaultSerializerOptions` unless
-you pass per-call serializer options. If you inspect `Email.TemplateModel`, expect the JSON snapshot rather than the original CLR object.
-
-Built emails also snapshot addresses, headers, metadata, attachments, and template models. Mutating the source collections or model object after `Build()` no longer changes the email that will be sent.
-
-### Client Response Changes
-
-- `IPostKitClient.SendEmailAsync` returns `Result<EmailSubmission>` instead of `Result<SendEmailResponse>`.
-- `IPostKitClient.SendEmailBatchAsync` returns `Result<EmailBatchSubmission>` instead of `Result<SendEmailBatchResponse>`. Its parameter is now `IEnumerable<Email>` instead of `IReadOnlyCollection<Email>`.
-- `SendEmailResponse`, `SendEmailBatchResponse`, and `SendEmailBatchResult` were removed.
-- `EmailSubmission.MessageId` is now a `Guid` containing Postmark's message identifier. Use `EmailSubmission.InternetMessageId` when you need the RFC-style `<...@mtasv.net>` value.
-- `InternetMessageId` preserves your outbound `Message-ID` header only when `X-PM-KeepID: true` is also set; otherwise it falls back to the Postmark-based `<...@mtasv.net>` value.
-- `EmailBatchSubmission.Results` exposes `IReadOnlyList<Result<EmailSubmission>>`. Per-email failures are failed item results, typically containing `PostmarkError`, instead of `SendEmailBatchResult` entries with `ErrorCode`, `Message`,
-  and `Response` properties.
-
-### Interface And DI Changes
-
-`IPostKitClient` now includes Postmark API methods beyond sending email, including messages, templates, webhooks, inbound rules, stats, suppressions, and data removals. Code that implements `IPostKitClient` directly, including hand-written
-test doubles, must implement these methods.
-
-PostKit service registration now validates that the selected configuration section defines at least one Postmark API token. `AddPostKit()` and `AddKeyedPostKit()` still exist, but missing tokens can fail during startup or first
-resolution, and the explicit configuration overloads throw immediately when a required configuration section is missing. Default and keyed registrations also replace existing PostKit client/options registrations for the same service/key,
-so register custom replacements after calling PostKit's registration helpers.
-
-### Validation Changes
-
-Several validations now happen before a request is sent:
-
-- Custom message stream IDs reject reserved IDs such as `all` and IDs starting with `pm-`.
-- Template models are serialized at build time and must be non-null JSON objects.
-- Message and batch size estimates now include UTF-8 body bytes, Base64 attachment payloads, headers, metadata, and template model size.
-- Header folding must use `CRLF` followed by whitespace.
+Release notes and upgrade guidance are maintained in [CHANGES.md](https://github.com/jscarle/PostKit/blob/develop/CHANGES.md).
 
 ## Quickstart
 
@@ -193,6 +102,41 @@ builder.Services.AddKeyedPostKit(PostmarkServer.Production, builder.Configuratio
   }
 }
 ```
+
+### HTTP Resilience And Retry Safety
+
+Postmark does not currently support idempotency keys. Repeating an unsafe request such as `POST /email` can therefore send the same email more than once. Custom `Message-ID` headers and metadata are useful for correlation, but Postmark does not document
+them as deduplication keys.
+
+PostKit proactively paces all requests against known or observed Postmark rate limits. When Postmark returns `429 Too Many Requests`, PostKit honors `Retry-After` when present and otherwise uses bounded exponential backoff with jitter, but it retries only
+safe methods such as `GET`. Unsafe methods (`POST`, `PUT`, `PATCH`, and `DELETE`) return the first response without an automatic retry.
+
+An `HttpClient` resilience handler runs inside PostKit's request and can retry before PostKit observes the result. Because the .NET standard resilience handler retries unsafe methods by default, PostKit's named HTTP client removes resilience handlers
+registered earlier and installs a PostKit-owned standard pipeline. The default pipeline:
+
+- retains standard rate limiting, total and attempt timeouts, safe-method retries, and circuit breaking;
+- disables retries for unsafe methods; and
+- excludes `429 Too Many Requests` from transport retry and circuit breaking so PostKit's shared rate-limit buckets remain the sole owner of `429` backoff.
+
+Register application-wide HTTP client defaults before calling `AddPostKit`. No additional configuration is required for the safe default. To customize the named client, call `ConfigurePostKitHttpClient` after every `AddPostKit` and `AddKeyedPostKit`
+registration:
+
+```csharp
+using PostKit;
+
+builder.Services.AddPostKit(builder.Configuration);
+
+builder.Services.ConfigurePostKitHttpClient(httpClient =>
+{
+    httpClient.SetHandlerLifetime(TimeSpan.FromMinutes(10));
+});
+```
+
+Configurations added through this hook extend the existing named client. Adding another resilience handler without first removing PostKit's handler creates nested pipelines. A caller that replaces the default pipeline or re-enables unsafe retries assumes
+responsibility for duplicate effects and for ensuring that PostKit remains the sole owner of `429` retries.
+
+The application remains responsible for business-level idempotency. For security emails, billing notifications, and other sensitive operations, use a stable application operation ID and durable or process-local delivery state appropriate to the workflow.
+Do not blindly retry an unsafe request that returns `PostmarkUnknownOutcomeError` or a successful unsafe request that returns `PostmarkInvalidResponseError`.
 
 PostKit validates that the selected configuration section defines `ServerApiToken`, `AccountApiToken`, or both. When you use the explicit configuration overloads above, missing sections fail immediately and missing tokens fail during
 startup or first resolution. Server-level endpoints still require `ServerApiToken`; account-level endpoints still require `AccountApiToken`.
@@ -656,16 +600,35 @@ else
 
 PostKit may return different types of errors depending on the failure scenario:
 
-**HttpError** - Returned for HTTP-level failures (network issues, timeouts, non-422 status codes):
+**PostmarkUnknownOutcomeError** - Returned when PostKit does not receive a conclusive HTTP response because of a transport failure or timeout. `IsRetrySafe` identifies safe methods such as `GET`. For unsafe methods, Postmark may have processed the operation,
+so the application must not retry unless it can prevent duplicate effects:
 
 ```csharp
-if (error is HttpError httpError)
+if (error is PostmarkUnknownOutcomeError unknownOutcomeError)
 {
-    Console.WriteLine($"HTTP error: {httpError.StatusCode} - {httpError.Message}");
+    Console.WriteLine($"Unknown outcome: {unknownOutcomeError.Method} {unknownOutcomeError.Endpoint}");
+
+    if (!unknownOutcomeError.IsRetrySafe)
+    {
+        // Reconcile the operation through application delivery state before retrying.
+    }
 }
 ```
 
-**PostmarkError** - Returned for Postmark API validation errors (422 status code), and for per-email failures inside a successful batch request:
+**PostmarkInvalidResponseError** - Returned when Postmark supplies a response that cannot be deserialized or does not match the documented response contract. Examples include malformed JSON, missing acceptance fields, invalid message identifiers, and mismatched
+batch result counts. Repeated occurrences most likely indicate a change in the Postmark API, and the error message directs the developer to [open an issue in the PostKit repository](https://github.com/jscarle/PostKit/issues):
+
+```csharp
+if (error is PostmarkInvalidResponseError invalidResponseError)
+{
+    Console.WriteLine($"Invalid response: {invalidResponseError.Method} {invalidResponseError.Endpoint}");
+    Console.WriteLine($"HTTP status: {invalidResponseError.StatusCode}");
+}
+```
+
+When an invalid response follows a successful unsafe request, the operation may already have been processed and must not be blindly retried.
+
+**PostmarkError** - Returned when Postmark supplies a valid, structured Postmark error payload. This includes Postmark API validation errors and per-email failures inside a successfully processed batch request:
 
 ```csharp
 if (error is PostmarkError postmarkError)
@@ -687,6 +650,18 @@ if (error is PostmarkError postmarkError)
     }
 }
 ```
+
+**HttpError** - Returned when Postmark or an intermediary supplies a non-success HTTP response without a recognized structured Postmark error. `RetryAfter` contains the requested delay when the response provides a valid `Retry-After` header:
+
+```csharp
+if (error is HttpError httpError)
+{
+    Console.WriteLine($"HTTP error: {httpError.StatusCode} - {httpError.Message}");
+    Console.WriteLine($"Retry after: {httpError.RetryAfter}");
+}
+```
+
+Caller-requested cancellation continues to throw `OperationCanceledException`. If cancellation happens after an unsafe request was dispatched, its outcome can also be unknown, so cancellation should not trigger an unconditional retry.
 
 **BulkEmailValidationError** - Returned when the Bulk Email API accepts a request but reports unprocessable messages:
 

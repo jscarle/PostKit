@@ -1,7 +1,9 @@
+using System.Net;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PostKit.Configuration;
@@ -13,6 +15,7 @@ namespace PostKit;
 public static class PostKitExtensions
 {
     private const string ConfigurationSectionName = "PostKit";
+    private const string PostmarkHttpClientName = "Postmark";
 
     private static readonly string RequiredTokenMessage = $"must define '{nameof(PostKitOptions.ServerApiToken)}' or '{nameof(PostKitOptions.AccountApiToken)}'.";
 
@@ -147,6 +150,25 @@ public static class PostKitExtensions
         return AddKeyedPostKitRegistration(services, serviceKey, GetOptionsName(configurationSection), false, optionsBuilder => optionsBuilder.Configure(configurationSection.Bind));
     }
 
+    /// <summary>Configures the HTTP client used for all Postmark API requests.</summary>
+    /// <param name="services">The service collection containing the PostKit registration.</param>
+    /// <param name="configure">The HTTP client builder configuration to apply.</param>
+    /// <returns>The same <paramref name="services" /> instance so calls can be chained.</returns>
+    /// <remarks>Call this method after all PostKit registrations so the supplied configuration can extend or replace PostKit's default HTTP resilience pipeline.</remarks>
+    public static IServiceCollection ConfigurePostKitHttpClient(this IServiceCollection services, Action<IHttpClientBuilder> configure)
+    {
+        if (services is null)
+            throw new ArgumentNullException(nameof(services), "The service collection cannot be null.");
+
+        if (configure is null)
+            throw new ArgumentNullException(nameof(configure), "The HTTP client configuration cannot be null.");
+
+        var httpClientBuilder = services.AddHttpClient(PostmarkHttpClientName);
+        configure(httpClientBuilder);
+
+        return services;
+    }
+
     private static IServiceCollection AddDefaultPostKitRegistration(IServiceCollection services, string optionsName, bool validateConfigurationSectionFromServices, Action<OptionsBuilder<PostKitOptions>> configureOptions)
     {
         RegisterCommonServices(services);
@@ -189,7 +211,24 @@ public static class PostKitExtensions
 
     private static void RegisterCommonServices(IServiceCollection services)
     {
-        services.AddHttpClient("Postmark");
+        var httpClientBuilder = services.AddHttpClient(PostmarkHttpClientName);
+#pragma warning disable EXTEXP0001 // PostKit replaces inherited resilience handlers so unsafe Postmark requests are not retried.
+        httpClientBuilder.RemoveAllResilienceHandlers();
+#pragma warning restore EXTEXP0001
+        httpClientBuilder.AddStandardResilienceHandler(options =>
+        {
+            options.Retry.DisableForUnsafeHttpMethods();
+
+            var retryShouldHandle = options.Retry.ShouldHandle;
+            options.Retry.ShouldHandle = arguments => arguments.Outcome.Result?.StatusCode == HttpStatusCode.TooManyRequests
+                ? ValueTask.FromResult(false)
+                : retryShouldHandle(arguments);
+
+            var circuitBreakerShouldHandle = options.CircuitBreaker.ShouldHandle;
+            options.CircuitBreaker.ShouldHandle = arguments => arguments.Outcome.Result?.StatusCode == HttpStatusCode.TooManyRequests
+                ? ValueTask.FromResult(false)
+                : circuitBreakerShouldHandle(arguments);
+        });
         services.TryAddSingleton<IPostmarkClientFactory, PostmarkClientFactory>();
         services.TryAddSingleton<PostmarkRateLimiter>();
     }
