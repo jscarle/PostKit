@@ -19,19 +19,19 @@
     <ItemGroup>
         <PackageReference Include="JetBrains.Annotations" Version="2026.2.0"/>
         <PackageReference Include="LightResults" Version="10.0.4"/>
-        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10"/>
-        <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0"/>
-        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.8.0"/>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.301" PrivateAssets="All"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.11" />
+        <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.9.0" />
+        <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.9.0" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.400" PrivateAssets="All" />
         <PackageReference Include="MimeKit" Version="4.17.0"/>
     </ItemGroup>
 
     <!-- Output -->
     <PropertyGroup>
         <AssemblyName>PostKit</AssemblyName>
-        <Version>10.3.0.0</Version>
-        <AssemblyVersion>10.3.0.0</AssemblyVersion>
-        <FileVersion>10.3.0.0</FileVersion>
+        <Version>10.3.1.0</Version>
+        <AssemblyVersion>10.3.1.0</AssemblyVersion>
+        <FileVersion>10.3.1.0</FileVersion>
         <NeutralLanguage>en-US</NeutralLanguage>
         <Optimize>true</Optimize>
         <!--<IsAotCompatible>true</IsAotCompatible>-->
