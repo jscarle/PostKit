@@ -488,6 +488,49 @@ var message = JsonSerializer.Deserialize<InboundWebhookMessage>(json);
 `RawEmail` is nullable because Postmark only includes it when raw email retention is enabled. Attachment `ContentId` is also nullable because Postmark can omit it. Unknown JSON properties are ignored by System.Text.Json's default behavior and are not
 retained by the model.
 
+### Outbound Webhook Deserialization
+
+`OutboundWebhookDeserializer` reads `RecordType` and returns the corresponding `BounceWebhookMessage`, `ClickWebhookMessage`, `DeliveryWebhookMessage`, `OpenWebhookMessage`, `SpamComplaintWebhookMessage`, or
+`SubscriptionChangeWebhookMessage`. This is useful when one endpoint receives multiple Postmark webhook event types:
+
+```csharp
+using PostKit.Webhooks;
+
+app.MapPost("/postmark/outbound", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var result = await OutboundWebhookDeserializer.DeserializeAsync(request.BodyReader, cancellationToken);
+    if (result.IsFailure(out var error, out var message))
+        return Results.BadRequest(new { error.Message });
+
+    switch (message)
+    {
+        case DeliveryWebhookMessage delivery:
+            await ProcessDeliveryAsync(delivery, cancellationToken);
+            break;
+        case BounceWebhookMessage bounce:
+            await ProcessBounceAsync(bounce, cancellationToken);
+            break;
+    }
+
+    return Results.Ok();
+});
+```
+
+Each event also has a dedicated deserializer, such as `DeliveryWebhookDeserializer` or `BounceWebhookDeserializer`, for endpoints that receive only one event type. The dispatcher and every dedicated deserializer provide the same synchronous and
+asynchronous source overloads as `InboundWebhookDeserializer`, preserve caller ownership of streams and pipe readers, and return strict validation failures through `Result<T>`.
+
+The concrete outbound message records and their shared client, operating-system, and geographic types are regular System.Text.Json contracts. Applications can deserialize a known event type directly when native serializer semantics or custom options
+are preferred:
+
+```csharp
+using System.Text.Json;
+using PostKit.Webhooks;
+
+var delivery = JsonSerializer.Deserialize<DeliveryWebhookMessage>(json);
+```
+
+PostKit models optional bounce and spam-complaint content, nullable subscription-change values, and partially available open/click tracking information. Unknown JSON properties are ignored by default and are not retained by any outbound webhook model.
+
 ### Templates, Webhooks, Stats, And Account APIs
 
 ```csharp
