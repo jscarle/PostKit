@@ -454,6 +454,40 @@ Outbound message details expose nullable `TextBody`, `HtmlBody`, and `Body` prop
 raw source. The Messages API also includes `SearchInboundMessagesAsync`, `GetInboundMessageDetailsAsync`, `BypassInboundMessageRulesAsync`, `RetryInboundMessageAsync`, `SearchMessageOpensAsync`, `GetMessageOpensAsync`,
 `SearchMessageClicksAsync`, and `GetMessageClicksAsync`.
 
+### Inbound Webhook Deserialization
+
+`InboundWebhookDeserializer` validates and deserializes the JSON that Postmark posts to an inbound webhook. In ASP.NET Core, pass the request `BodyReader` directly:
+
+```csharp
+using PostKit.Webhooks;
+
+app.MapPost("/postmark/inbound", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var result = await InboundWebhookDeserializer.DeserializeAsync(request.BodyReader, cancellationToken);
+    if (result.IsFailure(out var error, out var message))
+        return Results.BadRequest(new { error.Message });
+
+    await ProcessInboundMessageAsync(message, cancellationToken);
+    return Results.Ok();
+});
+```
+
+Synchronous `Deserialize` overloads accept `string`, `ReadOnlySpan<char>`, UTF-8 `ReadOnlySpan<byte>`, `Stream`, `ref Utf8JsonReader`, `JsonDocument`, `JsonElement`, and `JsonNode`. Asynchronous overloads accept `Stream` and `PipeReader` and
+carry a `CancellationToken`. PostKit does not close caller-owned streams or complete caller-owned pipe readers. Malformed JSON and invalid webhook contracts are returned as failed `Result<InboundWebhookMessage>` values with actionable messages;
+null reference arguments still throw `ArgumentNullException`.
+
+`InboundWebhookMessage` and its nested types are regular System.Text.Json contracts, so applications that want native serializer behavior or custom options can deserialize them directly:
+
+```csharp
+using System.Text.Json;
+using PostKit.Webhooks;
+
+var message = JsonSerializer.Deserialize<InboundWebhookMessage>(json);
+```
+
+`RawEmail` is nullable because Postmark only includes it when raw email retention is enabled. Attachment `ContentId` is also nullable because Postmark can omit it. Unknown JSON properties are ignored by System.Text.Json's default behavior and are not
+retained by the model.
+
 ### Templates, Webhooks, Stats, And Account APIs
 
 ```csharp
