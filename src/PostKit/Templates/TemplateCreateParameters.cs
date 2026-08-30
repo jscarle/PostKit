@@ -18,7 +18,7 @@ public sealed record TemplateCreateParameters
     public string? HtmlBody { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the text body content.</summary>
-    public string? TextBody { [UsedImplicitly] get; init; }
+    public string? TextBody { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets the template type. When omitted, Postmark defaults to a standard template.</summary>
     public TemplateType? TemplateType { [UsedImplicitly] get; init; }

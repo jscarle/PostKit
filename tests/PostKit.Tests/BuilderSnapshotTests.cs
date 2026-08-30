@@ -191,7 +191,7 @@ public class BuilderSnapshotTests
 
         var email = builder.Build();
 
-        Assert.Equal("Sender", email.From!.Name);
+        Assert.Equal("Sender", email.From.Name);
         Assert.Equal("sender@postkit.com", email.From.Address);
     }
 

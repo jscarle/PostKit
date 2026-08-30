@@ -9,5 +9,6 @@ internal sealed class TemplateListResponse
     public int? TotalCount { get; [UsedImplicitly] init; }
 
     [JsonPropertyName("Templates")]
+    // ReSharper disable once CollectionNeverUpdated.Global
     public List<TemplateSummaryResponse?>? Templates { get; [UsedImplicitly] init; }
 }

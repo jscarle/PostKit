@@ -22,20 +22,21 @@ public static class PostKitExtensions
     /// <summary>Registers the default (non-keyed) PostKit services using configuration from the <c>PostKit</c> section.</summary>
     /// <param name="services">The service collection to configure.</param>
     /// <returns>The same <paramref name="services" /> instance so calls can be chained.</returns>
+    /// <remarks>When the registered configuration provider supports reload notifications, resolved PostKit clients use refreshed values for subsequent requests.</remarks>
     [UsedImplicitly]
     public static IServiceCollection AddPostKit(this IServiceCollection services)
     {
         if (services is null)
             throw new ArgumentNullException(nameof(services), "The service collection cannot be null.");
 
-        return AddDefaultPostKitRegistration(services, ConfigurationSectionName, true, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(ConfigurationSectionName)
-            .Bind(options)));
+        return AddDefaultPostKitRegistration(services, ConfigurationSectionName, true, optionsBuilder => optionsBuilder.BindConfiguration(ConfigurationSectionName));
     }
 
     /// <summary>Registers the default (non-keyed) PostKit services using configuration from the <c>PostKit</c> section of the provided configuration root.</summary>
     /// <param name="services">The service collection to configure.</param>
     /// <param name="configuration">The configuration root that contains the <c>PostKit</c> section.</param>
     /// <returns>The same <paramref name="services" /> instance so calls can be chained.</returns>
+    /// <remarks>When the supplied configuration supports reload notifications, resolved PostKit clients use refreshed values for subsequent requests.</remarks>
     [UsedImplicitly]
     public static IServiceCollection AddPostKit(this IServiceCollection services, IConfiguration configuration)
     {
@@ -56,6 +57,7 @@ public static class PostKitExtensions
     /// <param name="configurationSection">The configuration section to bind options from.</param>
     /// <exception cref="InvalidOperationException">Thrown when the provided configuration section cannot be found.</exception>
     /// <returns>The same <paramref name="services" /> instance so calls can be chained.</returns>
+    /// <remarks>When the supplied configuration section supports reload notifications, resolved PostKit clients use refreshed values for subsequent requests.</remarks>
     [UsedImplicitly]
     public static IServiceCollection AddPostKit(this IServiceCollection services, IConfigurationSection configurationSection)
     {
@@ -67,7 +69,7 @@ public static class PostKitExtensions
 
         EnsureConfigurationSectionExists(configurationSection);
 
-        return AddDefaultPostKitRegistration(services, GetOptionsName(configurationSection), false, optionsBuilder => optionsBuilder.Configure(configurationSection.Bind));
+        return AddDefaultPostKitRegistration(services, GetOptionsName(configurationSection), false, optionsBuilder => optionsBuilder.Bind(configurationSection));
     }
 
     /// <summary>Registers PostKit services either as default (non-keyed) services or as keyed services.</summary>
@@ -77,6 +79,7 @@ public static class PostKitExtensions
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="services" /> is <see langword="null" />.</exception>
     /// <exception cref="InvalidOperationException">Thrown when a keyed registration cannot determine the configuration key.</exception>
     /// <returns>The same <paramref name="services" /> instance so calls can be chained.</returns>
+    /// <remarks>When the registered configuration provider supports reload notifications, resolved PostKit clients use refreshed values for subsequent requests.</remarks>
     [UsedImplicitly]
     public static IServiceCollection AddKeyedPostKit(this IServiceCollection services, object? serviceKey = null, string? configurationKey = null)
     {
@@ -89,14 +92,12 @@ public static class PostKitExtensions
                 return services.AddPostKit();
 
             var sectionPath = GetSectionPath(NormalizeConfigurationKey(configurationKey));
-            return AddDefaultPostKitRegistration(services, sectionPath, true, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(sectionPath)
-                .Bind(options)));
+            return AddDefaultPostKitRegistration(services, sectionPath, true, optionsBuilder => optionsBuilder.BindConfiguration(sectionPath));
         }
 
         var resolvedConfigurationKey = ResolveConfigurationKey(serviceKey, configurationKey);
         var resolvedSectionPath = GetSectionPath(resolvedConfigurationKey);
-        return AddKeyedPostKitRegistration(services, serviceKey, resolvedSectionPath, true, optionsBuilder => optionsBuilder.Configure<IConfiguration>((options, configuration) => configuration.GetSection(resolvedSectionPath)
-            .Bind(options)));
+        return AddKeyedPostKitRegistration(services, serviceKey, resolvedSectionPath, true, optionsBuilder => optionsBuilder.BindConfiguration(resolvedSectionPath));
     }
 
     /// <summary>Registers keyed PostKit services using configuration from the <c>PostKit</c> section of the provided configuration root.</summary>
@@ -105,6 +106,7 @@ public static class PostKitExtensions
     /// <param name="configuration">The configuration root that contains the <c>PostKit</c> section.</param>
     /// <param name="configurationKey">The configuration key to bind options from. When omitted, the value is inferred from <paramref name="serviceKey" />.</param>
     /// <returns>The same <paramref name="services" /> instance so calls can be chained.</returns>
+    /// <remarks>When the supplied configuration supports reload notifications, resolved PostKit clients use refreshed values for subsequent requests.</remarks>
     [UsedImplicitly]
     public static IServiceCollection AddKeyedPostKit(this IServiceCollection services, object serviceKey, IConfiguration configuration, string? configurationKey = null)
     {
@@ -133,6 +135,7 @@ public static class PostKitExtensions
     /// <param name="configurationSection">The configuration section to bind options from.</param>
     /// <exception cref="InvalidOperationException">Thrown when the provided configuration section cannot be found.</exception>
     /// <returns>The same <paramref name="services" /> instance so calls can be chained.</returns>
+    /// <remarks>When the supplied configuration section supports reload notifications, resolved PostKit clients use refreshed values for subsequent requests.</remarks>
     [UsedImplicitly]
     public static IServiceCollection AddKeyedPostKit(this IServiceCollection services, object serviceKey, IConfigurationSection configurationSection)
     {
@@ -147,7 +150,7 @@ public static class PostKitExtensions
 
         EnsureConfigurationSectionExists(configurationSection);
 
-        return AddKeyedPostKitRegistration(services, serviceKey, GetOptionsName(configurationSection), false, optionsBuilder => optionsBuilder.Configure(configurationSection.Bind));
+        return AddKeyedPostKitRegistration(services, serviceKey, GetOptionsName(configurationSection), false, optionsBuilder => optionsBuilder.Bind(configurationSection));
     }
 
     /// <summary>Configures the HTTP client used for all Postmark API requests.</summary>

@@ -9,6 +9,7 @@ internal sealed class TemplateValidationContentResponse
     public bool? ContentIsValid { get; [UsedImplicitly] init; }
 
     [JsonPropertyName("ValidationErrors")]
+    // ReSharper disable once CollectionNeverUpdated.Global
     public List<TemplateValidationErrorResponse?>? ValidationErrors { get; [UsedImplicitly] init; }
 
     [JsonPropertyName("RenderedContent")]

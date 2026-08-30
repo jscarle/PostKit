@@ -9,5 +9,6 @@ internal sealed class MessageClickSearchResponse
     public int? TotalCount { get; [UsedImplicitly] init; }
 
     [JsonPropertyName("Clicks")]
+    // ReSharper disable once CollectionNeverUpdated.Global
     public List<MessageClickResponse?>? Clicks { get; [UsedImplicitly] init; }
 }

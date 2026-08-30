@@ -9,5 +9,6 @@ internal sealed class InboundRuleTriggerListResponse
     public int? TotalCount { get; [UsedImplicitly] init; }
 
     [JsonPropertyName("InboundRules")]
+    // ReSharper disable once CollectionNeverUpdated.Global
     public List<InboundRuleTriggerResponse?>? InboundRules { get; [UsedImplicitly] init; }
 }

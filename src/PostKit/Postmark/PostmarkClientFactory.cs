@@ -12,7 +12,7 @@ internal sealed class PostmarkClientFactory(IHttpClientFactory httpClientFactory
     public PostmarkClient Create(string? key = null)
     {
         var httpClient = httpClientFactory.CreateClient("Postmark");
-        var postKitOptions = key is null ? defaultOptions.Value : namedOptions.Get(key);
-        return new PostmarkClient(httpClient, Options.Create(postKitOptions), logger, rateLimiter);
+        IOptions<PostKitOptions> postKitOptions = key is null ? defaultOptions : new RebasedOptions<PostKitOptions>(namedOptions, key);
+        return new PostmarkClient(httpClient, postKitOptions, logger, rateLimiter);
     }
 }

@@ -54,6 +54,7 @@ internal class OutboundMessageResponse
     public string? TrackLinks { get; [UsedImplicitly] init; }
 
     [JsonPropertyName("Metadata")]
+    // ReSharper disable once CollectionNeverUpdated.Global
     public Dictionary<string, string?>? Metadata { get; [UsedImplicitly] init; }
 
     [JsonPropertyName("Sandboxed")]

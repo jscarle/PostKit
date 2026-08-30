@@ -678,10 +678,6 @@ public class PostKitClientManagementResponseTests
 
         public string? LastAccountEmptyPostEndpoint { get; private set; }
 
-        public string? LastPutEndpoint { get; private set; }
-
-        public object? LastPutBody { get; private set; }
-
         public string? LastAccountPutEndpoint { get; private set; }
 
         public object? LastAccountPutBody { get; private set; }
@@ -691,10 +687,6 @@ public class PostKitClientManagementResponseTests
         public string? LastPatchEndpoint { get; private set; }
 
         public object? LastPatchBody { get; private set; }
-
-        public string? LastDeleteEndpoint { get; private set; }
-
-        public string? LastAccountDeleteEndpoint { get; private set; }
 
         public Task<Result<TResponse>> PostAsync<TRequest, TResponse>(PostmarkTokenScope tokenScope, string endpoint, TRequest body, CancellationToken cancellationToken = default)
         {
@@ -743,8 +735,6 @@ public class PostKitClientManagementResponseTests
                 return GetResponse<TResponse>(accountPutResponses, endpoint);
             }
 
-            LastPutEndpoint = endpoint;
-            LastPutBody = body;
             return GetResponse<TResponse>(putResponses, endpoint);
         }
 
@@ -769,12 +759,8 @@ public class PostKitClientManagementResponseTests
         public Task<Result<TResponse>> DeleteAsync<TResponse>(PostmarkTokenScope tokenScope, string endpoint, CancellationToken cancellationToken = default)
         {
             if (tokenScope == PostmarkTokenScope.Account)
-            {
-                LastAccountDeleteEndpoint = endpoint;
                 return GetResponse<TResponse>(accountDeleteResponses, endpoint);
-            }
 
-            LastDeleteEndpoint = endpoint;
             return GetResponse<TResponse>(deleteResponses, endpoint);
         }
 

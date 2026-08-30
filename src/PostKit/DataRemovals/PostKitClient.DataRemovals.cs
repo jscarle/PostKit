@@ -6,9 +6,9 @@ using PostKit.Postmark;
 using DataRemovalRequestModel = PostKit.Postmark.DataRemovals.DataRemovalCreateRequest;
 using DataRemovalResponseModel = PostKit.Postmark.DataRemovals.DataRemovalResponse;
 
+// ReSharper disable once CheckNamespace
 namespace PostKit;
 
-// ReSharper disable once CheckNamespace
 internal sealed partial class PostKitClient
 {
     public async Task<Result<DataRemoval>> CreateDataRemovalAsync(DataRemovalCreateParameters parameters, CancellationToken cancellationToken = default)

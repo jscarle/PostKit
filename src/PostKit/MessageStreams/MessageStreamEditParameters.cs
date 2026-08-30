@@ -12,5 +12,5 @@ public sealed record MessageStreamEditParameters
     public string? Description { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the optional subscription-management settings.</summary>
-    public MessageStreamSubscriptionManagementConfiguration? SubscriptionManagementConfiguration { [UsedImplicitly] get; init; }
+    public MessageStreamSubscriptionManagementConfiguration? SubscriptionManagementConfiguration { [UsedImplicitly] get; [UsedImplicitly] init; }
 }
