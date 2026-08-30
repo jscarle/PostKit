@@ -1,12 +1,39 @@
+using System.Net;
+using System.Net.Mime;
+using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using PostKit.Configuration;
+using PostKit.Postmark;
+using PostKit.Postmark.Email;
 
 namespace PostKit.Tests;
 
 public class PostKitExtensionsTests
 {
+    [Fact]
+    public void AddPostKit_DefaultRegistration_ReloadsOptions()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:ServerApiToken"] = "initial-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging();
+        services.AddPostKit();
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<PostKitOptions>>();
+
+        Assert.Equal("initial-token", optionsMonitor.CurrentValue.ServerApiToken);
+
+        configuration["PostKit:ServerApiToken"] = "refreshed-token";
+        configuration.Reload();
+
+        Assert.Equal("refreshed-token", optionsMonitor.CurrentValue.ServerApiToken);
+    }
+
     [Fact]
     public void AddPostKit_WithConfiguration_BindsPostKitSectionWithoutIConfigurationRegistration()
     {
@@ -25,6 +52,27 @@ public class PostKitExtensionsTests
         Assert.Equal("root-token", options.ServerApiToken);
         Assert.Equal("account-token", options.AccountApiToken);
         Assert.NotNull(serviceProvider.GetRequiredService<IPostKitClient>());
+    }
+
+    [Fact]
+    public void AddPostKit_WithConfiguration_ReloadsOptions()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:ServerApiToken"] = "initial-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddPostKit(configuration);
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<PostKitOptions>>();
+
+        Assert.Equal("initial-token", optionsMonitor.CurrentValue.ServerApiToken);
+
+        configuration["PostKit:ServerApiToken"] = "refreshed-token";
+        configuration.Reload();
+
+        Assert.Equal("refreshed-token", optionsMonitor.CurrentValue.ServerApiToken);
     }
 
     [Fact]
@@ -101,6 +149,27 @@ public class PostKitExtensionsTests
         Assert.Equal("marketing-token", options.ServerApiToken);
         Assert.Equal("marketing-account", options.AccountApiToken);
         Assert.NotNull(serviceProvider.GetRequiredService<IPostKitClient>());
+    }
+
+    [Fact]
+    public void AddPostKit_WithConfigurationSection_ReloadsOptions()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Tenants:Marketing:ServerApiToken"] = "initial-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddPostKit(configuration.GetSection("Tenants:Marketing"));
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<PostKitOptions>>();
+
+        Assert.Equal("initial-token", optionsMonitor.CurrentValue.ServerApiToken);
+
+        configuration["Tenants:Marketing:ServerApiToken"] = "refreshed-token";
+        configuration.Reload();
+
+        Assert.Equal("refreshed-token", optionsMonitor.CurrentValue.ServerApiToken);
     }
 
     [Fact]
@@ -194,6 +263,50 @@ public class PostKitExtensionsTests
     }
 
     [Fact]
+    public void AddKeyedPostKit_KeyedRegistrationWithInferredConfigurationKey_ReloadsOptions()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:Marketing:ServerApiToken"] = "initial-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging();
+        services.AddKeyedPostKit("Marketing");
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<PostKitOptions>>();
+
+        Assert.Equal("initial-token", optionsMonitor.Get("PostKit:Marketing").ServerApiToken);
+
+        configuration["PostKit:Marketing:ServerApiToken"] = "refreshed-token";
+        configuration.Reload();
+
+        Assert.Equal("refreshed-token", optionsMonitor.Get("PostKit:Marketing").ServerApiToken);
+    }
+
+    [Fact]
+    public void AddKeyedPostKit_KeyedRegistrationWithExplicitConfigurationKey_ReloadsOptions()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:Default:ServerApiToken"] = "initial-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging();
+        services.AddKeyedPostKit("Production", "Default");
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<PostKitOptions>>();
+
+        Assert.Equal("initial-token", optionsMonitor.Get("PostKit:Default").ServerApiToken);
+
+        configuration["PostKit:Default:ServerApiToken"] = "refreshed-token";
+        configuration.Reload();
+
+        Assert.Equal("refreshed-token", optionsMonitor.Get("PostKit:Default").ServerApiToken);
+    }
+
+    [Fact]
     public void AddKeyedPostKit_WithConfiguration_BindsInferredSectionWithoutIConfigurationRegistration()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:Marketing:ServerApiToken"] = "marketing-token" })
@@ -206,6 +319,27 @@ public class PostKitExtensionsTests
         using var serviceProvider = services.BuildServiceProvider();
 
         Assert.NotNull(serviceProvider.GetRequiredKeyedService<IPostKitClient>("Marketing"));
+    }
+
+    [Fact]
+    public void AddKeyedPostKit_WithConfiguration_ReloadsOptions()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:Default:ServerApiToken"] = "initial-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddKeyedPostKit("Production", configuration, "Default");
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<PostKitOptions>>();
+
+        Assert.Equal("initial-token", optionsMonitor.Get("PostKit:Default").ServerApiToken);
+
+        configuration["PostKit:Default:ServerApiToken"] = "refreshed-token";
+        configuration.Reload();
+
+        Assert.Equal("refreshed-token", optionsMonitor.Get("PostKit:Default").ServerApiToken);
     }
 
     [Fact]
@@ -284,6 +418,27 @@ public class PostKitExtensionsTests
     }
 
     [Fact]
+    public void AddKeyedPostKit_WithConfigurationSection_ReloadsOptions()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Tenants:Marketing:ServerApiToken"] = "initial-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddKeyedPostKit("Marketing", configuration.GetSection("Tenants:Marketing"));
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<PostKitOptions>>();
+
+        Assert.Equal("initial-token", optionsMonitor.Get("Tenants:Marketing").ServerApiToken);
+
+        configuration["Tenants:Marketing:ServerApiToken"] = "refreshed-token";
+        configuration.Reload();
+
+        Assert.Equal("refreshed-token", optionsMonitor.Get("Tenants:Marketing").ServerApiToken);
+    }
+
+    [Fact]
     public void AddKeyedPostKit_DefaultRegistration_TrimsConfigurationKey()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:Marketing:ServerApiToken"] = "marketing-token" })
@@ -300,6 +455,28 @@ public class PostKitExtensionsTests
             .Value;
 
         Assert.Equal("marketing-token", options.ServerApiToken);
+    }
+
+    [Fact]
+    public void AddKeyedPostKit_DefaultRegistrationWithConfigurationKey_ReloadsOptions()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PostKit:Secondary:ServerApiToken"] = "initial-token" })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging();
+        services.AddKeyedPostKit(configurationKey: "Secondary");
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<PostKitOptions>>();
+
+        Assert.Equal("initial-token", optionsMonitor.CurrentValue.ServerApiToken);
+
+        configuration["PostKit:Secondary:ServerApiToken"] = "refreshed-token";
+        configuration.Reload();
+
+        Assert.Equal("refreshed-token", optionsMonitor.CurrentValue.ServerApiToken);
     }
 
     [Fact]
@@ -416,6 +593,45 @@ public class PostKitExtensionsTests
     }
 
     [Fact]
+    public async Task DefaultAndKeyedClients_WhenConfigurationReloads_UseRefreshedTokens()
+    {
+        const string infrastructurePostKitKey = "Infrastructure";
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["PostKit:ServerApiToken"] = "default-initial-token", ["PostKit:Infrastructure:ServerApiToken"] = "infrastructure-initial-token"
+            })
+            .Build();
+        var handler = new RecordingTokenHttpMessageHandler();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging();
+        services.AddPostKit();
+        services.AddKeyedPostKit(infrastructurePostKitKey);
+        services.ConfigurePostKitHttpClient(httpClient => httpClient.ConfigurePrimaryHttpMessageHandler(() => handler));
+
+        await using var serviceProvider = services.BuildServiceProvider();
+        var defaultClient = serviceProvider.GetRequiredService<IPostmarkClient>();
+        var infrastructureClient = serviceProvider.GetRequiredKeyedService<IPostmarkClient>(infrastructurePostKitKey);
+
+        var initialDefaultResult = await defaultClient.GetAsync<PostmarkResponse>(PostmarkTokenScope.Server, "/server", CancellationToken.None);
+        var initialInfrastructureResult = await infrastructureClient.GetAsync<PostmarkResponse>(PostmarkTokenScope.Server, "/server", CancellationToken.None);
+
+        configuration["PostKit:ServerApiToken"] = "default-refreshed-token";
+        configuration["PostKit:Infrastructure:ServerApiToken"] = "infrastructure-refreshed-token";
+        configuration.Reload();
+
+        var refreshedDefaultResult = await defaultClient.GetAsync<PostmarkResponse>(PostmarkTokenScope.Server, "/server", CancellationToken.None);
+        var refreshedInfrastructureResult = await infrastructureClient.GetAsync<PostmarkResponse>(PostmarkTokenScope.Server, "/server", CancellationToken.None);
+
+        Assert.True(initialDefaultResult.IsSuccess(out _), initialDefaultResult.ToString());
+        Assert.True(initialInfrastructureResult.IsSuccess(out _), initialInfrastructureResult.ToString());
+        Assert.True(refreshedDefaultResult.IsSuccess(out _), refreshedDefaultResult.ToString());
+        Assert.True(refreshedInfrastructureResult.IsSuccess(out _), refreshedInfrastructureResult.ToString());
+        Assert.Equal(["default-initial-token", "infrastructure-initial-token", "default-refreshed-token", "infrastructure-refreshed-token"], handler.ServerApiTokens);
+    }
+
+    [Fact]
     public void AddKeyedPostKit_DefaultRegistration_LastCallWinsForDefaultOptions()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
@@ -454,5 +670,26 @@ public class PostKitExtensionsTests
         using var serviceProvider = services.BuildServiceProvider();
 
         Assert.NotNull(serviceProvider.GetRequiredKeyedService<IPostKitClient>("shared"));
+    }
+
+    private sealed class RecordingTokenHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly List<string> _serverApiTokens = [];
+
+        public IReadOnlyList<string> ServerApiTokens => _serverApiTokens;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var serverApiToken = request.Headers.GetValues("X-Postmark-Server-Token")
+                .Single();
+            _serverApiTokens.Add(serverApiToken);
+
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{"ErrorCode":0,"Message":"OK"}""", Encoding.UTF8, MediaTypeNames.Application.Json)
+            };
+
+            return Task.FromResult(response);
+        }
     }
 }

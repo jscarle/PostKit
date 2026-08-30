@@ -7,6 +7,7 @@ namespace PostKit.Postmark.Stats;
 internal sealed class OutboundStatsSeriesResponse
 {
     [JsonPropertyName("Days")]
+    // ReSharper disable once CollectionNeverUpdated.Global
     public List<OutboundStatsDayResponse?>? Days { get; [UsedImplicitly] init; }
 
     [JsonExtensionData]

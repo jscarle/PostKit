@@ -6,7 +6,7 @@ namespace PostKit.Templates;
 public sealed record TemplateValidationParameters
 {
     /// <summary>Gets the subject content to validate.</summary>
-    public string? Subject { [UsedImplicitly] get; init; }
+    public string? Subject { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets the HTML body content to validate.</summary>
     public string? HtmlBody { [UsedImplicitly] get; init; }
@@ -18,7 +18,7 @@ public sealed record TemplateValidationParameters
     public object? TestRenderModel { [UsedImplicitly] get; init; }
 
     /// <summary>Gets whether CSS should be inlined for HTML test rendering.</summary>
-    public bool? InlineCssForHtmlTestRender { [UsedImplicitly] get; init; }
+    public bool? InlineCssForHtmlTestRender { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets the template type to validate. When omitted, Postmark defaults to a standard template.</summary>
     public TemplateType? TemplateType { [UsedImplicitly] get; init; }

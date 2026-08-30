@@ -9,5 +9,6 @@ internal sealed class SenderSignatureListResponse
     public int? TotalCount { get; [UsedImplicitly] init; }
 
     [JsonPropertyName("SenderSignatures")]
+    // ReSharper disable once CollectionNeverUpdated.Global
     public List<SenderSignatureSummaryResponse?>? SenderSignatures { get; [UsedImplicitly] init; }
 }

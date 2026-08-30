@@ -22,38 +22,38 @@ public sealed record ServerCreateParameters
     public ServerDeliveryType? DeliveryType { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the optional inbound webhook URL.</summary>
-    public string? InboundHookUrl { [UsedImplicitly] get; init; }
+    public string? InboundHookUrl { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets the optional bounce webhook URL.</summary>
     public string? BounceHookUrl { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the optional open webhook URL.</summary>
-    public string? OpenHookUrl { [UsedImplicitly] get; init; }
+    public string? OpenHookUrl { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets the optional delivery webhook URL.</summary>
-    public string? DeliveryHookUrl { [UsedImplicitly] get; init; }
+    public string? DeliveryHookUrl { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets whether Postmark should call the open webhook only for the first open.</summary>
-    public bool? PostFirstOpenOnly { [UsedImplicitly] get; init; }
+    public bool? PostFirstOpenOnly { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets the optional inbound domain.</summary>
-    public string? InboundDomain { [UsedImplicitly] get; init; }
+    public string? InboundDomain { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets the inbound spam threshold.</summary>
-    public int? InboundSpamThreshold { [UsedImplicitly] get; init; }
+    public int? InboundSpamThreshold { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets whether open tracking should be enabled.</summary>
-    public bool? TrackOpens { [UsedImplicitly] get; init; }
+    public bool? TrackOpens { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets the link tracking mode.</summary>
     public LinkTracking? TrackLinks { [UsedImplicitly] get; init; }
 
     /// <summary>Gets whether bounce content should be included in webhook payloads.</summary>
-    public bool? IncludeBounceContentInHook { [UsedImplicitly] get; init; }
+    public bool? IncludeBounceContentInHook { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets the optional click webhook URL.</summary>
-    public string? ClickHookUrl { [UsedImplicitly] get; init; }
+    public string? ClickHookUrl { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets whether SMTP API error webhooks should be enabled.</summary>
-    public bool? EnableSmtpApiErrorHooks { [UsedImplicitly] get; init; }
+    public bool? EnableSmtpApiErrorHooks { [UsedImplicitly] get; [UsedImplicitly] init; }
 }

@@ -141,6 +141,7 @@ internal sealed partial class PostKitClient
     private static Result<InboundRuleRequestModel> CreateInboundRuleTriggerRequest(InboundRuleTriggerCreateParameters parameters)
     {
         if (string.IsNullOrWhiteSpace(parameters.Rule))
+            // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
             return Result.Failure<InboundRuleRequestModel>($"The inbound rule trigger create parameters rule cannot be empty or whitespace. Actual length: {parameters.Rule?.Length ?? 0}.");
 
         return Result.Success(new InboundRuleRequestModel { Rule = parameters.Rule });

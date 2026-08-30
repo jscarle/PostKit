@@ -2,10 +2,10 @@ using Microsoft.Extensions.Options;
 
 namespace PostKit.Configuration;
 
-internal sealed class RebasedOptions<TOptions>(IOptionsMonitor<TOptions> monitor) : IOptions<TOptions>
+internal sealed class RebasedOptions<TOptions>(IOptionsMonitor<TOptions> monitor, string? optionsName = null) : IOptions<TOptions>
     where TOptions : class
 {
-    public TOptions Value => monitor.CurrentValue;
+    public TOptions Value => optionsName is null ? monitor.CurrentValue : monitor.Get(optionsName);
 }
 
 internal sealed class RebasedOptionsSnapshot<TOptions>(IOptionsFactory<TOptions> factory, string defaultName) : IOptionsSnapshot<TOptions>

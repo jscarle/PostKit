@@ -438,6 +438,7 @@ internal static partial class ValidationExtensions
         if (metadata is null)
             return null;
 
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (metadata.Name is null)
             return "The outbound message query metadata filter name cannot be null. Set Metadata to null to omit this filter.";
 
@@ -455,6 +456,7 @@ internal static partial class ValidationExtensions
             return
                 $"The outbound message query metadata filter name is invalid. The metadata name is required, must not exceed {MetadataNameMaxLength} characters, and cannot start or end with whitespace. Invalid trailing whitespace {FormatCharacter(metadata.Name[^1])} at index {metadata.Name.Length - 1}.";
 
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (metadata.Value is null)
             return "The outbound message query metadata filter value cannot be null. Set Metadata to null to omit this filter.";
 
@@ -800,9 +802,11 @@ internal static partial class ValidationExtensions
             return null;
 
         if (string.IsNullOrWhiteSpace(auth.Username))
+            // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
             return $"{subject} username cannot be empty or whitespace. Actual length: {auth.Username?.Length ?? 0}.";
 
         if (string.IsNullOrWhiteSpace(auth.Password))
+            // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
             return $"{subject} password cannot be empty or whitespace. Actual length: {auth.Password?.Length ?? 0}.";
 
         return null;
@@ -816,6 +820,7 @@ internal static partial class ValidationExtensions
         for (var index = 0; index < headers.Count; index++)
         {
             var header = headers[index];
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if (header is null)
                 return $"{subject} item {index} cannot be null.";
 

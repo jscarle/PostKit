@@ -9,5 +9,6 @@ internal sealed class ServerListResponse
     public int? TotalCount { get; [UsedImplicitly] init; }
 
     [JsonPropertyName("Servers")]
+    // ReSharper disable once CollectionNeverUpdated.Global
     public List<ServerResponse?>? Servers { get; [UsedImplicitly] init; }
 }

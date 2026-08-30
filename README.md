@@ -103,6 +103,43 @@ builder.Services.AddKeyedPostKit(PostmarkServer.Production, builder.Configuratio
 }
 ```
 
+### Dynamic Configuration
+
+All `AddPostKit` and `AddKeyedPostKit` configuration overloads observe standard .NET configuration reload notifications. This includes configuration resolved from dependency injection and explicitly supplied `IConfiguration` or
+`IConfigurationSection` instances. When a reload-capable provider publishes a change, already-resolved PostKit clients use the refreshed options for subsequent requests. A request already in progress keeps the token selected when that request was
+created.
+
+For example, these registrations watch `PostKit` and `PostKit:Infrastructure`, respectively, when `InfrastructurePostKitKey` has the string value `Infrastructure`:
+
+```csharp
+builder.Services.AddPostKit();
+builder.Services.AddKeyedPostKit(EmailDeliveryConfiguration.InfrastructurePostKitKey);
+```
+
+PostKit observes reload notifications but does not poll or refresh an external configuration source itself. The application must configure and trigger the provider's refresh. For Azure App Configuration in an ASP.NET Core application, the host setup
+can use request-driven refresh:
+
+```csharp
+builder.Configuration.AddAzureAppConfiguration(options =>
+{
+    options.Connect(new Uri(appConfigurationEndpoint), new DefaultAzureCredential())
+        .Select("PostKit:*")
+        .ConfigureRefresh(refreshOptions => refreshOptions.RegisterAll());
+});
+
+builder.Services.AddAzureAppConfiguration();
+builder.Services.AddPostKit();
+builder.Services.AddKeyedPostKit(EmailDeliveryConfiguration.InfrastructurePostKitKey);
+
+var app = builder.Build();
+app.UseAzureAppConfiguration();
+```
+
+The Azure-specific packages and refresh policy remain application dependencies; PostKit does not reference them. Non-web applications can trigger Azure App Configuration through its `IConfigurationRefresher`. Other configuration providers work when
+they update the registered configuration and signal its reload token.
+
+Refreshed values go through the same PostKit options validation as initial values. Invalid refreshed options follow the standard `IOptionsMonitor` validation behavior and do not fall back to the last valid PostKit token.
+
 ### HTTP Resilience And Retry Safety
 
 Postmark does not currently support idempotency keys. Repeating an unsafe request such as `POST /email` can therefore send the same email more than once. Custom `Message-ID` headers and metadata are useful for correlation, but Postmark does not document

@@ -15,11 +15,11 @@ public sealed record TemplateEditParameters
     public string? Subject { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the HTML body content.</summary>
-    public string? HtmlBody { [UsedImplicitly] get; init; }
+    public string? HtmlBody { [UsedImplicitly] get; [UsedImplicitly] init; }
 
     /// <summary>Gets the text body content.</summary>
     public string? TextBody { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the optional layout template alias to apply to a standard template.</summary>
-    public string? LayoutTemplate { [UsedImplicitly] get; init; }
+    public string? LayoutTemplate { [UsedImplicitly] get; [UsedImplicitly] init; }
 }

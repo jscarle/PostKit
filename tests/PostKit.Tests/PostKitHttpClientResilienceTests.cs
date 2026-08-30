@@ -3,7 +3,6 @@ using System.Net.Mime;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http.Resilience;
 using PostKit.Emails;
 using PostKit.Errors;
 using PostKit.Postmark;

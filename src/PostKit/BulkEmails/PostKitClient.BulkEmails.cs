@@ -9,9 +9,9 @@ using PostKit.Postmark.Bulk;
 using PostKit.Postmark.Common;
 using SendBulkEmailModel = PostKit.Postmark.Bulk.SendBulkEmailResponse;
 
+// ReSharper disable once CheckNamespace
 namespace PostKit;
 
-// ReSharper disable once CheckNamespace
 internal sealed partial class PostKitClient
 {
     public async Task<Result<BulkEmailJob>> SendBulkEmailAsync(BulkEmail email, CancellationToken cancellationToken = default)
