@@ -95,7 +95,8 @@ internal sealed partial class PostKitClient
         Result<WebhookResponseModel> response;
         try
         {
-            response = await postmark.PostAsync<WebhookRequestModel, WebhookResponseModel>(PostmarkTokenScope.Server, "/webhooks", webhookRequest, cancellationToken);
+            var endpoint = parameters.Verify.HasValue ? $"/webhooks?verify={(parameters.Verify.Value ? "true" : "false")}" : "/webhooks";
+            response = await postmark.PostAsync<WebhookRequestModel, WebhookResponseModel>(PostmarkTokenScope.Server, endpoint, webhookRequest, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -136,10 +137,28 @@ internal sealed partial class PostKitClient
         if (mappedRequest.IsFailure(out var requestError, out var webhookRequest))
             return Result.Failure<Webhook>(requestError);
 
+        // The live API verifies the submitted Url and Triggers, including for verification-only edits.
+        if (parameters.Verify.HasValue && (parameters.Url is null || parameters.Verify.Value && parameters.Triggers is null))
+        {
+            var currentResult = await GetWebhookAsync(id, cancellationToken);
+            if (currentResult.IsFailure(out var currentError, out var currentWebhook))
+                return Result.Failure<Webhook>(currentError);
+
+            webhookRequest = new WebhookRequestModel
+            {
+                Url = webhookRequest.Url ?? currentWebhook.Url,
+                Verify = webhookRequest.Verify,
+                HttpAuth = webhookRequest.HttpAuth,
+                HttpHeaders = webhookRequest.HttpHeaders,
+                Triggers = webhookRequest.Triggers ?? (parameters.Verify.Value ? CreateWebhookTriggersModel(currentWebhook.Triggers) : null)
+            };
+        }
+
         Result<WebhookResponseModel> response;
         try
         {
-            response = await postmark.PutAsync<WebhookRequestModel, WebhookResponseModel>(PostmarkTokenScope.Server, $"/webhooks/{id}", webhookRequest, cancellationToken);
+            var endpoint = parameters.Verify.HasValue ? $"/webhooks/{id}?verify={(parameters.Verify.Value ? "true" : "false")}" : $"/webhooks/{id}";
+            response = await postmark.PutAsync<WebhookRequestModel, WebhookResponseModel>(PostmarkTokenScope.Server, endpoint, webhookRequest, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -263,6 +282,7 @@ internal sealed partial class PostKitClient
         return Result.Success(new WebhookRequestModel
         {
             Url = parameters.Url,
+            Verify = parameters.Verify,
             MessageStream = parameters.MessageStreamId,
             HttpAuth = CreateWebhookHttpAuthModel(parameters.HttpAuth),
             HttpHeaders = CreateWebhookHeaderModels(parameters.HttpHeaders),
@@ -272,8 +292,8 @@ internal sealed partial class PostKitClient
 
     private static Result<WebhookRequestModel> CreateWebhookRequest(WebhookEditParameters parameters)
     {
-        if (parameters.Url is null && parameters.HttpAuth is null && parameters.HttpHeaders is null && parameters.Triggers is null)
-            return Result.Failure<WebhookRequestModel>("The webhook edit parameters must set Url, HttpAuth, HttpHeaders, or Triggers.");
+        if (parameters.Url is null && parameters.HttpAuth is null && parameters.HttpHeaders is null && parameters.Triggers is null && parameters.Verify is null)
+            return Result.Failure<WebhookRequestModel>("The webhook edit parameters must set Url, HttpAuth, HttpHeaders, Triggers, or Verify.");
 
         var validationError = ValidationExtensions.ValidateWebhookUrl(parameters.Url, "The webhook edit parameters URL");
         if (validationError is not null)
@@ -294,6 +314,7 @@ internal sealed partial class PostKitClient
         return Result.Success(new WebhookRequestModel
         {
             Url = parameters.Url,
+            Verify = parameters.Verify,
             HttpAuth = CreateWebhookHttpAuthModel(parameters.HttpAuth),
             HttpHeaders = CreateWebhookHeaderModels(parameters.HttpHeaders),
             Triggers = CreateWebhookTriggersModel(parameters.Triggers)
@@ -376,7 +397,7 @@ internal sealed partial class PostKitClient
         if (triggers.IsFailure(out var triggersError, out var mappedTriggers))
             return Result.Failure<Webhook>(triggersError);
 
-        return Result.Success(new Webhook(response.Id.Value, response.Url, response.MessageStream, mappedAuth, mappedHeaders, mappedTriggers));
+        return Result.Success(new Webhook(response.Id.Value, response.Url, response.MessageStream, mappedAuth, mappedHeaders, mappedTriggers, response.Status));
     }
 
     private static Result<WebhookHttpAuth?> CreateWebhookHttpAuth(WebhookHttpAuthModel? response, string context)

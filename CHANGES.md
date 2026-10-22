@@ -2,6 +2,19 @@
 
 This file contains PostKit release notes and upgrade guidance. General installation, configuration, and usage documentation remains in the [README](README.md).
 
+## Version 10.4.0 Webhook And Bulk API Additions
+
+Added webhook statistics, explicit webhook verification, and cursor-based bulk request listing. Webhook create/edit parameters accept an optional `Verify` choice; verification failures expose typed per-trigger details through
+`PostmarkError.Verification`. Statistics preserve Postmark's window and metric values, including missing response-time averages as null. Webhook status and trigger names remain open strings where the new endpoints return them.
+
+`IPostKitClient` has three additional members: `GetWebhookStatisticsAsync`, `VerifyWebhookAsync`, and `ListBulkEmailRequestsAsync`. Custom implementations and hand-written test doubles must implement these methods. Existing methods, overloads,
+configuration, and DI registration remain available.
+
+Bulk status supports `Cancelled = 4` while retaining `Failed = 3` and existing failed-submission handling. Optional `ReleasedCount` and `FailedCount` are also retained unchanged in `AdditionalProperties`, including uninterpretable values.
+List entries use `BulkEmailRequestSummary` with a nullable subject; the existing `BulkEmailJob.Subject` and send/status validation contracts are unchanged. See the README for verification outcomes, explicit verification choices, and pagination examples.
+
+Updated package dependencies and test infrastructure, including the security update for `System.Security.Cryptography.Pkcs`.
+
 ## Version 10.3.0 Retry Safety Changes
 
 PostKit now limits automatic `429 Too Many Requests` retries to safe HTTP methods. Unsafe requests such as email submissions are returned to the caller after the first response so the application can decide whether its business operation can be

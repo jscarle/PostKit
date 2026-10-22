@@ -16,4 +16,7 @@ public sealed record WebhookEditParameters
 
     /// <summary>Gets the optional trigger settings.</summary>
     public WebhookTriggers? Triggers { [UsedImplicitly] get; init; }
+
+    /// <summary>Gets whether Postmark tests enabled events before saving. Null preserves Postmark's default of true; false saves an unverified webhook.</summary>
+    public bool? Verify { [UsedImplicitly] get; init; }
 }

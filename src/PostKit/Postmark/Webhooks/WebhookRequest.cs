@@ -5,6 +5,9 @@ namespace PostKit.Postmark.Webhooks;
 
 internal sealed class WebhookRequest
 {
+    [JsonPropertyName("Verify")]
+    public bool? Verify { [UsedImplicitly] get; init; }
+
     [JsonPropertyName("Url")]
     public string? Url { [UsedImplicitly] get; init; }
 

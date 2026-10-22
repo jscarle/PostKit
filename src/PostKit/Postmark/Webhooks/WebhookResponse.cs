@@ -5,6 +5,9 @@ namespace PostKit.Postmark.Webhooks;
 
 internal sealed class WebhookResponse
 {
+    [JsonPropertyName("Status")]
+    public string? Status { get; [UsedImplicitly] init; }
+
     [JsonPropertyName("ID")]
     public long? Id { get; [UsedImplicitly] init; }
 
