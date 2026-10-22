@@ -5,7 +5,7 @@ namespace PostKit.Webhooks;
 /// <summary>Represents a webhook returned from Postmark.</summary>
 public sealed record Webhook
 {
-    internal Webhook(long id, string url, string messageStream, WebhookHttpAuth? httpAuth, IReadOnlyList<WebhookHeader> httpHeaders, WebhookTriggers triggers)
+    internal Webhook(long id, string url, string messageStream, WebhookHttpAuth? httpAuth, IReadOnlyList<WebhookHeader> httpHeaders, WebhookTriggers triggers, string? status = null)
     {
         Id = id;
         Url = url;
@@ -13,6 +13,7 @@ public sealed record Webhook
         HttpAuth = httpAuth;
         HttpHeaders = httpHeaders;
         Triggers = triggers;
+        Status = status;
     }
 
     /// <summary>Gets the webhook ID.</summary>
@@ -32,4 +33,7 @@ public sealed record Webhook
 
     /// <summary>Gets the webhook trigger settings.</summary>
     public WebhookTriggers Triggers { [UsedImplicitly] get; }
+
+    /// <summary>Gets the provider's verification status, when returned. Unknown future status values are preserved.</summary>
+    public string? Status { [UsedImplicitly] get; }
 }

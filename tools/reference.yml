@@ -2,11 +2,23 @@
 openapi: "3.0.3"
 info:
   title: "Postmark API"
-  version: "2026-03-14-bulk-and-bounces-live-validated"
+  version: "2026-10-21-webhook-and-bulk-additions"
   description: "Merged from the live Postmark API Explorer Swagger plus developer
     docs and llms.txt patches, with Bounces API payloads validated against a live
     server on 2026-03-11 and Bulk API submit, status, and validation-error
-    payloads validated against a live server on 2026-03-14."
+    payloads validated against a live server on 2026-03-14. Additive Webhooks API
+    and Bulk API updates follow the developer documentation retrieved on
+    2026-10-21. Standalone webhook verification, verified create/edit, zero-activity
+    statistics, and an empty bulk-list page were live-validated on that date.
+    Live webhook responses omitted Status; zero-activity metrics omitted both
+    response-time averages. The live API uses the verify query parameter and
+    requires Url and enabled Triggers for a verified edit. Verification failures
+    may nest details under Verification, with Id 0 for an unsaved webhook.
+    Nonempty bulk pages, cursors, Cancelled, and optional bulk counters remain
+    documentation-derived and fixture-tested. Existing live-validated bulk
+    submission and status required fields are preserved. Sources:
+    https://postmarkapp.com/developer/api/webhooks-api and
+    https://postmarkapp.com/developer/api/bulk-email."
 servers:
   - url: "https://api.postmarkapp.com"
     description: "Postmark API"
@@ -614,6 +626,40 @@ paths:
       security:
         - serverToken: [ ]
   /email/bulk:
+    get:
+      operationId: "listBulkEmailRequests"
+      summary: "List bulk email requests"
+      description: "One page, newest first. Requires Bulk API approval (error code 14).
+        Only an empty page was live-observed on 2026-10-21; entries and cursors
+        follow the current documentation. Pass cursors back unchanged."
+      tags:
+        - "Email"
+      security:
+        - serverToken: [ ]
+      parameters:
+        - name: "count"
+          in: "query"
+          description: "Positive page size; omit to use Postmark's default. No documented maximum."
+          schema:
+            type: "integer"
+            minimum: 1
+        - name: "paginationKey"
+          in: "query"
+          description: "Opaque next-page cursor. Preserve exactly and URI-escape for transport."
+          schema:
+            type: "string"
+            minLength: 1
+      responses:
+        200:
+          description: "One page; absent PaginationKey means completion."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkEmailRequestPage"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
     post:
       operationId: "sendBulkEmail"
       summary: "Send bulk email"
@@ -2871,6 +2917,13 @@ paths:
         - "Webhooks"
       security:
         - serverToken: [ ]
+      parameters:
+        - name: "verify"
+          in: "query"
+          description: "Live-validated opt-out/opt-in. False saves unverified with delivery paused."
+          schema:
+            type: "boolean"
+            default: true
       requestBody:
         required: true
         content:
@@ -2885,7 +2938,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Webhook"
         422:
-          $ref: "#/components/responses/422"
+          $ref: "#/components/responses/Webhook422"
         500:
           $ref: "#/components/responses/500"
   /webhooks/{id}:
@@ -2928,6 +2981,12 @@ paths:
           description: ""
           schema:
             type: "integer"
+        - name: "verify"
+          in: "query"
+          description: "Defaults to true at Postmark. Verified edits must submit Url and enabled Triggers."
+          schema:
+            type: "boolean"
+            default: true
       requestBody:
         required: true
         content:
@@ -2942,7 +3001,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Webhook"
         422:
-          $ref: "#/components/responses/422"
+          $ref: "#/components/responses/Webhook422"
         500:
           $ref: "#/components/responses/500"
     delete:
@@ -2966,6 +3025,72 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StandardPostmarkResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+  /webhooks/{id}/verify:
+    post:
+      operationId: "verifyWebhook"
+      summary: "Verify each enabled webhook trigger"
+      description: "Bodyless POST. HTTP 200 means the check completed; inspect Success and Results.
+        Live-validated with successful callbacks on 2026-10-21. Do not automatically retry."
+      tags:
+        - "Webhooks"
+      security:
+        - serverToken: [ ]
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+            minimum: 1
+      responses:
+        200:
+          description: "Completed verification, including an overall false result."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/WebhookVerification"
+                  - type: "object"
+                    required: [ "Id" ]
+                    properties:
+                      Id:
+                        type: "integer"
+                        format: "int64"
+                        minimum: 1
+        422:
+          $ref: "#/components/responses/Webhook422"
+        500:
+          $ref: "#/components/responses/500"
+  /webhooks/{id}/statistics:
+    get:
+      operationId: "getWebhookStatistics"
+      summary: "Get webhook delivery statistics"
+      description: "Fixed rolling 24-hour window; no date-range filters. Zero-activity
+        response live-validated on 2026-10-21. Aggregate and per-trigger totals are independent."
+      tags:
+        - "Webhooks"
+      security:
+        - serverToken: [ ]
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+            minimum: 1
+      responses:
+        200:
+          description: "Provider window and metrics."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookStatistics"
         422:
           $ref: "#/components/responses/422"
         500:
@@ -3163,6 +3288,7 @@ components:
             - "Processing"
             - "Completed"
             - "Failed"
+            - "Cancelled"
         SubmittedAt:
           type: "string"
           format: "date-time"
@@ -3172,6 +3298,15 @@ components:
           type: "number"
         Subject:
           type: "string"
+        ReleasedCount:
+          type: "integer"
+          nullable: true
+          minimum: 0
+          description: "Documentation-derived. SDK retains raw extension data even when this optional value is uninterpretable."
+        FailedCount:
+          type: "integer"
+          nullable: true
+          minimum: 0
     BulkEmailSubmitResponse:
       type: "object"
       required:
@@ -3191,6 +3326,7 @@ components:
             - "Failed"
             - "Processing"
             - "Completed"
+            - "Cancelled"
         SubmittedAt:
           type: "string"
           format: "date-time"
@@ -3200,6 +3336,59 @@ components:
           type: "number"
         Subject:
           type: "string"
+        ReleasedCount:
+          type: "integer"
+          nullable: true
+          minimum: 0
+        FailedCount:
+          type: "integer"
+          nullable: true
+          minimum: 0
+    BulkEmailRequestPage:
+      type: "object"
+      required: [ "Requests" ]
+      properties:
+        Requests:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/BulkEmailRequestSummary"
+        PaginationKey:
+          type: "string"
+          nullable: true
+          description: "Opaque cursor; absent when complete."
+    BulkEmailRequestSummary:
+      type: "object"
+      description: "Documentation-derived list entry. Subject is optional; existing send/status schemas retain their live-validated requirements."
+      required: [ "Id", "Status", "SubmittedAt", "TotalMessages", "PercentageCompleted" ]
+      additionalProperties: true
+      properties:
+        Id:
+          type: "string"
+          format: "uuid"
+        Status:
+          type: "string"
+          enum: [ "Accepted", "Processing", "Completed", "Failed", "Cancelled" ]
+        SubmittedAt:
+          type: "string"
+          format: "date-time"
+        TotalMessages:
+          type: "integer"
+          minimum: 0
+        PercentageCompleted:
+          type: "number"
+          minimum: 0
+          maximum: 100
+        Subject:
+          type: "string"
+          nullable: true
+        ReleasedCount:
+          type: "integer"
+          nullable: true
+          minimum: 0
+        FailedCount:
+          type: "integer"
+          nullable: true
+          minimum: 0
     CreateInboundRuleRequest:
       description: ""
       properties:
@@ -4832,6 +5021,10 @@ components:
           type: "string"
         MessageStream:
           type: "string"
+        Status:
+          type: "string"
+          nullable: true
+          description: "Documented verification status, omitted in the live response on 2026-10-21. Preserve future text values."
         HttpAuth:
           $ref: "#/components/schemas/WebhookHttpAuth"
         HttpHeaders:
@@ -4893,6 +5086,10 @@ components:
       properties:
         Url:
           type: "string"
+        Verify:
+          type: "boolean"
+          nullable: true
+          description: "Documented optional flag, default true at Postmark. SDK omits null; explicit choices are also sent as the live-compatible verify query parameter."
         MessageStream:
           type: "string"
         HttpAuth:
@@ -4901,7 +5098,157 @@ components:
           $ref: "#/components/schemas/HeaderCollection"
         Triggers:
           $ref: "#/components/schemas/WebhookTriggers"
+    WebhookVerification:
+      type: "object"
+      required: [ "Url", "Success", "Results", "Message" ]
+      properties:
+        Id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+          minimum: 0
+          description: "Positive for standalone verification. May be omitted, null, or zero on an unsaved create failure; SDK exposes null."
+        Url:
+          type: "string"
+        Success:
+          type: "boolean"
+        Message:
+          type: "string"
+        Results:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/WebhookVerificationTriggerResult"
+    WebhookVerificationTriggerResult:
+      type: "object"
+      required: [ "TriggerType", "Success", "StatusCode", "Message" ]
+      properties:
+        TriggerType:
+          type: "string"
+          description: "Provider event name; future names remain representable."
+        Success:
+          type: "boolean"
+        StatusCode:
+          type: "integer"
+          minimum: 0
+          description: "Zero represents no HTTP response."
+        Message:
+          type: "string"
+    WebhookVerificationError:
+      description: "Code 1364 in ErrorCode or X-PM-ApiErrorCode. Documentation shows flat details; live API also returns a nested Verification object."
+      anyOf:
+        - $ref: "#/components/schemas/WebhookVerification"
+        - type: "object"
+          required: [ "Message", "Verification" ]
+          properties:
+            ErrorCode:
+              type: "integer"
+              enum: [ 1364 ]
+            Message:
+              type: "string"
+            Verification:
+              $ref: "#/components/schemas/WebhookVerification"
+    WebhookStatistics:
+      type: "object"
+      required: [ "WebhookId", "ServerId", "MessageStreamId", "Url", "Statuses", "TimeRange", "Metrics", "MetricsByTrigger" ]
+      properties:
+        WebhookId:
+          type: "integer"
+          format: "int64"
+          minimum: 1
+        ServerId:
+          type: "integer"
+          format: "int64"
+          minimum: 1
+        MessageStreamId:
+          type: "string"
+        Url:
+          type: "string"
+        Statuses:
+          type: "object"
+          additionalProperties:
+            type: "string"
+          description: "Per-trigger status strings. Empty dictionaries and future names/values are valid."
+        TimeRange:
+          $ref: "#/components/schemas/WebhookStatisticsTimeRange"
+        Metrics:
+          $ref: "#/components/schemas/WebhookStatisticsMetrics"
+        MetricsByTrigger:
+          type: "object"
+          additionalProperties:
+            $ref: "#/components/schemas/WebhookStatisticsMetrics"
+    WebhookStatisticsTimeRange:
+      type: "object"
+      required: [ "StartTime", "EndTime", "Hours" ]
+      properties:
+        StartTime:
+          type: "string"
+          format: "date-time"
+          description: "Must not follow EndTime."
+        EndTime:
+          type: "string"
+          format: "date-time"
+        Hours:
+          type: "integer"
+          minimum: 1
+    WebhookStatisticsMetrics:
+      type: "object"
+      required: [ "TotalRequests", "SuccessCount", "FailureCount", "RetryCount", "SuccessRate", "SlowCount", "VerySlowCount" ]
+      properties:
+        TotalRequests:
+          type: "integer"
+          format: "int64"
+          minimum: 0
+        SuccessCount:
+          type: "integer"
+          format: "int64"
+          minimum: 0
+        FailureCount:
+          type: "integer"
+          format: "int64"
+          minimum: 0
+        RetryCount:
+          type: "integer"
+          format: "int64"
+          minimum: 0
+        SuccessRate:
+          type: "number"
+          format: "double"
+          minimum: 0
+          maximum: 100
+        SlowCount:
+          type: "integer"
+          format: "int64"
+          minimum: 0
+        VerySlowCount:
+          type: "integer"
+          format: "int64"
+          minimum: 0
+        AverageTerminalResponseTimeMs:
+          type: "integer"
+          format: "int64"
+          nullable: true
+          minimum: 0
+          description: "Documented integer; live zero-activity responses omit it. SDK exposes null when absent."
+        AverageRetryResponseTimeMs:
+          type: "integer"
+          format: "int64"
+          nullable: true
+          minimum: 0
+          description: "Nullable in the docs; omitted in the live zero-activity response."
   responses:
+    Webhook422:
+      description: "Standard Postmark error, or verification failure with code 1364. Header fallback applies only to webhook mutations and verification."
+      headers:
+        X-PM-ApiErrorCode:
+          schema:
+            type: "integer"
+          description: "Verification failure code 1364 when ErrorCode is absent from the body."
+      content:
+        application/json:
+          schema:
+            anyOf:
+              - $ref: "#/components/schemas/StandardPostmarkResponse"
+              - $ref: "#/components/schemas/WebhookVerificationError"
     422:
       description: "An error was generated due to incorrect use of the API. See the
         Message associated with this response for more information."

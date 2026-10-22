@@ -44,6 +44,9 @@ public interface IPostKitClient
     /// <returns>A result containing the current bulk email request status or error information.</returns>
     Task<Result<BulkEmailJob>> GetBulkEmailStatusAsync(Guid id, CancellationToken cancellationToken = default);
 
+    /// <summary>Lists bulk email requests, newest first. Null count uses Postmark's default; pass the returned opaque pagination key for the next page.</summary>
+    Task<Result<BulkEmailRequestPage>> ListBulkEmailRequestsAsync(int? count = null, string? paginationKey = null, CancellationToken cancellationToken = default);
+
     /// <summary>Gets a page of bounces asynchronously.</summary>
     /// <param name="messageStream">The message stream whose bounces should be queried.</param>
     /// <param name="count">The number of bounces to return.</param>
@@ -268,6 +271,12 @@ public interface IPostKitClient
 
     /// <summary>Gets a webhook asynchronously.</summary>
     Task<Result<Webhook>> GetWebhookAsync(long id, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets delivery statistics for a webhook over Postmark's rolling window.</summary>
+    Task<Result<WebhookStatistics>> GetWebhookStatisticsAsync(long id, CancellationToken cancellationToken = default);
+
+    /// <summary>Tests the webhook's enabled events. A successful request may contain Success = false when a callback fails verification.</summary>
+    Task<Result<WebhookVerification>> VerifyWebhookAsync(long id, CancellationToken cancellationToken = default);
 
     /// <summary>Creates a webhook asynchronously.</summary>
     Task<Result<Webhook>> CreateWebhookAsync(WebhookCreateParameters parameters, CancellationToken cancellationToken = default);

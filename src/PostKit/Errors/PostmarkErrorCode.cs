@@ -18,6 +18,9 @@ public enum PostmarkErrorCode
     /// <summary>Invalid pagination key. The pagination key provided in the request was invalid.</summary>
     InvalidPaginationKey = 13,
 
+    /// <summary>The endpoint requires account approval. Contact Postmark support to enable access.</summary>
+    EndpointApprovalRequired = 14,
+
     /// <summary>Maintenance. The Postmark API is offline for maintenance.</summary>
     Maintenance = 100,
 
@@ -280,5 +283,8 @@ public enum PostmarkErrorCode
     InvalidDataRemovalId = 1301,
 
     /// <summary>No Data Removal access. You lack permission for these requests.</summary>
-    NoDataRemovalAccess = 1302
+    NoDataRemovalAccess = 1302,
+
+    /// <summary>One or more enabled webhook triggers failed endpoint verification.</summary>
+    WebhookVerificationFailed = 1364
 }

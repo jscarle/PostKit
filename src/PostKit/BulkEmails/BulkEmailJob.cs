@@ -7,7 +7,8 @@ namespace PostKit.BulkEmails;
 /// <summary>Represents the status returned for a Postmark bulk email request.</summary>
 public sealed record BulkEmailJob
 {
-    internal BulkEmailJob(Guid id, BulkEmailStatus status, DateTimeOffset submittedAt, int totalMessages, double percentageCompleted, string subject, ReadOnlyDictionary<string, JsonElement>? additionalProperties = null)
+    internal BulkEmailJob(Guid id, BulkEmailStatus status, DateTimeOffset submittedAt, int totalMessages, double percentageCompleted, string subject, ReadOnlyDictionary<string, JsonElement>? additionalProperties = null,
+        int? releasedCount = null, int? failedCount = null)
     {
         Id = id;
         Status = status;
@@ -16,6 +17,8 @@ public sealed record BulkEmailJob
         PercentageCompleted = percentageCompleted;
         Subject = subject;
         AdditionalProperties = additionalProperties;
+        ReleasedCount = releasedCount;
+        FailedCount = failedCount;
     }
 
     /// <summary>Gets the identifier assigned to the bulk email request.</summary>
@@ -38,4 +41,10 @@ public sealed record BulkEmailJob
 
     /// <summary>Gets any additional server-provided fields returned for the bulk request.</summary>
     public IReadOnlyDictionary<string, JsonElement>? AdditionalProperties { [UsedImplicitly] get; }
+
+    /// <summary>Gets the released count when supplied as a nonnegative integer. The original field is also preserved in AdditionalProperties.</summary>
+    public int? ReleasedCount { [UsedImplicitly] get; }
+
+    /// <summary>Gets the failed count when supplied as a nonnegative integer. The original field is also preserved in AdditionalProperties.</summary>
+    public int? FailedCount { [UsedImplicitly] get; }
 }

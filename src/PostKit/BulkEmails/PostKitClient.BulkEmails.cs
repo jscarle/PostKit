@@ -133,7 +133,9 @@ internal sealed partial class PostKitClient
             return Result.Failure<BulkEmailJob>("Subject was not returned from the Postmark Bulk API.");
 
         var clonedAdditionalProperties = CloneAdditionalProperties(response.AdditionalProperties);
-        var bulkEmailJob = new BulkEmailJob(mapped.Id, mapped.Status, mapped.SubmittedAt, response.TotalMessages.Value, response.PercentageCompleted.Value, response.Subject, clonedAdditionalProperties);
+        var releasedCount = GetOptionalBulkEmailCount(response.AdditionalProperties, "ReleasedCount");
+        var failedCount = GetOptionalBulkEmailCount(response.AdditionalProperties, "FailedCount");
+        var bulkEmailJob = new BulkEmailJob(mapped.Id, mapped.Status, mapped.SubmittedAt, response.TotalMessages.Value, response.PercentageCompleted.Value, response.Subject, clonedAdditionalProperties, releasedCount, failedCount);
 
         return Result.Success(bulkEmailJob);
     }
@@ -158,6 +160,7 @@ internal sealed partial class PostKitClient
             "Processing" => BulkEmailStatus.Processing,
             "Completed" => BulkEmailStatus.Completed,
             "Failed" => BulkEmailStatus.Failed,
+            "Cancelled" => BulkEmailStatus.Cancelled,
             _ => (BulkEmailStatus?)null
         };
 

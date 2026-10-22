@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json.Nodes;
 using PostKit.Postmark.Email;
+using PostKit.Webhooks;
 
 namespace PostKit.Errors;
 
@@ -19,10 +20,11 @@ public sealed class PostmarkError : HttpError
     {
     }
 
-    internal PostmarkError(HttpStatusCode statusCode, int errorCode, string message, JsonNode? errors, TimeSpan? retryAfter = null) : base(statusCode, message, retryAfter)
+    internal PostmarkError(HttpStatusCode statusCode, int errorCode, string message, JsonNode? errors, TimeSpan? retryAfter = null, WebhookVerification? verification = null) : base(statusCode, message, retryAfter)
     {
         ErrorCode = (PostmarkErrorCode)errorCode;
         Errors = errors?.DeepClone();
+        Verification = verification;
     }
 
     /// <summary>The error code returned by the Postmark API.</summary>
@@ -30,4 +32,7 @@ public sealed class PostmarkError : HttpError
 
     /// <summary>Additional field-level error details returned by the Postmark API when available.</summary>
     public JsonNode? Errors { get; }
+
+    /// <summary>Gets per-trigger details when webhook creation, editing, or verification fails with error code 1364.</summary>
+    public WebhookVerification? Verification { get; }
 }

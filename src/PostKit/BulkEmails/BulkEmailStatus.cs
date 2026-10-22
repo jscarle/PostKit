@@ -13,5 +13,8 @@ public enum BulkEmailStatus
     Completed,
 
     /// <summary>The bulk email request failed during processing.</summary>
-    Failed
+    Failed,
+
+    /// <summary>The bulk email request was cancelled.</summary>
+    Cancelled = 4
 }

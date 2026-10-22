@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Mime;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using JetBrains.Annotations;
@@ -10,6 +11,7 @@ using PostKit.Configuration;
 using PostKit.Errors;
 using PostKit.Postmark.Common;
 using PostKit.Postmark.Email;
+using PostKit.Postmark.Webhooks;
 
 namespace PostKit.Postmark;
 
@@ -338,6 +340,62 @@ internal sealed partial class PostmarkClient : IPostmarkClient
 
         try
         {
+            if (strict && IsWebhookVerificationOperation(method, endpoint))
+            {
+                int? headerErrorCode = null;
+                if (responseMessage.Headers.TryGetValues("X-PM-ApiErrorCode", out var values) &&
+                    int.TryParse(values.FirstOrDefault(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedCode))
+                    headerErrorCode = parsedCode;
+
+                using var document = JsonDocument.Parse(receivedContent);
+                int? bodyErrorCode = null;
+                var hasBodyErrorCode = false;
+                var hasVerificationFields = false;
+                JsonElement? verificationElement = null;
+                if (document.RootElement.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var property in document.RootElement.EnumerateObject())
+                    {
+                        if (string.Equals(property.Name, "ErrorCode", StringComparison.OrdinalIgnoreCase))
+                        {
+                            hasBodyErrorCode = true;
+                            if (property.Value.ValueKind == JsonValueKind.Number && property.Value.TryGetInt32(out var code))
+                                bodyErrorCode = code;
+                        }
+                        if (string.Equals(property.Name, "Success", StringComparison.OrdinalIgnoreCase) || string.Equals(property.Name, "Results", StringComparison.OrdinalIgnoreCase))
+                            hasVerificationFields = true;
+                        if (string.Equals(property.Name, "Verification", StringComparison.OrdinalIgnoreCase))
+                            verificationElement = property.Value;
+                    }
+                }
+
+                var errorCode = hasBodyErrorCode ? bodyErrorCode : headerErrorCode;
+                if (errorCode == (int)PostmarkErrorCode.WebhookVerificationFailed && (hasVerificationFields || verificationElement.HasValue || !hasBodyErrorCode))
+                {
+                    var verificationPayload = verificationElement ?? document.RootElement;
+                    var verificationResponse = verificationPayload.Deserialize<WebhookVerificationResponse>(PostmarkConfiguration.JsonSerializerOptions);
+                    if (verificationResponse is null)
+                    {
+                        var invalidResponse = new PostmarkInvalidResponseError(method, endpoint, "Verification must contain an object with per-trigger results.", responseMessage.StatusCode);
+                        return Result.Failure<PostmarkResponse?>(invalidResponse);
+                    }
+                    var mappedVerification = verificationResponse.ToVerification(false);
+                    if (mappedVerification.IsFailure(out var mappingError, out var verification))
+                    {
+                        var invalidResponse = new PostmarkInvalidResponseError(method, endpoint, mappingError.Message, responseMessage.StatusCode);
+                        return Result.Failure<PostmarkResponse?>(invalidResponse);
+                    }
+
+                    var standardError = hasBodyErrorCode ? JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions) : null;
+                    var envelope = verificationElement.HasValue && !hasBodyErrorCode
+                        ? document.RootElement.Deserialize<WebhookVerificationResponse>(PostmarkConfiguration.JsonSerializerOptions)
+                        : verificationResponse;
+                    var verificationError = new PostmarkError(responseMessage.StatusCode, errorCode.Value, standardError?.Message ?? envelope?.Message ?? verification.Message, standardError?.Errors ?? envelope?.Errors,
+                        GetRetryAfter(responseMessage), verification);
+                    return Result.Failure<PostmarkResponse?>(verificationError);
+                }
+            }
+
             var response = JsonSerializer.Deserialize<PostmarkResponse>(receivedContent, PostmarkConfiguration.JsonSerializerOptions);
             if (response is null && strict)
             {
@@ -356,6 +414,22 @@ internal sealed partial class PostmarkClient : IPostmarkClient
             var error = new PostmarkInvalidResponseError(method, endpoint, "The error response JSON could not be deserialized as a Postmark error.", responseMessage.StatusCode, exception);
             return Result.Failure<PostmarkResponse?>(error);
         }
+    }
+
+    private static bool IsWebhookVerificationOperation(HttpMethod method, string endpoint)
+    {
+        var queryIndex = endpoint.IndexOf('?', StringComparison.Ordinal);
+        var path = queryIndex < 0 ? endpoint : endpoint[..queryIndex];
+        if (method == HttpMethod.Post && string.Equals(path, "/webhooks", StringComparison.Ordinal))
+            return true;
+
+        var segments = path.Split('/');
+        if (segments.Length is not (3 or 4) || !string.Equals(segments[1], "webhooks", StringComparison.Ordinal) ||
+            !long.TryParse(segments[2], NumberStyles.None, CultureInfo.InvariantCulture, out var id) || id <= 0)
+            return false;
+
+        return segments.Length == 3 && method == HttpMethod.Put ||
+               segments.Length == 4 && method == HttpMethod.Post && string.Equals(segments[3], "verify", StringComparison.Ordinal);
     }
 
     private TimeSpan? GetRetryAfter(HttpResponseMessage responseMessage)

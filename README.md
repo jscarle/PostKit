@@ -203,7 +203,7 @@ PostKit uses a fluent builder pattern with the following capabilities:
 - **Display Names**: Address/display-name overloads are address-first, for example `.From("sender@example.com", "Sender Name")`
 - **Multiple Recipients**: Repeat `To()`, `Cc()`, `Bcc()`, or `ReplyTo()` to add additional recipients
 - **Templates**: Send templated emails by template ID or alias, including in batches
-- **Bulk Email API**: Submit broadcast bulk email jobs and poll their processing status
+- **Bulk Email API**: Submit broadcast bulk email jobs, list requests with cursor pagination, and inspect processing status and outcome counters
 - **Suppressions API**: Query, create, and delete message stream suppressions
 - **Validation**: Builder validation covers required fields, recipient counts, headers, metadata, message streams, template/body exclusivity, and size limits. Postmark still performs final sender and recipient validation
 
@@ -428,6 +428,31 @@ if (result.IsFailure(out var error, out _) && error is BulkEmailValidationError 
 }
 ```
 
+List bulk requests one page at a time. Pass `PaginationKey` back unchanged; a missing key means there are no more pages. Omit `count` to use Postmark's default, or supply any positive count.
+
+```csharp
+string? paginationKey = null;
+do
+{
+    var pageResult = await _postKitClient.ListBulkEmailRequestsAsync(count: 20, paginationKey: paginationKey);
+    if (pageResult.IsFailure(out var error, out var page))
+    {
+        Console.WriteLine(error.Message);
+        break;
+    }
+
+    foreach (var request in page.Requests)
+        Console.WriteLine($"{request.Id}: {request.Status}, released={request.ReleasedCount}, failed={request.FailedCount}");
+
+    paginationKey = page.PaginationKey;
+} while (paginationKey is not null);
+```
+
+List entries use `BulkEmailRequestSummary`, whose `Subject` may be null. Existing send/status methods still return `BulkEmailJob` with their existing validation and required subject.
+Both models expose nullable `ReleasedCount` and `FailedCount`. Released messages have entered the sending pipeline; they may still bounce later. Missing, null, or uninterpretable counters remain null,
+and their raw JSON entries remain available in `AdditionalProperties`. `BulkEmailStatus.Cancelled = 4` is additive; `Accepted = 0`, `Processing = 1`, `Completed = 2`, and `Failed = 3` retain their values and behavior.
+Bulk endpoints require Postmark approval; code `14` is exposed as `PostmarkErrorCode.EndpointApprovalRequired`.
+
 ### Bounces
 
 ```csharp
@@ -620,6 +645,73 @@ var signatures = await _postKitClient.ListSenderSignaturesAsync();
 
 Template CRUD, webhooks, inbound rules, stats, and message streams use server API tokens. `PushTemplatesAsync`, server management by ID, domains, sender signatures, and data-removal calls use Postmark account-level endpoints and require
 `PostKit:AccountApiToken`.
+
+### Webhook verification and statistics
+
+```csharp
+using PostKit.Errors;
+using PostKit.Webhooks;
+
+var createResult = await _postKitClient.CreateWebhookAsync(new WebhookCreateParameters
+{
+    Url = "https://example.com/postmark/webhook",
+    Verify = false,
+    Triggers = new WebhookTriggers { Delivery = new WebhookBasicTrigger { Enabled = true } },
+});
+
+if (createResult.IsSuccess(out var webhook))
+{
+    var verificationResult = await _postKitClient.VerifyWebhookAsync(webhook.Id);
+    if (verificationResult.IsSuccess(out var verification))
+    {
+        Console.WriteLine($"Passed: {verification.Success}; {verification.Message}");
+        foreach (var trigger in verification.Results)
+            Console.WriteLine($"{trigger.TriggerType}: {trigger.Success}, HTTP {trigger.StatusCode}, {trigger.Message}");
+    }
+
+    var statisticsResult = await _postKitClient.GetWebhookStatisticsAsync(webhook.Id);
+    if (statisticsResult.IsSuccess(out var statistics))
+        Console.WriteLine($"{statistics.TimeRange.StartTime:o}–{statistics.TimeRange.EndTime:o}: {statistics.Metrics.SuccessRate}%");
+}
+else if (createResult.IsFailure(out var error, out _) && error is PostmarkError { Verification: { } details })
+{
+    Console.WriteLine($"{error.Message}: {details.Message}");
+    foreach (var trigger in details.Results)
+        Console.WriteLine($"{trigger.TriggerType}: {trigger.StatusCode}, {trigger.Message}");
+}
+```
+
+`WebhookCreateParameters.Verify` and `WebhookEditParameters.Verify` default to null: PostKit omits the field and preserves the existing request shape. Postmark currently defaults verification to true.
+Set true to verify while saving, or false to save an unverified webhook; event delivery remains paused until verification succeeds. PostKit sends explicit choices in JSON and the `verify` query parameter for compatibility with the live API.
+A verification-only edit is valid. When an explicit verification choice needs the current URL or enabled triggers, PostKit retrieves the webhook before submitting the edit. Supplying both avoids that lookup.
+
+HTTP 200 means verification ran; the successful result can still contain `Success = false`. Inspect its summary and every trigger result. A status code of zero means no HTTP response was received.
+Create/edit failures with code `PostmarkErrorCode.WebhookVerificationFailed` (1364) expose typed `PostmarkError.Verification` details as well as the HTTP status and error summary. An unsaved webhook has no verification ID.
+Webhook `Status` is nullable for older responses, and future status and trigger names are preserved as strings. Verification and webhook mutations are never automatically retried.
+
+Statistics expose Postmark's fixed rolling window without date filters. Counts and millisecond averages use 64-bit integers; both response-time averages are nullable because the live API omits them when there are no observations.
+Empty trigger dictionaries and zero activity are valid. Collections are owned and read-only, and trigger dictionaries use ordinal keys. The provider's aggregate and per-trigger values are preserved independently.
+See the [Webhooks API documentation](https://postmarkapp.com/developer/api/webhooks-api) and [bulk pagination documentation](https://postmarkapp.com/developer/api/bulk-email#list-bulk-api-requests).
+
+Custom implementations and hand-written test doubles of `IPostKitClient` must implement the three additional members: `GetWebhookStatisticsAsync`, `VerifyWebhookAsync`, and `ListBulkEmailRequestsAsync`.
+Existing SDK methods, overloads, configuration, and DI registration remain available.
+
+### Opt-in tests for the new endpoints
+
+`NewApiIntegrationTests` runs only when the process-local `POSTKIT_RUN_LIVE_API_TESTS` is `1`. Supply `POSTKIT_LIVE_ACCOUNT_TOKEN` and `POSTKIT_LIVE_SERVER_TOKEN` through the test process environment.
+The fixture uses the account token read-only to match the server token to `PostKit Testing` or `PostKit Alternate Testing`, then checks the server ID and exact name before server requests.
+Only after explicit operator authorization may `POSTKIT_LIVE_AUTHORIZED_SERVER_NAME` name an additional test server for that run. Never use it to bypass a server restriction without approval.
+Set `POSTKIT_LIVE_WEBHOOK_URL` to an inbox receiving endpoint you control. The fixture snapshots webhook IDs, tracks its creations, deletes only those resources, and checks cleanup even after failures.
+
+Run only the new fixture, leaving the broader live integration suite opt-in separately:
+
+```powershell
+dotnet test tests/PostKit.IntegrationTests/PostKit.IntegrationTests.csproj --configuration Release --framework net10.0 --filter FullyQualifiedName~NewApiIntegrationTests --logger "console;verbosity=detailed"
+```
+
+Bulk pagination uses existing jobs. If necessary, optional process-local `POSTKIT_LIVE_FROM_EMAIL` and `POSTKIT_LIVE_TO_EMAIL` may identify established test fixtures; the test submits at most two one-recipient broadcast jobs.
+Without sufficient jobs or configured addresses, pagination and status/counter observations are reported as unverified live coverage. Approval denial is a skip, not a live pass. Negative verification cases use local HTTP fixtures.
+Keep credentials out of files, command-line arguments, logs, and artifacts.
 
 ### Suppressions
 
@@ -859,8 +951,9 @@ The following tables track development progress and map the different Postmark A
 
 |   | Endpoint                                                                                                                                           | Implementation                           |
 |---|----------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------|
-| ✅ | [Send bulk emails BETA](https://postmarkapp.com/developer/api/bulk-email#send-bulk-emails)                                                         | `IPostKitClient.SendBulkEmailAsync`      |
-| ✅ | [Get the status/details of a bulk API request BETA](https://postmarkapp.com/developer/api/bulk-email#get-the-status-details-of-a-bulk-api-request) | `IPostKitClient.GetBulkEmailStatusAsync` |
+| ✅ | [Send bulk emails](https://postmarkapp.com/developer/api/bulk-email#send-bulk-emails)                                                         | `IPostKitClient.SendBulkEmailAsync`      |
+| ✅ | [Get the status/details of a bulk API request](https://postmarkapp.com/developer/api/bulk-email#get-the-status-details-of-a-bulk-api-request) | `IPostKitClient.GetBulkEmailStatusAsync` |
+| ✅ | [List bulk API requests](https://postmarkapp.com/developer/api/bulk-email#list-bulk-api-requests)                                             | `IPostKitClient.ListBulkEmailRequestsAsync` |
 
 ---
 
@@ -1014,6 +1107,8 @@ The following tables track development progress and map the different Postmark A
 | ✅ | [Create a webhook](https://postmarkapp.com/developer/api/webhooks-api#create-a-webhook) | `IPostKitClient.CreateWebhookAsync` |
 | ✅ | [Edit a webhook](https://postmarkapp.com/developer/api/webhooks-api#edit-a-webhook)     | `IPostKitClient.EditWebhookAsync`   |
 | ✅ | [Delete a webhook](https://postmarkapp.com/developer/api/webhooks-api#delete-a-webhook) | `IPostKitClient.DeleteWebhookAsync` |
+| ✅ | [Verify a webhook](https://postmarkapp.com/developer/api/webhooks-api#verify-a-webhook) | `IPostKitClient.VerifyWebhookAsync` |
+| ✅ | [Get webhook statistics](https://postmarkapp.com/developer/api/webhooks-api#get-webhook-statistics) | `IPostKitClient.GetWebhookStatisticsAsync` |
 
 ---
 

@@ -4,6 +4,7 @@ using PostKit.BulkEmails;
 using PostKit.Emails;
 using PostKit.Messages;
 using PostKit.Suppressions;
+using PostKit.Webhooks;
 
 namespace PostKit.Tests;
 
@@ -24,6 +25,13 @@ public class PostKitClientResponseModelConstructorTests
             typeof(BounceDump),
             typeof(BounceActivation),
             typeof(BulkEmailJob),
+            typeof(BulkEmailRequestPage),
+            typeof(BulkEmailRequestSummary),
+            typeof(WebhookStatistics),
+            typeof(WebhookStatisticsTimeRange),
+            typeof(WebhookStatisticsMetrics),
+            typeof(WebhookVerification),
+            typeof(WebhookVerificationTriggerResult),
             typeof(OutboundMessagePage),
             typeof(OutboundMessage),
             typeof(OutboundMessageDetails),
