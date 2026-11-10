@@ -2,6 +2,39 @@
 
 This file contains PostKit release notes and upgrade guidance. General installation, configuration, and usage documentation remains in the [README](README.md).
 
+## Version 11.0.1 API Accuracy And Usability
+
+Added `GetOutboundReadTimeStatsAsync` for `/stats/outbound/opens/readTimes`, with owned read-only totals and daily counts keyed by provider bucket names. Custom `IPostKitClient` implementations and hand-written test doubles must add this member.
+Statistics accept live-observed empty series and omitted zero categories without deriving aggregate values from daily values. Overview statistics expose `WithReadTimeRecorded`.
+
+Webhook edits validate before reading, merge changes with the current configuration, preserve omitted settings, and clear headers only for an explicit empty collection. This adds a GET and is not atomic with the update. Returned statuses are excluded from mutations.
+Layout-template edits without a subject read the existing type and apply the appropriate validation. Failed or cancelled reads prevent updates. Mutations retain their no-automatic-retry behavior.
+
+Added `DisableOpenTracking()` to composed/templated ordinary and bulk builders. Open webhook and REST event results expose optional `TimeSpan? ReadTime`. Missing outbound-message and bounce tags are preserved as null.
+Bulk submission/status responses reject an empty returned request ID or non-finite/out-of-range completion percentage. Existing `Failed = 3`, `Cancelled = 4`, validation errors, required job subject, optional counters, and extension data remain supported.
+Fresh composed/templated sandbox observations did not establish a nullable job subject or required counters across all applicable response shapes; those proposed changes remain pending live evidence.
+
+### Property migration
+
+Recompile callers and replace string comparisons or assignments with the corresponding enum values:
+
+| Property | Current type |
+| --- | --- |
+| `Webhook.Status`, each webhook trigger's `Status` | `WebhookVerificationStatus?` (`Verified`, `Unverified`) |
+| `WebhookVerificationTriggerResult.TriggerType` | `WebhookTriggerType` |
+| `WebhookStatistics.Statuses` | `IReadOnlyDictionary<WebhookTriggerType, WebhookVerificationStatus>` |
+| `WebhookStatistics.MetricsByTrigger` | `IReadOnlyDictionary<WebhookTriggerType, WebhookStatisticsMetrics>` |
+| `MessageTrackingEvent.Platform`, open/click webhook `Platform`, `MessageTrackingQuery.Platform` | `MessagePlatform?` (`WebMail`, `Desktop`, `Mobile`, `Unknown`) |
+| `OutboundMessageEventDetails.ClickLocation` | `LinkClickLocation?` (`Html`, `Text`) |
+| `MessageClick.ClickLocation`, `ClickWebhookMessage.ClickLocation` | `LinkClickLocation` (required; missing/null values are rejected) |
+| `OutboundMessageEventDetails.BounceId` | `long?` |
+| `OutboundMessageEventDetails.SuppressSending` | `bool?` |
+| `OutboundMessageEventDetails.Origin` | `SuppressionOrigin?` |
+| Outbound-message and bounce `Tag` | `string?` |
+
+The new enums preserve current Postmark wire strings internally. Unrecognized values produce actionable failures with the original value and the repository issue-reporting URL; `MessagePlatform.Unknown` remains a valid provider category.
+`OutboundMessageEventDetails.Values` retains provider details for diagnostics. No duplicate string properties were added. See the README's contract-evidence notes for live versus fixture/source-derived coverage.
+
 ## Version 11.0.0 .NET 11 Support
 
 Added a `net11.0` target alongside `net8.0`, `net9.0`, and `net10.0`. Building the repository requires the stable .NET 11 SDK selected by `global.json`.

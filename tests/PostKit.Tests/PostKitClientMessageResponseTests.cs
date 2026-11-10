@@ -229,7 +229,7 @@ public class PostKitClientMessageResponseTests
         Assert.Equal(OutboundMessageEventType.LinkClicked, clicked.Type);
         Assert.Equal("Tracked link was clicked from the HTMLBody.", clicked.Details.Summary);
         Assert.Equal("https://example.com/a/path/to/the/future?queryValue=1&queryValue=2", clicked.Details.Link);
-        Assert.Equal("HTML", clicked.Details.ClickLocation);
+        Assert.Equal(LinkClickLocation.Html, clicked.Details.ClickLocation);
     }
 
     [Fact]

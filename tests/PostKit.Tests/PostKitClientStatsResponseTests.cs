@@ -32,6 +32,7 @@ public class PostKitClientStatsResponseTests
                            "UniqueLinksClicked": 30,
                            "TotalClicks": 72,
                            "WithClientRecorded": 14,
+                           "WithReadTimeRecorded": 8,
                            "WithPlatformRecorded": 10
                          }
                          """
@@ -71,17 +72,17 @@ public class PostKitClientStatsResponseTests
     {
         var responses = new Dictionary<string, string>
         {
-            ["/stats/outbound/sends"] = """{ "Days": [], "Sent": 0 }""",
-            ["/stats/outbound/bounces"] = """{ "Days": [], "HardBounce": 0, "SMTPApiError": 0, "SoftBounce": 0, "Transient": 0 }""",
-            ["/stats/outbound/spam"] = """{ "Days": [], "SpamComplaint": 0 }""",
-            ["/stats/outbound/tracked"] = """{ "Days": [], "Tracked": 0 }""",
-            ["/stats/outbound/opens"] = """{ "Days": [], "Opens": 0, "Unique": 0 }""",
-            ["/stats/outbound/opens/platforms"] = """{ "Days": [], "Desktop": 0, "Mobile": 0, "Unknown": 0, "WebMail": 0 }""",
-            ["/stats/outbound/opens/emailclients"] = """{ "Days": [], "Apple Mail": 0 }""",
-            ["/stats/outbound/clicks"] = """{ "Days": [], "Clicks": 0, "Unique": 0 }""",
-            ["/stats/outbound/clicks/browserfamilies"] = """{ "Days": [], "Google Chrome": 0 }""",
-            ["/stats/outbound/clicks/platforms"] = """{ "Days": [], "Desktop": 0, "Mobile": 0, "Unknown": 0 }""",
-            ["/stats/outbound/clicks/location"] = """{ "Days": [], "HTML": 0, "Text": 0 }"""
+            ["/stats/outbound/sends"] = """{ "Days": [] }""",
+            ["/stats/outbound/bounces"] = """{ "Days": [] }""",
+            ["/stats/outbound/spam"] = """{ "Days": [] }""",
+            ["/stats/outbound/tracked"] = """{ "Days": [] }""",
+            ["/stats/outbound/opens"] = """{ "Days": [] }""",
+            ["/stats/outbound/opens/platforms"] = """{ "Days": [] }""",
+            ["/stats/outbound/opens/emailclients"] = """{ "Days": [] }""",
+            ["/stats/outbound/clicks"] = """{ "Days": [] }""",
+            ["/stats/outbound/clicks/browserfamilies"] = """{ "Days": [] }""",
+            ["/stats/outbound/clicks/platforms"] = """{ "Days": [] }""",
+            ["/stats/outbound/clicks/location"] = """{ "Days": [] }"""
         };
         var postmark = new RecordingPostmarkClient(responses);
         var client = new PostKitClient(postmark, new TestLogger());

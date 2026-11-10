@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+using JetBrains.Annotations;
 
 namespace PostKit.Stats;
 
@@ -49,6 +49,9 @@ public sealed record OutboundOverviewStats
 
     /// <summary>Gets the count of messages with client data recorded.</summary>
     public required int WithClientRecorded { [UsedImplicitly] get; init; }
+
+    /// <summary>Gets the count of messages with reading-time data recorded.</summary>
+    public required int WithReadTimeRecorded { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the count of messages with platform data recorded.</summary>
     public required int WithPlatformRecorded { [UsedImplicitly] get; init; }

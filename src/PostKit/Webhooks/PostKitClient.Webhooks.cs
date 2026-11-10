@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using PostKit.Common;
 using PostKit.Errors;
 using PostKit.Postmark;
+using PostKit.Postmark.Common;
 using PostKit.Webhooks;
 using WebhookBasicTriggerModel = PostKit.Postmark.Webhooks.WebhookBasicTriggerModel;
 using WebhookContentTriggerModel = PostKit.Postmark.Webhooks.WebhookContentTriggerModel;
@@ -137,22 +138,28 @@ internal sealed partial class PostKitClient
         if (mappedRequest.IsFailure(out var requestError, out var webhookRequest))
             return Result.Failure<Webhook>(requestError);
 
-        // The live API verifies the submitted Url and Triggers, including for verification-only edits.
-        if (parameters.Verify.HasValue && (parameters.Url is null || parameters.Verify.Value && parameters.Triggers is null))
-        {
-            var currentResult = await GetWebhookAsync(id, cancellationToken);
-            if (currentResult.IsFailure(out var currentError, out var currentWebhook))
-                return Result.Failure<Webhook>(currentError);
+        // Postmark verifies the submitted configuration, so partial edits need a complete snapshot.
+        var currentResult = await GetWebhookAsync(id, cancellationToken);
+        if (currentResult.IsFailure(out var currentError, out var currentWebhook))
+            return Result.Failure<Webhook>(currentError);
 
-            webhookRequest = new WebhookRequestModel
-            {
-                Url = webhookRequest.Url ?? currentWebhook.Url,
-                Verify = webhookRequest.Verify,
-                HttpAuth = webhookRequest.HttpAuth,
-                HttpHeaders = webhookRequest.HttpHeaders,
-                Triggers = webhookRequest.Triggers ?? (parameters.Verify.Value ? CreateWebhookTriggersModel(currentWebhook.Triggers) : null)
-            };
-        }
+        var mergedTriggers = new WebhookTriggers
+        {
+            Open = parameters.Triggers?.Open ?? currentWebhook.Triggers.Open,
+            Click = parameters.Triggers?.Click ?? currentWebhook.Triggers.Click,
+            Delivery = parameters.Triggers?.Delivery ?? currentWebhook.Triggers.Delivery,
+            Bounce = parameters.Triggers?.Bounce ?? currentWebhook.Triggers.Bounce,
+            SpamComplaint = parameters.Triggers?.SpamComplaint ?? currentWebhook.Triggers.SpamComplaint,
+            SubscriptionChange = parameters.Triggers?.SubscriptionChange ?? currentWebhook.Triggers.SubscriptionChange
+        };
+        webhookRequest = new WebhookRequestModel
+        {
+            Url = webhookRequest.Url ?? currentWebhook.Url,
+            Verify = webhookRequest.Verify,
+            HttpAuth = webhookRequest.HttpAuth ?? CreateWebhookHttpAuthModel(currentWebhook.HttpAuth),
+            HttpHeaders = webhookRequest.HttpHeaders ?? CreateWebhookHeaderModels(currentWebhook.HttpHeaders),
+            Triggers = CreateWebhookTriggersModel(mergedTriggers)
+        };
 
         Result<WebhookResponseModel> response;
         try
@@ -397,7 +404,16 @@ internal sealed partial class PostKitClient
         if (triggers.IsFailure(out var triggersError, out var mappedTriggers))
             return Result.Failure<Webhook>(triggersError);
 
-        return Result.Success(new Webhook(response.Id.Value, response.Url, response.MessageStream, mappedAuth, mappedHeaders, mappedTriggers, response.Status));
+        WebhookVerificationStatus? status = null;
+        if (response.Status is not null)
+        {
+            var statusResult = WebhookVerificationStatusJsonConverter.FromPostmark(response.Status);
+            if (statusResult.IsFailure(out var statusError, out var mappedStatus))
+                return Result.Failure<Webhook>(statusError);
+            status = mappedStatus;
+        }
+
+        return Result.Success(new Webhook(response.Id.Value, response.Url, response.MessageStream, mappedAuth, mappedHeaders, mappedTriggers, status));
     }
 
     private static Result<WebhookHttpAuth?> CreateWebhookHttpAuth(WebhookHttpAuthModel? response, string context)
@@ -483,7 +499,16 @@ internal sealed partial class PostKitClient
         if (response.Enabled is null)
             return Result.Failure<WebhookBasicTrigger?>($"{propertyName}.Enabled was not returned from the Postmark Webhooks API for {context}.");
 
-        return Result.Success<WebhookBasicTrigger?>(new WebhookBasicTrigger { Enabled = response.Enabled.Value });
+        WebhookVerificationStatus? status = null;
+        if (response.Status is not null)
+        {
+            var statusResult = WebhookVerificationStatusJsonConverter.FromPostmark(response.Status);
+            if (statusResult.IsFailure(out var statusError, out var mappedStatus))
+                return Result.Failure<WebhookBasicTrigger?>(statusError);
+            status = mappedStatus;
+        }
+
+        return Result.Success<WebhookBasicTrigger?>(new WebhookBasicTrigger { Status = status, Enabled = response.Enabled.Value });
     }
 
     private static Result<WebhookContentTrigger?> CreateContentTrigger(WebhookContentTriggerModel? response, string propertyName, string context)
@@ -497,7 +522,16 @@ internal sealed partial class PostKitClient
         if (response.IncludeContent is null)
             return Result.Failure<WebhookContentTrigger?>($"{propertyName}.IncludeContent was not returned from the Postmark Webhooks API for {context}.");
 
-        return Result.Success<WebhookContentTrigger?>(new WebhookContentTrigger { Enabled = response.Enabled.Value, IncludeContent = response.IncludeContent.Value });
+        WebhookVerificationStatus? status = null;
+        if (response.Status is not null)
+        {
+            var statusResult = WebhookVerificationStatusJsonConverter.FromPostmark(response.Status);
+            if (statusResult.IsFailure(out var statusError, out var mappedStatus))
+                return Result.Failure<WebhookContentTrigger?>(statusError);
+            status = mappedStatus;
+        }
+
+        return Result.Success<WebhookContentTrigger?>(new WebhookContentTrigger { Status = status, Enabled = response.Enabled.Value, IncludeContent = response.IncludeContent.Value });
     }
 
     private static Result<WebhookOpenTrigger?> CreateOpenTrigger(WebhookOpenTriggerModel? response, string propertyName, string context)
@@ -511,7 +545,16 @@ internal sealed partial class PostKitClient
         if (response.PostFirstOpenOnly is null)
             return Result.Failure<WebhookOpenTrigger?>($"{propertyName}.PostFirstOpenOnly was not returned from the Postmark Webhooks API for {context}.");
 
-        return Result.Success<WebhookOpenTrigger?>(new WebhookOpenTrigger { Enabled = response.Enabled.Value, PostFirstOpenOnly = response.PostFirstOpenOnly.Value });
+        WebhookVerificationStatus? status = null;
+        if (response.Status is not null)
+        {
+            var statusResult = WebhookVerificationStatusJsonConverter.FromPostmark(response.Status);
+            if (statusResult.IsFailure(out var statusError, out var mappedStatus))
+                return Result.Failure<WebhookOpenTrigger?>(statusError);
+            status = mappedStatus;
+        }
+
+        return Result.Success<WebhookOpenTrigger?>(new WebhookOpenTrigger { Status = status, Enabled = response.Enabled.Value, PostFirstOpenOnly = response.PostFirstOpenOnly.Value });
     }
 
     private static Result<WebhookDeletion> CreateWebhookDeletion(WebhookDeletionModel response)

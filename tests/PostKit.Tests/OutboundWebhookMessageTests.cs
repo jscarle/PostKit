@@ -1,3 +1,4 @@
+using PostKit.Common;
 using System.Globalization;
 using System.IO.Pipelines;
 using System.Text;
@@ -210,7 +211,7 @@ public class OutboundWebhookMessageTests
         Assert.True(message.FirstOpen);
         Assert.Equal("Chrome 35.0.1916.153", message.Client?.Name);
         Assert.Equal("OS X 10.7 Lion", message.Os?.Name);
-        Assert.Equal("WebMail", message.Platform);
+        Assert.Equal(MessagePlatform.WebMail, message.Platform);
         Assert.Equal("RS", message.Geo?.CountryIsoCode);
         Assert.Equal("188.2.95.4", message.Geo?.Ip);
         Assert.Equal(Guid.Parse("883953f4-6105-42a2-a16a-77a8eac79483"), message.MessageId);
@@ -224,7 +225,7 @@ public class OutboundWebhookMessageTests
 
         Assert.NotNull(message);
         Assert.Equal("Click", message.RecordType);
-        Assert.Equal("HTML", message.ClickLocation);
+        Assert.Equal(LinkClickLocation.Html, message.ClickLocation);
         Assert.Equal("https://example.com", message.OriginalLink);
         Assert.Equal("Chrome", message.Client?.Family);
         Assert.Equal("OS X 10", message.Os?.Family);

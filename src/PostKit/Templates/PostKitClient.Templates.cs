@@ -285,6 +285,17 @@ internal sealed partial class PostKitClient
         if (request.IsFailure(out var requestError, out var templateRequest))
             return Result.Failure<TemplateSummary>(requestError);
 
+        if (parameters.Subject is null)
+        {
+            var currentResult = await GetTemplateCoreAsync(endpoint, cancellationToken);
+            if (currentResult.IsFailure(out var currentError, out var currentTemplate))
+                return Result.Failure<TemplateSummary>(currentError);
+
+            var validationError = ValidationExtensions.ValidateTemplateParameters(parameters.Name, parameters.Alias, parameters.Subject, parameters.HtmlBody, parameters.TextBody, currentTemplate.TemplateType, parameters.LayoutTemplate, "edit");
+            if (validationError is not null)
+                return Result.Failure<TemplateSummary>(validationError);
+        }
+
         Result<TemplateSummaryModel> response;
         try
         {
@@ -389,7 +400,7 @@ internal sealed partial class PostKitClient
 
     private static Result<TemplateRequestModel> CreateTemplateRequest(TemplateEditParameters parameters)
     {
-        var validationError = ValidationExtensions.ValidateTemplateParameters(parameters.Name, parameters.Alias, parameters.Subject, parameters.HtmlBody, parameters.TextBody, null, parameters.LayoutTemplate, "edit");
+        var validationError = ValidationExtensions.ValidateTemplateParameters(parameters.Name, parameters.Alias, parameters.Subject, parameters.HtmlBody, parameters.TextBody, null, parameters.LayoutTemplate, "edit", validateStandardSubject: false);
         if (validationError is not null)
             return Result.Failure<TemplateRequestModel>(validationError);
 

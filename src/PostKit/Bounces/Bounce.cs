@@ -5,7 +5,7 @@ namespace PostKit.Bounces;
 /// <summary>Represents bounce metadata returned from Postmark bounce endpoints.</summary>
 public record Bounce
 {
-    internal Bounce(string recordType, long id, BounceType type, string name, string tag, Guid messageId, long serverId, string messageStream, string description, string details, string email, string? from, DateTimeOffset bouncedAt,
+    internal Bounce(string recordType, long id, BounceType type, string name, string? tag, Guid messageId, long serverId, string messageStream, string description, string details, string email, string? from, DateTimeOffset bouncedAt,
         bool dumpAvailable, bool inactive, bool canActivate, string subject)
     {
         RecordType = recordType;
@@ -40,7 +40,7 @@ public record Bounce
     public string Name { [UsedImplicitly] get; }
 
     /// <summary>Gets the message tag associated with the bounced email.</summary>
-    public string Tag { [UsedImplicitly] get; }
+    public string? Tag { [UsedImplicitly] get; }
 
     /// <summary>Gets the Postmark message identifier for the bounced email.</summary>
     public Guid MessageId { [UsedImplicitly] get; }

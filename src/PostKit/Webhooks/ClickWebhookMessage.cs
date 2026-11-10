@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using JetBrains.Annotations;
+using PostKit.Common;
 
 namespace PostKit.Webhooks;
 
@@ -8,7 +9,7 @@ public sealed record ClickWebhookMessage : OutboundWebhookMessage
 {
     /// <summary>Gets whether the link appeared in the HTML or text message body.</summary>
     [JsonPropertyName("ClickLocation")]
-    public required string ClickLocation { [UsedImplicitly] get; init; }
+    public required LinkClickLocation ClickLocation { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the identified email client when available.</summary>
     [JsonPropertyName("Client")]
@@ -20,7 +21,7 @@ public sealed record ClickWebhookMessage : OutboundWebhookMessage
 
     /// <summary>Gets the identified platform when available.</summary>
     [JsonPropertyName("Platform")]
-    public string? Platform { [UsedImplicitly] get; init; }
+    public MessagePlatform? Platform { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the user agent supplied by the clicking client.</summary>
     [JsonPropertyName("UserAgent")]

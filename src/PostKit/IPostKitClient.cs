@@ -6,8 +6,8 @@ using PostKit.DataRemovals;
 using PostKit.Domains;
 using PostKit.Emails;
 using PostKit.InboundRules;
-using PostKit.Messages;
 using PostKit.MessageStreams;
+using PostKit.Messages;
 using PostKit.SenderSignatures;
 using PostKit.Servers;
 using PostKit.Stats;
@@ -240,9 +240,11 @@ public interface IPostKitClient
     Task<Result<TemplateSummary>> CreateTemplateAsync(TemplateCreateParameters parameters, CancellationToken cancellationToken = default);
 
     /// <summary>Edits a Postmark template by ID asynchronously.</summary>
+    /// <remarks>When Subject is omitted, reads the existing template type before validating the edit. Layouts do not require a subject.</remarks>
     Task<Result<TemplateSummary>> EditTemplateAsync(long templateId, TemplateEditParameters parameters, CancellationToken cancellationToken = default);
 
     /// <summary>Edits a Postmark template by alias asynchronously.</summary>
+    /// <remarks>When Subject is omitted, reads the existing template type before validating the edit. Layouts do not require a subject.</remarks>
     Task<Result<TemplateSummary>> EditTemplateAsync(string templateAlias, TemplateEditParameters parameters, CancellationToken cancellationToken = default);
 
     /// <summary>Gets a page of Postmark templates asynchronously.</summary>
@@ -282,6 +284,7 @@ public interface IPostKitClient
     Task<Result<Webhook>> CreateWebhookAsync(WebhookCreateParameters parameters, CancellationToken cancellationToken = default);
 
     /// <summary>Edits a webhook asynchronously.</summary>
+    /// <remarks>Reads the current configuration and merges supplied changes. Omitted settings are preserved; an empty header collection clears headers. The read and update are not atomic.</remarks>
     Task<Result<Webhook>> EditWebhookAsync(long id, WebhookEditParameters parameters, CancellationToken cancellationToken = default);
 
     /// <summary>Deletes a webhook asynchronously.</summary>
@@ -322,6 +325,9 @@ public interface IPostKitClient
 
     /// <summary>Gets outbound email-client statistics asynchronously.</summary>
     Task<Result<OutboundEmailClientStats>> GetOutboundEmailClientStatsAsync(OutboundStatsQuery? query = null, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets outbound reading-time statistics, with provider-named buckets and daily counts.</summary>
+    Task<Result<OutboundReadTimeStats>> GetOutboundReadTimeStatsAsync(OutboundStatsQuery? query = null, CancellationToken cancellationToken = default);
 
     /// <summary>Gets outbound click statistics asynchronously.</summary>
     Task<Result<OutboundClickStats>> GetOutboundClickStatsAsync(OutboundStatsQuery? query = null, CancellationToken cancellationToken = default);

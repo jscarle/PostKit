@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using PostKit.Common;
 using PostKit.Errors;
 using PostKit.Postmark;
+using PostKit.Postmark.Common;
 using PostKit.Postmark.Webhooks;
 using PostKit.Webhooks;
 
@@ -73,15 +74,21 @@ internal sealed partial class PostKitClient
         if (aggregateResult.IsFailure(out var aggregateError, out var aggregate))
             return Result.Failure<WebhookStatistics>(aggregateError);
 
-        var statuses = new Dictionary<string, string>(response.Statuses.Count, StringComparer.Ordinal);
+        var statuses = new Dictionary<WebhookTriggerType, WebhookVerificationStatus>(response.Statuses.Count);
         foreach (var entry in response.Statuses)
         {
             if (string.IsNullOrWhiteSpace(entry.Key) || string.IsNullOrWhiteSpace(entry.Value))
                 return Result.Failure<WebhookStatistics>($"Statuses contains an empty trigger name or status for '{entry.Key}'.");
-            statuses.Add(entry.Key, entry.Value);
+            var triggerResult = WebhookTriggerTypeJsonConverter.FromPostmark(entry.Key);
+            if (triggerResult.IsFailure(out var triggerError, out var trigger))
+                return Result.Failure<WebhookStatistics>(triggerError);
+            var statusResult = WebhookVerificationStatusJsonConverter.FromPostmark(entry.Value);
+            if (statusResult.IsFailure(out var statusError, out var status))
+                return Result.Failure<WebhookStatistics>(statusError);
+            statuses.Add(trigger, status);
         }
 
-        var metricsByTrigger = new Dictionary<string, WebhookStatisticsMetrics>(response.MetricsByTrigger.Count, StringComparer.Ordinal);
+        var metricsByTrigger = new Dictionary<WebhookTriggerType, WebhookStatisticsMetrics>(response.MetricsByTrigger.Count);
         foreach (var entry in response.MetricsByTrigger)
         {
             if (string.IsNullOrWhiteSpace(entry.Key))
@@ -89,12 +96,15 @@ internal sealed partial class PostKitClient
             var triggerResult = CreateWebhookStatisticsMetrics(entry.Value, $"MetricsByTrigger['{entry.Key}']");
             if (triggerResult.IsFailure(out var triggerError, out var metrics))
                 return Result.Failure<WebhookStatistics>(triggerError);
-            metricsByTrigger.Add(entry.Key, metrics);
+            var typeResult = WebhookTriggerTypeJsonConverter.FromPostmark(entry.Key);
+            if (typeResult.IsFailure(out var typeError, out var type))
+                return Result.Failure<WebhookStatistics>(typeError);
+            metricsByTrigger.Add(type, metrics);
         }
 
         var timeRange = new WebhookStatisticsTimeRange(range.StartTime.Value, range.EndTime.Value, range.Hours.Value);
         var statistics = new WebhookStatistics(response.WebhookId.Value, response.ServerId.Value, response.MessageStreamId, response.Url,
-            new ReadOnlyDictionary<string, string>(statuses), timeRange, aggregate, new ReadOnlyDictionary<string, WebhookStatisticsMetrics>(metricsByTrigger));
+            new ReadOnlyDictionary<WebhookTriggerType, WebhookVerificationStatus>(statuses), timeRange, aggregate, new ReadOnlyDictionary<WebhookTriggerType, WebhookStatisticsMetrics>(metricsByTrigger));
         return Result.Success(statistics);
     }
 

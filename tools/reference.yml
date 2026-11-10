@@ -2,7 +2,7 @@
 openapi: "3.0.3"
 info:
   title: "Postmark API"
-  version: "2026-10-21-webhook-and-bulk-additions"
+  version: "2026-11-10-api-accuracy"
   description: "Merged from the live Postmark API Explorer Swagger plus developer
     docs and llms.txt patches, with Bounces API payloads validated against a live
     server on 2026-03-11 and Bulk API submit, status, and validation-error
@@ -14,9 +14,26 @@ info:
     response-time averages. The live API uses the verify query parameter and
     requires Url and enabled Triggers for a verified edit. Verification failures
     may nest details under Verification, with Id 0 for an unsaved webhook.
-    Nonempty bulk pages, cursors, Cancelled, and optional bulk counters remain
-    documentation-derived and fixture-tested. Existing live-validated bulk
-    submission and status required fields are preserved. Sources:
+    On 2026-11-10, the authorized sandbox confirmed all 13 statistics operations,
+    including /stats/outbound/opens/readTimes with Days: [], the overview counter
+    WithReadTimeRecorded, untagged outbound messages, partial webhook editing with
+    authentication and headers, successful verification callbacks, and layout
+    editing without a subject. Exactly two composed/templated one-recipient bulk
+    jobs confirmed Accepted/Processing/Completed, subjects (including an unrendered
+    template subject), ReleasedCount/FailedCount, nonempty pages and opaque cursors.
+    All created webhook/template resources were removed. These observations do not
+    establish nullable job subjects or required counters across every response
+    shape; existing live-validated bulk contracts, including Failed, are retained.
+    Cancelled remains documentation-derived. The initial account token returned
+    401; a later authorized temporary token confirmed seven read-only GETs with
+    HTTP 200: filtered server lists, allowed sandbox details, domain list/details,
+    and an empty sender-signature list. SDK mappings all passed. No account
+    mutations or data-removal operations were tested; sender details were not
+    exercised because no sender signatures were returned.
+    Populated reading-time buckets and optional ReadSeconds remain source-derived
+    and fixture-tested, not live captures. Contract authority is actual API
+    observations first, official SDK evidence second, documentation last. Sources:
+    https://github.com/ActiveCampaign/postmark-dotnet/blob/main/src/Postmark/PostmarkClient.cs,
     https://postmarkapp.com/developer/api/webhooks-api and
     https://postmarkapp.com/developer/api/bulk-email."
 servers:
@@ -2115,7 +2132,7 @@ paths:
             format: "date"
       responses:
         200:
-          description: "OK"
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
           content:
             application/json:
               schema:
@@ -2174,7 +2191,7 @@ paths:
             format: "date"
       responses:
         200:
-          description: "OK"
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
           content:
             application/json:
               schema:
@@ -2211,7 +2228,7 @@ paths:
             format: "date"
       responses:
         200:
-          description: "OK"
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
           content:
             application/json:
               schema:
@@ -2248,7 +2265,7 @@ paths:
             format: "date"
       responses:
         200:
-          description: "OK"
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
           content:
             application/json:
               schema:
@@ -2285,7 +2302,7 @@ paths:
             format: "date"
       responses:
         200:
-          description: "OK"
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
           content:
             application/json:
               schema:
@@ -2322,7 +2339,7 @@ paths:
             format: "date"
       responses:
         200:
-          description: "OK"
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
           content:
             application/json:
               schema:
@@ -2373,7 +2390,7 @@ paths:
             format: "date"
       responses:
         200:
-          description: "OK"
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
           content:
             application/json:
               schema:
@@ -2390,6 +2407,48 @@ paths:
                     type: "array"
                     items:
                       $ref: "#/components/schemas/DynamicResponse"
+        422:
+          $ref: "#/components/responses/422"
+        500:
+          $ref: "#/components/responses/500"
+      security:
+        - serverToken: [ ]
+  /stats/outbound/opens/readTimes:
+    get:
+      operationId: "getOutboundReadTimeStatistics"
+      tags:
+        - "Stats"
+      summary: "Get reading-time counts"
+      description: "Official SDK-supported route; HTTP 200 with Days: [] observed live on 2026-11-10. Populated bucket names and counts follow the official SDK dynamic response mapping; no duration boundaries are inferred."
+      parameters:
+        - name: "tag"
+          description: "Filter by tag"
+          in: "query"
+          schema:
+            type: "string"
+        - name: "fromdate"
+          in: "query"
+          description: "Filter stats starting from the date specified. e.g. `2014-01-01`"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "todate"
+          description: "Filter stats up to the date specified. e.g. `2014-02-01`"
+          in: "query"
+          schema:
+            type: "string"
+            format: "date"
+        - name: "messagestream"
+          in: "query"
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutboundReadTimeStatsResponse"
         422:
           $ref: "#/components/responses/422"
         500:
@@ -2422,7 +2481,7 @@ paths:
             format: "date"
       responses:
         200:
-          description: "OK"
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
           content:
             application/json:
               schema:
@@ -2481,7 +2540,7 @@ paths:
             format: "date"
       responses:
         200:
-          description: "OK"
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
           content:
             application/json:
               schema:
@@ -2518,7 +2577,7 @@ paths:
             format: "date"
       responses:
         200:
-          description: "OK"
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
           content:
             application/json:
               schema:
@@ -2565,7 +2624,7 @@ paths:
             format: "date"
       responses:
         200:
-          description: "OK"
+          description: "OK. Live zero-activity series can contain only Days: []. Omitted named categories are zero; dynamic count dictionaries may be empty. Counts supplied by Postmark must be nonnegative integers; aggregate and daily values remain independent."
           content:
             application/json:
               schema:
@@ -3302,7 +3361,7 @@ components:
           type: "integer"
           nullable: true
           minimum: 0
-          description: "Documentation-derived. SDK retains raw extension data even when this optional value is uninterpretable."
+          description: "Observed in composed/templated Accepted/Processing/Completed responses on 2026-11-10; optional because these observations do not establish presence across all current response shapes. SDK retains raw extension data even when uninterpretable."
         FailedCount:
           type: "integer"
           nullable: true
@@ -3358,7 +3417,7 @@ components:
           description: "Opaque cursor; absent when complete."
     BulkEmailRequestSummary:
       type: "object"
-      description: "Documentation-derived list entry. Subject is optional; existing send/status schemas retain their live-validated requirements."
+      description: "List entries and opaque cursor pagination were live-observed on 2026-11-10. Subject optionality is documentation-derived; existing send/status schemas retain their live-validated requirements."
       required: [ "Id", "Status", "SubmittedAt", "TotalMessages", "PercentageCompleted" ]
       additionalProperties: true
       properties:
@@ -3853,9 +3912,12 @@ components:
                 - "Bcc"
     ExtendedMessageClickEventInformation:
       description: ""
+      required: [ "ClickLocation" ]
       properties:
         ClickLocation:
           type: "string"
+          enum: [ "HTML", "Text" ]
+          description: "Required by the official Node SDK contract. PostKit rejects missing/null locations; no live omission was established."
         Client:
           description: ""
           properties:
@@ -3875,6 +3937,8 @@ components:
               type: "string"
         Platform:
           type: "string"
+          nullable: true
+          enum: [ "WebMail", "Desktop", "Mobile", "Unknown" ]
         UserAgent:
           type: "string"
         OriginalLink:
@@ -3920,6 +3984,11 @@ components:
       properties:
         FirstOpen:
           type: "boolean"
+        ReadSeconds:
+          type: "integer"
+          nullable: true
+          minimum: 0
+          description: "Optional integer seconds, supported by official SDK models. PostKit exposes TimeSpan? ReadTime for REST open events and open callbacks. No populated live reading time was observed in this run."
         Client:
           description: ""
           properties:
@@ -3939,6 +4008,8 @@ components:
               type: "string"
         Platform:
           type: "string"
+          nullable: true
+          enum: [ "WebMail", "Desktop", "Mobile", "Unknown" ]
         UserAgent:
           type: "string"
         Geo:
@@ -4412,8 +4483,29 @@ components:
           description: "Raw source of message. If no dump is available this will return an
             empty string."
           type: "string"
+    OutboundReadTimeStatsResponse:
+      type: "object"
+      description: "Dynamic provider bucket counts. Live empty response: {Days: []}. Populated structure is official-SDK-derived; bucket names do not imply SDK-defined time ranges. Aggregate values are independent of daily values."
+      required: [ "Days" ]
+      properties:
+        Days:
+          type: "array"
+          items:
+            type: "object"
+            required: [ "Date" ]
+            properties:
+              Date:
+                type: "string"
+                format: "date"
+            additionalProperties:
+              type: "integer"
+              minimum: 0
+      additionalProperties:
+        type: "integer"
+        minimum: 0
     OutboundOverviewStatsResponse:
-      description: ""
+      description: "WithReadTimeRecorded is live-observed on 2026-11-10. Existing overview counts remain required by the live-validated SDK contract."
+      required: [ "WithReadTimeRecorded" ]
       properties:
         Sent:
           type: "integer"
@@ -4447,6 +4539,10 @@ components:
           type: "integer"
         WithPlatformRecorded:
           type: "integer"
+        WithReadTimeRecorded:
+          type: "integer"
+          minimum: 0
+          description: "Messages with a recorded reading time; observed live on 2026-11-10."
     OutboundSearchResponse:
       description: ""
       properties:
@@ -5024,7 +5120,9 @@ components:
         Status:
           type: "string"
           nullable: true
-          description: "Documented verification status, omitted in the live response on 2026-10-21. Preserve future text values."
+          enum: [ "verified", "unverified" ]
+          readOnly: true
+          description: "Documented status; omission is live-validated. PostKit uses WebhookVerificationStatus and rejects unrecognized values with diagnostics."
         HttpAuth:
           $ref: "#/components/schemas/WebhookHttpAuth"
         HttpHeaders:
@@ -5034,6 +5132,12 @@ components:
     WebhookContentTrigger:
       type: "object"
       properties:
+        Status:
+          type: "string"
+          nullable: true
+          enum: [ "verified", "unverified" ]
+          readOnly: true
+          description: "Per-trigger verification status from the documented response contract; never included in mutation requests."
         Enabled:
           type: "boolean"
         IncludeContent:
@@ -5055,6 +5159,12 @@ components:
     WebhookOpenTrigger:
       type: "object"
       properties:
+        Status:
+          type: "string"
+          nullable: true
+          enum: [ "verified", "unverified" ]
+          readOnly: true
+          description: "Per-trigger verification status from the documented response contract; never included in mutation requests."
         Enabled:
           type: "boolean"
         PostFirstOpenOnly:
@@ -5062,6 +5172,12 @@ components:
     WebhookToggle:
       type: "object"
       properties:
+        Status:
+          type: "string"
+          nullable: true
+          enum: [ "verified", "unverified" ]
+          readOnly: true
+          description: "Per-trigger verification status from the documented response contract; never included in mutation requests."
         Enabled:
           type: "boolean"
     WebhookTriggers:
@@ -5124,7 +5240,8 @@ components:
       properties:
         TriggerType:
           type: "string"
-          description: "Provider event name; future names remain representable."
+          enum: [ "Open", "Click", "Delivery", "Bounce", "SpamComplaint", "SubscriptionChange" ]
+          description: "Current supported trigger names. PostKit exposes WebhookTriggerType and reports unrecognized provider values."
         Success:
           type: "boolean"
         StatusCode:
@@ -5167,7 +5284,8 @@ components:
           type: "object"
           additionalProperties:
             type: "string"
-          description: "Per-trigger status strings. Empty dictionaries and future names/values are valid."
+            enum: [ "verified", "unverified" ]
+          description: "Per-trigger verification states keyed by current WebhookTriggerType names. Empty dictionaries are valid; PostKit reports unknown keys/values with their raw text."
         TimeRange:
           $ref: "#/components/schemas/WebhookStatisticsTimeRange"
         Metrics:

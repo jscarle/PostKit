@@ -107,6 +107,11 @@ internal sealed partial class PostKitClient
         return GetOutboundStatsSeriesAsync("/stats/outbound/clicks/location", query, CreateOutboundClickLocationStats, cancellationToken);
     }
 
+    public Task<Result<OutboundReadTimeStats>> GetOutboundReadTimeStatsAsync(OutboundStatsQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        return GetOutboundStatsSeriesAsync("/stats/outbound/opens/readTimes", query, CreateOutboundReadTimeStats, cancellationToken);
+    }
+
     private async Task<Result<TStats>> GetOutboundStatsSeriesAsync<TStats>(string endpoint, OutboundStatsQuery? query, Func<StatsSeriesModel, Result<TStats>> createStats, CancellationToken cancellationToken)
     {
         var validationError = ValidationExtensions.ValidateOutboundStatsQuery(query);
@@ -133,6 +138,10 @@ internal sealed partial class PostKitClient
             LogOutboundStatsError(error.Message, error);
             return Result.Failure<TStats>(error);
         }
+
+        var countsError = ValidationExtensions.ValidateStatsCountValues(seriesModel.Totals, "totals");
+        if (countsError is not null)
+            return Result.Failure<TStats>(countsError);
 
         var mapped = createStats(seriesModel);
         if (mapped.IsFailure(out var mappingError, out var stats))
@@ -231,6 +240,10 @@ internal sealed partial class PostKitClient
         if (withPlatformRecorded.IsFailure(out var platformError, out var mappedWithPlatformRecorded))
             return Result.Failure<OutboundOverviewStats>(platformError);
 
+        var withReadTimeRecorded = GetRequiredOverviewCount(response.WithReadTimeRecorded, "WithReadTimeRecorded");
+        if (withReadTimeRecorded.IsFailure(out var readTimeError, out var mappedWithReadTimeRecorded))
+            return Result.Failure<OutboundOverviewStats>(readTimeError);
+
         return Result.Success(new OutboundOverviewStats
         {
             Sent = mappedSent,
@@ -248,13 +261,14 @@ internal sealed partial class PostKitClient
             WithLinkTracking = mappedWithLinkTracking,
             WithOpenTracking = mappedWithOpenTracking,
             WithClientRecorded = mappedWithClientRecorded,
+            WithReadTimeRecorded = mappedWithReadTimeRecorded,
             WithPlatformRecorded = mappedWithPlatformRecorded
         });
     }
 
     private static Result<OutboundSentStats> CreateOutboundSentStats(StatsSeriesModel response)
     {
-        var sent = GetRequiredStatsTotal(response, "Sent");
+        var sent = GetStatsTotal(response, "Sent");
         if (sent.IsFailure(out var sentError, out var mappedSent))
             return Result.Failure<OutboundSentStats>(sentError);
 
@@ -267,19 +281,19 @@ internal sealed partial class PostKitClient
 
     private static Result<OutboundBounceStats> CreateOutboundBounceStats(StatsSeriesModel response)
     {
-        var hardBounce = GetRequiredStatsTotal(response, "HardBounce");
+        var hardBounce = GetStatsTotal(response, "HardBounce");
         if (hardBounce.IsFailure(out var hardError, out var mappedHardBounce))
             return Result.Failure<OutboundBounceStats>(hardError);
 
-        var smtpApiError = GetRequiredStatsTotal(response, "SMTPApiError");
+        var smtpApiError = GetStatsTotal(response, "SMTPApiError");
         if (smtpApiError.IsFailure(out var smtpError, out var mappedSmtpApiError))
             return Result.Failure<OutboundBounceStats>(smtpError);
 
-        var softBounce = GetRequiredStatsTotal(response, "SoftBounce");
+        var softBounce = GetStatsTotal(response, "SoftBounce");
         if (softBounce.IsFailure(out var softError, out var mappedSoftBounce))
             return Result.Failure<OutboundBounceStats>(softError);
 
-        var transient = GetRequiredStatsTotal(response, "Transient");
+        var transient = GetStatsTotal(response, "Transient");
         if (transient.IsFailure(out var transientError, out var mappedTransient))
             return Result.Failure<OutboundBounceStats>(transientError);
 
@@ -299,7 +313,7 @@ internal sealed partial class PostKitClient
 
     private static Result<OutboundSpamComplaintStats> CreateOutboundSpamComplaintStats(StatsSeriesModel response)
     {
-        var spamComplaint = GetRequiredStatsTotal(response, "SpamComplaint");
+        var spamComplaint = GetStatsTotal(response, "SpamComplaint");
         if (spamComplaint.IsFailure(out var error, out var mappedSpamComplaint))
             return Result.Failure<OutboundSpamComplaintStats>(error);
 
@@ -312,7 +326,7 @@ internal sealed partial class PostKitClient
 
     private static Result<OutboundTrackedEmailStats> CreateOutboundTrackedEmailStats(StatsSeriesModel response)
     {
-        var tracked = GetRequiredStatsTotal(response, "Tracked");
+        var tracked = GetStatsTotal(response, "Tracked");
         if (tracked.IsFailure(out var error, out var mappedTracked))
             return Result.Failure<OutboundTrackedEmailStats>(error);
 
@@ -325,11 +339,11 @@ internal sealed partial class PostKitClient
 
     private static Result<OutboundOpenStats> CreateOutboundOpenStats(StatsSeriesModel response)
     {
-        var opens = GetRequiredStatsTotal(response, "Opens");
+        var opens = GetStatsTotal(response, "Opens");
         if (opens.IsFailure(out var opensError, out var mappedOpens))
             return Result.Failure<OutboundOpenStats>(opensError);
 
-        var unique = GetRequiredStatsTotal(response, "Unique");
+        var unique = GetStatsTotal(response, "Unique");
         if (unique.IsFailure(out var uniqueError, out var mappedUnique))
             return Result.Failure<OutboundOpenStats>(uniqueError);
 
@@ -347,19 +361,19 @@ internal sealed partial class PostKitClient
 
     private static Result<OutboundEmailPlatformStats> CreateOutboundEmailPlatformStats(StatsSeriesModel response)
     {
-        var desktop = GetRequiredStatsTotal(response, "Desktop");
+        var desktop = GetStatsTotal(response, "Desktop");
         if (desktop.IsFailure(out var desktopError, out var mappedDesktop))
             return Result.Failure<OutboundEmailPlatformStats>(desktopError);
 
-        var mobile = GetRequiredStatsTotal(response, "Mobile");
+        var mobile = GetStatsTotal(response, "Mobile");
         if (mobile.IsFailure(out var mobileError, out var mappedMobile))
             return Result.Failure<OutboundEmailPlatformStats>(mobileError);
 
-        var unknown = GetRequiredStatsTotal(response, "Unknown");
+        var unknown = GetStatsTotal(response, "Unknown");
         if (unknown.IsFailure(out var unknownError, out var mappedUnknown))
             return Result.Failure<OutboundEmailPlatformStats>(unknownError);
 
-        var webMail = GetRequiredStatsTotal(response, "WebMail");
+        var webMail = GetStatsTotal(response, "WebMail");
         if (webMail.IsFailure(out var webMailError, out var mappedWebMail))
             return Result.Failure<OutboundEmailPlatformStats>(webMailError);
 
@@ -386,13 +400,22 @@ internal sealed partial class PostKitClient
         return Result.Success(new OutboundEmailClientStats(mappedUsage.Totals, mappedUsage.Days));
     }
 
+    private static Result<OutboundReadTimeStats> CreateOutboundReadTimeStats(StatsSeriesModel response)
+    {
+        var usage = CreateOutboundUsageStats(response, "read-time stats");
+        if (usage.IsFailure(out var error, out var mappedUsage))
+            return Result.Failure<OutboundReadTimeStats>(error);
+
+        return Result.Success(new OutboundReadTimeStats(mappedUsage.Totals, mappedUsage.Days));
+    }
+
     private static Result<OutboundClickStats> CreateOutboundClickStats(StatsSeriesModel response)
     {
-        var clicks = GetRequiredStatsTotal(response, "Clicks");
+        var clicks = GetStatsTotal(response, "Clicks");
         if (clicks.IsFailure(out var clicksError, out var mappedClicks))
             return Result.Failure<OutboundClickStats>(clicksError);
 
-        var unique = GetRequiredStatsTotal(response, "Unique");
+        var unique = GetStatsTotal(response, "Unique");
         if (unique.IsFailure(out var uniqueError, out var mappedUnique))
             return Result.Failure<OutboundClickStats>(uniqueError);
 
@@ -419,15 +442,15 @@ internal sealed partial class PostKitClient
 
     private static Result<OutboundClickPlatformStats> CreateOutboundClickPlatformStats(StatsSeriesModel response)
     {
-        var desktop = GetRequiredStatsTotal(response, "Desktop");
+        var desktop = GetStatsTotal(response, "Desktop");
         if (desktop.IsFailure(out var desktopError, out var mappedDesktop))
             return Result.Failure<OutboundClickPlatformStats>(desktopError);
 
-        var mobile = GetRequiredStatsTotal(response, "Mobile");
+        var mobile = GetStatsTotal(response, "Mobile");
         if (mobile.IsFailure(out var mobileError, out var mappedMobile))
             return Result.Failure<OutboundClickPlatformStats>(mobileError);
 
-        var unknown = GetRequiredStatsTotal(response, "Unknown");
+        var unknown = GetStatsTotal(response, "Unknown");
         if (unknown.IsFailure(out var unknownError, out var mappedUnknown))
             return Result.Failure<OutboundClickPlatformStats>(unknownError);
 
@@ -446,11 +469,11 @@ internal sealed partial class PostKitClient
 
     private static Result<OutboundClickLocationStats> CreateOutboundClickLocationStats(StatsSeriesModel response)
     {
-        var html = GetRequiredStatsTotal(response, "HTML");
+        var html = GetStatsTotal(response, "HTML");
         if (html.IsFailure(out var htmlError, out var mappedHtml))
             return Result.Failure<OutboundClickLocationStats>(htmlError);
 
-        var text = GetRequiredStatsTotal(response, "Text");
+        var text = GetStatsTotal(response, "Text");
         if (text.IsFailure(out var textError, out var mappedText))
             return Result.Failure<OutboundClickLocationStats>(textError);
 
@@ -468,7 +491,7 @@ internal sealed partial class PostKitClient
 
     private static Result<OutboundUsageStatsCore> CreateOutboundUsageStats(StatsSeriesModel response, string context)
     {
-        var totals = CreateStatsCounts(response.Totals, $"{context} totals", true);
+        var totals = CreateStatsCounts(response.Totals, $"{context} totals");
         if (totals.IsFailure(out var totalsError, out var mappedTotals))
             return Result.Failure<OutboundUsageStatsCore>(totalsError);
 
@@ -485,14 +508,14 @@ internal sealed partial class PostKitClient
             if (day.Date is null)
                 return Result.Failure<OutboundUsageStatsCore>($"Date was not returned from the Postmark Stats API for Days item {index}.");
 
-            var counts = CreateStatsCounts(day.Counts, $"Days item {index}", false);
+            var counts = CreateStatsCounts(day.Counts, $"Days item {index}");
             if (counts.IsFailure(out var countsError, out var mappedCounts))
                 return Result.Failure<OutboundUsageStatsCore>(countsError);
 
             days.Add(new OutboundUsageStatsDay { Date = day.Date.Value, Counts = mappedCounts });
         }
 
-        return Result.Success(new OutboundUsageStatsCore(mappedTotals, days));
+        return Result.Success(new OutboundUsageStatsCore(mappedTotals, days.AsReadOnly()));
     }
 
     private static Result<IReadOnlyList<TDay>> CreateStatsDays<TDay>(StatsSeriesModel response, string context, Func<StatsDayContext, TDay> createDay)
@@ -510,19 +533,19 @@ internal sealed partial class PostKitClient
             if (day.Date is null)
                 return Result.Failure<IReadOnlyList<TDay>>($"Date was not returned from the Postmark Stats API for {context} Days item {index}.");
 
-            var countsError = ValidationExtensions.ValidateStatsCountValues(day.Counts, $"Days item {index}", false);
+            var countsError = ValidationExtensions.ValidateStatsCountValues(day.Counts, $"Days item {index}");
             if (countsError is not null)
                 return Result.Failure<IReadOnlyList<TDay>>(countsError);
 
             days.Add(createDay(new StatsDayContext(day.Date.Value, day, index)));
         }
 
-        return Result.Success<IReadOnlyList<TDay>>(days);
+        return Result.Success<IReadOnlyList<TDay>>(days.AsReadOnly());
     }
 
-    private static Result<IReadOnlyDictionary<string, int>> CreateStatsCounts(Dictionary<string, JsonElement>? values, string context, bool requireAtLeastOne)
+    private static Result<IReadOnlyDictionary<string, int>> CreateStatsCounts(Dictionary<string, JsonElement>? values, string context)
     {
-        var validationError = ValidationExtensions.ValidateStatsCountValues(values, context, requireAtLeastOne);
+        var validationError = ValidationExtensions.ValidateStatsCountValues(values, context);
         if (validationError is not null)
             return Result.Failure<IReadOnlyDictionary<string, int>>(validationError);
 
@@ -534,10 +557,10 @@ internal sealed partial class PostKitClient
         return Result.Success<IReadOnlyDictionary<string, int>>(new ReadOnlyDictionary<string, int>(counts));
     }
 
-    private static Result<int> GetRequiredStatsTotal(StatsSeriesModel response, string propertyName)
+    private static Result<int> GetStatsTotal(StatsSeriesModel response, string propertyName)
     {
         if (response.Totals is null || !response.Totals.TryGetValue(propertyName, out var value))
-            return Result.Failure<int>($"{propertyName} was not returned from the Postmark Stats API.");
+            return Result.Success(0);
 
         return GetRequiredStatsCountValue(value, propertyName);
     }

@@ -1,11 +1,11 @@
-﻿using JetBrains.Annotations;
+using JetBrains.Annotations;
 
 namespace PostKit.Webhooks;
 
 /// <summary>Represents a webhook returned from Postmark.</summary>
 public sealed record Webhook
 {
-    internal Webhook(long id, string url, string messageStream, WebhookHttpAuth? httpAuth, IReadOnlyList<WebhookHeader> httpHeaders, WebhookTriggers triggers, string? status = null)
+    internal Webhook(long id, string url, string messageStream, WebhookHttpAuth? httpAuth, IReadOnlyList<WebhookHeader> httpHeaders, WebhookTriggers triggers, WebhookVerificationStatus? status = null)
     {
         Id = id;
         Url = url;
@@ -34,6 +34,6 @@ public sealed record Webhook
     /// <summary>Gets the webhook trigger settings.</summary>
     public WebhookTriggers Triggers { [UsedImplicitly] get; }
 
-    /// <summary>Gets the provider's verification status, when returned. Unknown future status values are preserved.</summary>
-    public string? Status { [UsedImplicitly] get; }
+    /// <summary>Gets the provider's verification status, when returned. Unrecognized values produce an actionable invalid-response failure.</summary>
+    public WebhookVerificationStatus? Status { [UsedImplicitly] get; }
 }

@@ -5,8 +5,8 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using LightResults;
 using PostKit.Bounces;
-using PostKit.Messages;
 using PostKit.MessageStreams;
+using PostKit.Messages;
 using PostKit.Servers;
 using PostKit.Stats;
 using PostKit.Suppressions;
@@ -544,9 +544,8 @@ internal static partial class ValidationExtensions
         if (validationError is not null)
             return validationError;
 
-        validationError = ValidateMessageTrackingStringFilter(query.Platform, nameof(MessageTrackingQuery.Platform), "platform", operationName);
-        if (validationError is not null)
-            return validationError;
+        if (query.Platform.HasValue && !Enum.IsDefined(query.Platform.Value))
+            return $"The {operationName} Platform filter must be a defined MessagePlatform value. Received {(int)query.Platform.Value}. Please open an issue in the PostKit repository (https://github.com/jscarle/PostKit/issues).";
 
         validationError = ValidateMessageTrackingStringFilter(query.Country, nameof(MessageTrackingQuery.Country), "country", operationName);
         if (validationError is not null)
@@ -588,10 +587,10 @@ internal static partial class ValidationExtensions
         return null;
     }
 
-    public static string? ValidateStatsCountValues(Dictionary<string, JsonElement>? values, string context, bool requireAtLeastOne)
+    public static string? ValidateStatsCountValues(Dictionary<string, JsonElement>? values, string context)
     {
         if (values is null || values.Count == 0)
-            return requireAtLeastOne ? $"No count values were returned from the Postmark Stats API for {context}." : null;
+            return null;
 
         foreach (var entry in values)
         {
@@ -634,7 +633,7 @@ internal static partial class ValidationExtensions
         return null;
     }
 
-    public static string? ValidateTemplateParameters(string? name, string? alias, string? subject, string? htmlBody, string? textBody, TemplateType? templateType, string? layoutTemplate, string operationName)
+    public static string? ValidateTemplateParameters(string? name, string? alias, string? subject, string? htmlBody, string? textBody, TemplateType? templateType, string? layoutTemplate, string operationName, bool validateStandardSubject = true)
     {
         if (name is null)
             return $"The template {operationName} parameters name cannot be null.";
@@ -668,7 +667,7 @@ internal static partial class ValidationExtensions
             if (subject is not null)
                 return $"The template {operationName} parameters subject cannot be set for a layout template. Set Subject to null for layout templates.";
         }
-        else if (subject is null)
+        else if (subject is null && validateStandardSubject)
         {
             return $"The template {operationName} parameters subject is required for standard templates.";
         }

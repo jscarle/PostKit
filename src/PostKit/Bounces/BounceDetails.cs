@@ -5,7 +5,7 @@ namespace PostKit.Bounces;
 /// <summary>Represents a single bounce returned from the Postmark bounce details endpoint.</summary>
 public sealed record BounceDetails : Bounce
 {
-    internal BounceDetails(string recordType, long id, BounceType type, string name, string tag, Guid messageId, long serverId, string messageStream, string description, string details, string email, string? from, DateTimeOffset bouncedAt,
+    internal BounceDetails(string recordType, long id, BounceType type, string name, string? tag, Guid messageId, long serverId, string messageStream, string description, string details, string email, string? from, DateTimeOffset bouncedAt,
         bool dumpAvailable, bool inactive, bool canActivate, string subject, string content) : base(recordType, id, type, name, tag, messageId, serverId, messageStream, description, details, email, from, bouncedAt, dumpAvailable, inactive,
         canActivate, subject)
     {

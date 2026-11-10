@@ -7,7 +7,7 @@ namespace PostKit.Messages;
 /// <summary>Represents an outbound message summary returned from Postmark message endpoints.</summary>
 public record OutboundMessage
 {
-    internal OutboundMessage(string tag, Guid messageId, string messageStream, IReadOnlyCollection<OutboundMessageRecipient> to, IReadOnlyCollection<OutboundMessageRecipient> cc, IReadOnlyCollection<OutboundMessageRecipient> bcc,
+    internal OutboundMessage(string? tag, Guid messageId, string messageStream, IReadOnlyCollection<OutboundMessageRecipient> to, IReadOnlyCollection<OutboundMessageRecipient> cc, IReadOnlyCollection<OutboundMessageRecipient> bcc,
         IReadOnlyCollection<string> recipients, DateTimeOffset receivedAt, string from, string subject, IReadOnlyCollection<OutboundMessageAttachment> attachments, OutboundMessageStatus status, bool trackOpens, LinkTracking trackLinks,
         IReadOnlyDictionary<string, string> metadata, bool sandboxed)
     {
@@ -34,7 +34,7 @@ public record OutboundMessage
     }
 
     /// <summary>Gets the message tag.</summary>
-    public string Tag { [UsedImplicitly] get; }
+    public string? Tag { [UsedImplicitly] get; }
 
     /// <summary>Gets the Postmark message identifier.</summary>
     public Guid MessageId { [UsedImplicitly] get; }

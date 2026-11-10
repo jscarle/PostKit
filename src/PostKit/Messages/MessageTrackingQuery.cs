@@ -1,5 +1,6 @@
 using JetBrains.Annotations;
 using MimeKit;
+using PostKit.Common;
 
 namespace PostKit.Messages;
 
@@ -31,7 +32,7 @@ public sealed record MessageTrackingQuery
     public string? OsCompany { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the optional platform filter.</summary>
-    public string? Platform { [UsedImplicitly] get; init; }
+    public MessagePlatform? Platform { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the optional country filter.</summary>
     public string? Country { [UsedImplicitly] get; init; }

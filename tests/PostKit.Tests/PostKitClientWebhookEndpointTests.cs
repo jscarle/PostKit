@@ -11,7 +11,7 @@ public class PostKitClientWebhookEndpointTests
     private const string VerificationJson = """
         {"Id":7,"Url":"https://example.com/hook","Success":false,"Message":"1/2 triggers verified successfully","Results":[
           {"TriggerType":"Delivery","Success":true,"StatusCode":200,"Message":"OK"},
-          {"TriggerType":"FutureEvent","Success":false,"StatusCode":0,"Message":"No response"}]}
+          {"TriggerType":"Click","Success":false,"StatusCode":0,"Message":"No response"}]}
         """;
     private const string MetricsJson = """
         {"TotalRequests":3000000000,"SuccessCount":4,"FailureCount":1,"RetryCount":2,"SuccessRate":80,
@@ -19,12 +19,12 @@ public class PostKitClientWebhookEndpointTests
         """;
     private const string StatisticsJson = $$$"""
         {"WebhookId":7,"ServerId":8,"MessageStreamId":"outbound","Url":"https://example.com/hook",
-         "Statuses":{"FutureEvent":"future-status"},"TimeRange":{"StartTime":"2026-08-11T18:00:00Z","EndTime":"2026-08-12T18:00:00Z","Hours":24},
-         "Metrics":{{{MetricsJson}}},"MetricsByTrigger":{"FutureEvent":{{{MetricsJson}}}}}
+         "Statuses":{"Click":"verified"},"TimeRange":{"StartTime":"2026-08-11T18:00:00Z","EndTime":"2026-08-12T18:00:00Z","Hours":24},
+         "Metrics":{{{MetricsJson}}},"MetricsByTrigger":{"Click":{{{MetricsJson}}}}}
         """;
 
     [Fact]
-    public async Task GetWebhookStatisticsAsync_WithCompleteResponse_PreservesMetricsAndFutureTriggers()
+    public async Task GetWebhookStatisticsAsync_WithCompleteResponse_MapsMetricsAndKnownTriggers()
     {
         using var session = new PostmarkEndpointTestSession(StatisticsJson);
 
@@ -32,10 +32,10 @@ public class PostKitClientWebhookEndpointTests
 
         Assert.True(result.IsSuccess(out var statistics), result.ToString());
         Assert.Equal(3000000000L, statistics.Metrics.TotalRequests);
-        Assert.Equal("future-status", statistics.Statuses["FutureEvent"]);
-        Assert.Null(statistics.MetricsByTrigger["FutureEvent"].AverageRetryResponseTimeMs);
+        Assert.Equal(WebhookVerificationStatus.Verified, statistics.Statuses[WebhookTriggerType.Click]);
+        Assert.Null(statistics.MetricsByTrigger[WebhookTriggerType.Click].AverageRetryResponseTimeMs);
         Assert.Equal(TimeSpan.Zero, statistics.TimeRange.StartTime.Offset);
-        Assert.Throws<NotSupportedException>(() => ((IDictionary<string, string>)statistics.Statuses).Add("Other", "verified"));
+        Assert.Throws<NotSupportedException>(() => ((IDictionary<WebhookTriggerType, WebhookVerificationStatus>)statistics.Statuses).Add(WebhookTriggerType.Open, WebhookVerificationStatus.Verified));
         Assert.Equal(HttpMethod.Get, session.Method);
         Assert.Equal("/webhooks/7/statistics", session.Endpoint);
         Assert.Equal("test-server-token", session.ServerToken);
@@ -62,6 +62,23 @@ public class PostKitClientWebhookEndpointTests
         Assert.Equal(0, statistics.Metrics.TotalRequests);
         Assert.Null(statistics.Metrics.AverageTerminalResponseTimeMs);
         Assert.Null(statistics.Metrics.AverageRetryResponseTimeMs);
+    }
+
+    [Theory]
+    [InlineData("Statuses", "NewTrigger", "verified", "NewTrigger")]
+    [InlineData("Statuses", "Open", "pending", "pending")]
+    [InlineData("MetricsByTrigger", "NewTrigger", null, "NewTrigger")]
+    public async Task GetWebhookStatisticsAsync_WithUnknownEnumValue_ReturnsOriginalValueAndReportingGuidance(string collection, string trigger, string? status, string original)
+    {
+        var body = JsonNode.Parse(StatisticsJson)!;
+        body[collection] = new JsonObject { [trigger] = status is null ? JsonNode.Parse(MetricsJson) : JsonValue.Create(status) };
+        using var session = new PostmarkEndpointTestSession(body.ToJsonString());
+
+        var result = await session.Client.GetWebhookStatisticsAsync(7, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsFailure(out var error, out _), result.ToString());
+        Assert.Contains(original, error.Message, StringComparison.Ordinal);
+        Assert.Contains("https://github.com/jscarle/PostKit/issues", error.Message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -157,7 +174,7 @@ public class PostKitClientWebhookEndpointTests
         Assert.True(result.IsSuccess(out var verification), result.ToString());
         Assert.Equal(success, verification.Success);
         Assert.Equal(2, verification.Results.Count);
-        Assert.Equal("FutureEvent", verification.Results[1].TriggerType);
+        Assert.Equal(WebhookTriggerType.Click, verification.Results[1].TriggerType);
         Assert.Equal(passingTriggers == 2 ? 200 : 0, verification.Results[1].StatusCode);
         Assert.Throws<NotSupportedException>(() => ((IList<WebhookVerificationTriggerResult>)verification.Results).Clear());
         Assert.Equal(HttpMethod.Post, session.Method);
@@ -193,13 +210,13 @@ public class PostKitClientWebhookEndpointTests
     public async Task CreateWebhookAsync_WithOptionalVerify_PreservesSerializationAndStatus(bool? verify)
     {
         var body = JsonNode.Parse(WebhookJson)!;
-        body["Status"] = "future-status";
+        body["Status"] = "verified";
         using var session = new PostmarkEndpointTestSession(body.ToJsonString());
 
         var result = await session.Client.CreateWebhookAsync(new WebhookCreateParameters { Url = "https://example.com/hook", Verify = verify }, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess(out var webhook), result.ToString());
-        Assert.Equal("future-status", webhook.Status);
+        Assert.Equal(WebhookVerificationStatus.Verified, webhook.Status);
         var request = JsonNode.Parse(session.Body!)!.AsObject();
         Assert.Equal(verify.HasValue, request.ContainsKey("Verify"));
         if (verify.HasValue)
@@ -309,7 +326,8 @@ public class PostKitClientWebhookEndpointTests
         body.Remove("Id");
         if (bodyCode)
             body["ErrorCode"] = 1364;
-        using var session = new PostmarkEndpointTestSession(body.ToJsonString(), HttpStatusCode.UnprocessableEntity, bodyCode ? null : "1364");
+        using var session = new PostmarkEndpointTestSession(edit ? WebhookJson : body.ToJsonString(), edit ? HttpStatusCode.OK : HttpStatusCode.UnprocessableEntity, bodyCode ? null : "1364",
+            subsequentResponses: edit ? [body.ToJsonString()] : null, subsequentStatus: HttpStatusCode.UnprocessableEntity);
 
         var result = edit
             ? await session.Client.EditWebhookAsync(7, new WebhookEditParameters

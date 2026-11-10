@@ -5,11 +5,11 @@ using PostKit.Bounces;
 using PostKit.Common;
 using PostKit.Postmark;
 using ActivateBounceModel = PostKit.Postmark.Bounces.ActivateBounceResponse;
+using BounceCountElementModel = PostKit.Postmark.Bounces.BounceCountElement;
 using BounceModel = PostKit.Postmark.Bounces.BounceResponse;
 using GetBounceDumpModel = PostKit.Postmark.Bounces.GetBounceDumpResponse;
 using GetBouncesModel = PostKit.Postmark.Bounces.GetBouncesResponse;
 using GetDeliveryStatsModel = PostKit.Postmark.Bounces.GetDeliveryStatsResponse;
-using BounceCountElementModel = PostKit.Postmark.Bounces.BounceCountElement;
 
 // ReSharper disable once CheckNamespace
 namespace PostKit;
@@ -465,9 +465,6 @@ internal sealed partial class PostKitClient
         if (string.IsNullOrWhiteSpace(response.Name))
             return Result.Failure<BounceCore>("Name was not returned from the Postmark Bounces API.");
 
-        if (response.Tag is null)
-            return Result.Failure<BounceCore>("Tag was not returned from the Postmark Bounces API.");
-
         if (response.MessageId is null)
             return Result.Failure<BounceCore>("MessageID was not returned from the Postmark Bounces API.");
 
@@ -624,7 +621,7 @@ internal sealed partial class PostKitClient
         long Id,
         BounceType Type,
         string Name,
-        string Tag,
+        string? Tag,
         Guid MessageId,
         long ServerId,
         string MessageStream,

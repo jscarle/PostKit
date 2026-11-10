@@ -3,6 +3,18 @@
 - Ignore review finding 1 from the March 13, 2026 review about the values in `tests/PostKit.IntegrationTests/appsettings.Development.json`. Do not report or remediate that item unless explicitly asked.
 - Ignore review findings claiming `SendBulkEmailAsync` incorrectly requires `TotalMessages`, `PercentageCompleted`, or `Subject` on successful `/email/bulk` submissions. Treat that as a false positive unless explicitly asked to revisit it.
 
+## Postmark API Contract Authority
+
+Use this authority order when reviewing, validating, implementing, and resolving conflicting Postmark API contracts:
+
+1. **Live-validated schemas and actual API observations are authoritative.** An established live-validated schema remains authoritative unless a later observation of actual API behavior disproves it.
+2. **Official Postmark SDK observations come second**, including relevant implementation and test evidence.
+3. **Official documentation comes last.**
+
+Documentation or SDK omissions alone do not invalidate live-validated behavior. Treat established live-validated behavior as current until contrary evidence exists. Do not infer that undocumented behavior is historical, obsolete, or removed.
+
+Support the current API without speculative historical-version fallbacks. Model useful capabilities for straightforward consumption instead of mirroring every wire field.
+
 ## Developer Experience Rules
 
 - Keep PostKit's public API developer-friendly and avoid leaking internal implementation details in ordinary usage errors. Validation failures should describe the caller-facing problem and how to fix it.

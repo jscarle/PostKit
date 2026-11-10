@@ -4,9 +4,10 @@ using Microsoft.Extensions.Logging;
 using PostKit.Common;
 using PostKit.Messages;
 using PostKit.Postmark;
-using TrackingClientModel = PostKit.Postmark.Messages.MessageTrackingClientResponse;
+using PostKit.Postmark.Common;
 using TrackingClickModel = PostKit.Postmark.Messages.MessageClickResponse;
 using TrackingClickSearchModel = PostKit.Postmark.Messages.MessageClickSearchResponse;
+using TrackingClientModel = PostKit.Postmark.Messages.MessageTrackingClientResponse;
 using TrackingEventModel = PostKit.Postmark.Messages.MessageTrackingEventResponse;
 using TrackingGeoModel = PostKit.Postmark.Messages.MessageTrackingGeoResponse;
 using TrackingOpenModel = PostKit.Postmark.Messages.MessageOpenResponse;
@@ -220,7 +221,8 @@ internal sealed partial class PostKitClient
         AddMessageTrackingFilter(parameters, "os_name", query?.OsName);
         AddMessageTrackingFilter(parameters, "os_family", query?.OsFamily);
         AddMessageTrackingFilter(parameters, "os_company", query?.OsCompany);
-        AddMessageTrackingFilter(parameters, "platform", query?.Platform);
+        if (query?.Platform is { } platform)
+            parameters.Add($"platform={MessagePlatformJsonConverter.ToPostmark(platform).ToLowerInvariant()}");
         AddMessageTrackingFilter(parameters, "country", query?.Country);
         AddMessageTrackingFilter(parameters, "region", query?.Region);
         AddMessageTrackingFilter(parameters, "city", query?.City);
@@ -296,7 +298,11 @@ internal sealed partial class PostKitClient
         if (common.IsFailure(out var error, out var core))
             return Result.Failure<MessageOpen>(error);
 
-        return Result.Success(new MessageOpen(core.RecordType, core.Client, core.Os, core.Platform, core.UserAgent, core.Geo, core.MessageId, core.MessageStream, core.ReceivedAt, core.Tag, core.Recipient));
+        if (response.ReadSeconds is < 0)
+            return Result.Failure<MessageOpen>($"ReadSeconds returned from the Postmark Messages API for Open item {index} must be nonnegative. Received {response.ReadSeconds}.");
+        TimeSpan? readTime = response.ReadSeconds.HasValue ? TimeSpan.FromSeconds(response.ReadSeconds.Value) : null;
+
+        return Result.Success(new MessageOpen(core.RecordType, core.Client, core.Os, core.Platform, core.UserAgent, core.Geo, core.MessageId, core.MessageStream, core.ReceivedAt, core.Tag, core.Recipient, readTime));
     }
 
     private static Result<MessageClick> CreateMessageClick(TrackingClickModel? response, int index)
@@ -308,7 +314,14 @@ internal sealed partial class PostKitClient
         if (common.IsFailure(out var error, out var core))
             return Result.Failure<MessageClick>(error);
 
-        return Result.Success(new MessageClick(core.RecordType, response.ClickLocation, core.Client, core.Os, response.OriginalLink, core.Platform, core.UserAgent, core.Geo, core.MessageId, core.MessageStream, core.ReceivedAt, core.Tag,
+        if (response.ClickLocation is null)
+            return Result.Failure<MessageClick>($"ClickLocation was not returned from the Postmark Messages API for Click item {index}. A click event must identify the HTML or text body containing the clicked link.");
+
+        var locationResult = LinkClickLocationJsonConverter.FromPostmark(response.ClickLocation);
+        if (locationResult.IsFailure(out var locationError, out var clickLocation))
+            return Result.Failure<MessageClick>($"Click item {index}: {locationError.Message}");
+
+        return Result.Success(new MessageClick(core.RecordType, clickLocation, core.Client, core.Os, response.OriginalLink, core.Platform, core.UserAgent, core.Geo, core.MessageId, core.MessageStream, core.ReceivedAt, core.Tag,
             core.Recipient));
     }
 
@@ -329,8 +342,17 @@ internal sealed partial class PostKitClient
         if (response.ReceivedAt is null)
             return Result.Failure<MessageTrackingEventCore>($"ReceivedAt was not returned from the Postmark Messages API for {context}.");
 
+        MessagePlatform? platform = null;
+        if (response.Platform is not null)
+        {
+            var platformResult = MessagePlatformJsonConverter.FromPostmark(response.Platform);
+            if (platformResult.IsFailure(out var platformError, out var mappedPlatform))
+                return Result.Failure<MessageTrackingEventCore>($"{context}: {platformError.Message}");
+            platform = mappedPlatform;
+        }
+
         return Result.Success(new MessageTrackingEventCore(NormalizeOptionalMessageTrackingString(response.RecordType), CreateMessageTrackingClient(response.Client), CreateMessageTrackingOperatingSystem(response.Os),
-            NormalizeOptionalMessageTrackingString(response.Platform), response.UserAgent, CreateMessageTrackingGeo(response.Geo), messageId, response.MessageStream, response.ReceivedAt.Value,
+            platform, response.UserAgent, CreateMessageTrackingGeo(response.Geo), messageId, response.MessageStream, response.ReceivedAt.Value,
             NormalizeOptionalMessageTrackingString(response.Tag), NormalizeOptionalMessageTrackingString(response.Recipient)));
     }
 
@@ -384,7 +406,7 @@ internal sealed partial class PostKitClient
         string? RecordType,
         MessageTrackingClient? Client,
         MessageTrackingOperatingSystem? Os,
-        string? Platform,
+        MessagePlatform? Platform,
         string UserAgent,
         MessageTrackingGeo? Geo,
         Guid MessageId,

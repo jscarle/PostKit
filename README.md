@@ -683,18 +683,57 @@ else if (createResult.IsFailure(out var error, out _) && error is PostmarkError 
 
 `WebhookCreateParameters.Verify` and `WebhookEditParameters.Verify` default to null: PostKit omits the field and preserves the existing request shape. Postmark currently defaults verification to true.
 Set true to verify while saving, or false to save an unverified webhook; event delivery remains paused until verification succeeds. PostKit sends explicit choices in JSON and the `verify` query parameter for compatibility with the live API.
-A verification-only edit is valid. When an explicit verification choice needs the current URL or enabled triggers, PostKit retrieves the webhook before submitting the edit. Supplying both avoids that lookup.
+Every edit validates the supplied parameters, reads the current configuration, and merges the changes before updating. Omitted URL, authentication, headers, and trigger settings remain unchanged; an explicit empty `HttpHeaders` collection clears headers.
+An unsuccessful or cancelled read prevents the update. This adds one GET per edit, and the read/update sequence is not atomic: concurrent changes can be overwritten. Response verification statuses are never sent in mutation requests.
 
 HTTP 200 means verification ran; the successful result can still contain `Success = false`. Inspect its summary and every trigger result. A status code of zero means no HTTP response was received.
 Create/edit failures with code `PostmarkErrorCode.WebhookVerificationFailed` (1364) expose typed `PostmarkError.Verification` details as well as the HTTP status and error summary. An unsaved webhook has no verification ID.
-Webhook `Status` is nullable for older responses, and future status and trigger names are preserved as strings. Verification and webhook mutations are never automatically retried.
+The existing top-level `Webhook.Status` is now a nullable `WebhookVerificationStatus` (`Verified`, `Unverified`); live webhook responses omitted this field, so PostKit preserves its absence as null.
+New per-trigger properties such as `webhook.Triggers.Delivery.Status` expose the verification states reported for individual enabled triggers. The [official SDK evidence](https://github.com/ActiveCampaign/postmark-python/commit/6918986f5ab77cf79de18e65813bb480b67768c3) describes status as absent for disabled triggers.
+Trigger records are shared by request parameters and returned configuration, but `Status` is response-only and always excluded from create/edit requests. Its absence is never converted to `Unverified` or derived from other statuses.
+Verification results use `WebhookTriggerType` for the six supported triggers.
+Statistics use the same enums for trigger keys and status values. Unknown enum values fail with the original provider value and the repository issue-reporting URL. Verification and webhook mutations are never automatically retried.
 
 Statistics expose Postmark's fixed rolling window without date filters. Counts and millisecond averages use 64-bit integers; both response-time averages are nullable because the live API omits them when there are no observations.
-Empty trigger dictionaries and zero activity are valid. Collections are owned and read-only, and trigger dictionaries use ordinal keys. The provider's aggregate and per-trigger values are preserved independently.
+Empty trigger dictionaries and zero activity are valid. Collections are owned and read-only, with typed trigger keys. The provider's aggregate and per-trigger values are preserved independently.
 See the [Webhooks API documentation](https://postmarkapp.com/developer/api/webhooks-api) and [bulk pagination documentation](https://postmarkapp.com/developer/api/bulk-email#list-bulk-api-requests).
 
-Custom implementations and hand-written test doubles of `IPostKitClient` must implement the three additional members: `GetWebhookStatisticsAsync`, `VerifyWebhookAsync`, and `ListBulkEmailRequestsAsync`.
+Custom implementations and hand-written test doubles of `IPostKitClient` must also implement `GetOutboundReadTimeStatsAsync(OutboundStatsQuery? query = null, CancellationToken cancellationToken = default)`, returning `Task<Result<OutboundReadTimeStats>>`.
+The previously added `GetWebhookStatisticsAsync`, `VerifyWebhookAsync`, and `ListBulkEmailRequestsAsync` members remain required.
 Existing SDK methods, overloads, configuration, and DI registration remain available.
+
+### Tracking values and empty statistics
+
+Use `DisableOpenTracking()` on composed or templated ordinary and bulk email builders to send an explicit false choice. `EnableOpenTracking()` remains available; calling either setting twice throws. Calling neither omits `TrackOpens`.
+Open/click REST results and webhook payloads expose nullable `MessagePlatform` (`WebMail`, `Desktop`, `Mobile`, `Unknown`). `MessageTrackingQuery.Platform` uses the same enum. Click locations use `LinkClickLocation.Html` and `.Text`.
+`MessageClick.ClickLocation` and `ClickWebhookMessage.ClickLocation` are required; missing/null locations are rejected. `OutboundMessageEventDetails.ClickLocation` remains nullable because its shared event-details model also represents events other than clicks.
+`Unknown` is a valid Postmark platform category; an unrecognized wire string still fails with reporting guidance. Open events and open webhooks expose optional reading time as `TimeSpan? ReadTime`, converted internally from `ReadSeconds`.
+Outbound-message and bounce `Tag` properties are nullable; an absent tag remains null.
+
+```csharp
+using PostKit.Stats;
+
+var result = await _postKitClient.GetOutboundReadTimeStatsAsync(new OutboundStatsQuery
+{
+    FromDate = new DateOnly(2026, 11, 1),
+    ToDate = new DateOnly(2026, 11, 10),
+    MessageStreamId = "outbound",
+});
+if (result.IsSuccess(out var readingTimes))
+{
+    foreach (var bucket in readingTimes.Totals)
+        Console.WriteLine($"{bucket.Key}: {bucket.Value}");
+    foreach (var day in readingTimes.Days)
+        Console.WriteLine($"{day.Date}: {day.Counts.Count} returned buckets");
+}
+```
+
+Reading-time bucket names are provider-defined strings; PostKit does not assign undocumented duration boundaries. Series endpoints accept the live-observed `{ "Days": [] }` response. Omitted named zero-count categories map to zero;
+dynamic totals and daily count dictionaries can be empty. Supplied counts must still be nonnegative integers, and dates and required structure must be valid. Returned aggregate values remain independent of daily values.
+The overview also exposes the live-observed nonnegative `WithReadTimeRecorded` counter.
+
+Layout-template edits can omit `Subject`. When a subject is omitted, PostKit reads the current template type before applying standard/layout validation. A failed or cancelled lookup prevents the update; creation validation is unchanged.
+See [migration guidance](CHANGES.md#property-migration) for the public property type changes in v11.0.1.
 
 ### Opt-in tests for the new endpoints
 
@@ -711,7 +750,29 @@ dotnet test tests/PostKit.IntegrationTests/PostKit.IntegrationTests.csproj --con
 
 Bulk pagination uses existing jobs. If necessary, optional process-local `POSTKIT_LIVE_FROM_EMAIL` and `POSTKIT_LIVE_TO_EMAIL` may identify established test fixtures; the test submits at most two one-recipient broadcast jobs.
 Without sufficient jobs or configured addresses, pagination and status/counter observations are reported as unverified live coverage. Approval denial is a skip, not a live pass. Negative verification cases use local HTTP fixtures.
+`ApiAccuracyIntegrationTests` is the server-token-only fixture for the accuracy updates. Set process-local `POSTKIT_RUN_LIVE_ACCURACY_TESTS=1`, `POSTKIT_LIVE_SERVER_TOKEN`, `POSTKIT_LIVE_AUTHORIZED_SERVER_NAME`,
+`POSTKIT_LIVE_AUTHORIZED_SERVER_ID`, and `POSTKIT_LIVE_WEBHOOK_URL`. It requires the exact authorized ID/name and `Sandbox` delivery type before testing. Run only this fixture:
+
+```powershell
+dotnet test tests/PostKit.IntegrationTests/PostKit.IntegrationTests.csproj --configuration Release --framework net11.0 --filter FullyQualifiedName~ApiAccuracyIntegrationTests --logger "console;verbosity=detailed"
+```
+
+It reads existing bulk jobs without submitting more, creates disposable webhook/layout resources, and verifies cleanup while preserving the initial inventory. The account-token-dependent fixture above is separate.
 Keep credentials out of files, command-line arguments, logs, and artifacts.
+
+### Contract evidence
+
+Contract decisions follow live observations first, official Postmark SDK implementation/test evidence second, and documentation last. The [API reference](tools/reference.yml) retains previously live-validated contracts and records new provenance.
+On 2026-11-10, the explicitly authorized sandbox confirmed all 13 statistics operations (including empty reading-time statistics and `WithReadTimeRecorded`), untagged outbound search/details, partial webhook edits with authentication and headers,
+verification callbacks, webhook statistics, and layout editing without a subject. The generated inbox independently received four Postmark verification callbacks. All disposable webhook and template resources were removed.
+
+Exactly two one-recipient bulk jobs, composed and templated, progressed through accepted/processing/completed responses. Subjects and both counters were present, including the unrendered template subject; nonempty list pages and cursor pagination were observed.
+These observations do not justify changing `BulkEmailJob.Subject` or requiring counters across every response shape. Their contracts, raw `AdditionalProperties`, `Failed = 3`, and `Cancelled = 4` remain intact.
+The initial account token returned 401. A subsequently authorized temporary account token completed seven read-only GETs with HTTP 200: filtered server lists, the allowed sandbox's details, domain list/details, and an empty sender-signature list.
+All mapped successfully through PostKit. Sender-signature details were not exercised because the list was empty; account mutations and data-removal operations were not tested. The account test enforced a GET-only endpoint allowlist and made no changes.
+Populated reading-time buckets, optional reading durations, and unknown/malformed values are covered by source/documentation-derived local fixtures, not claimed as live observations.
+The reading-time endpoint and dynamic bucket structure are also present in the [official .NET SDK](https://github.com/ActiveCampaign/postmark-dotnet/blob/main/src/Postmark/PostmarkClient.cs).
+The expired original callback inbox returned 404; the successful rerun used a freshly generated inbox.
 
 ### Suppressions
 
@@ -1081,6 +1142,7 @@ The following tables track development progress and map the different Postmark A
 | ✅ | [Get email open counts](https://postmarkapp.com/developer/api/stats-api#get-email-open-counts)           | `IPostKitClient.GetOutboundOpenStatsAsync`          |
 | ✅ | [Get email platform usage](https://postmarkapp.com/developer/api/stats-api#get-email-platform-usage)     | `IPostKitClient.GetOutboundEmailPlatformStatsAsync` |
 | ✅ | [Get email client usage](https://postmarkapp.com/developer/api/stats-api#get-email-client-usage)         | `IPostKitClient.GetOutboundEmailClientStatsAsync`   |
+| ✅ | [Get reading-time counts (official SDK)](https://github.com/ActiveCampaign/postmark-dotnet/blob/main/src/Postmark/PostmarkClient.cs) | `IPostKitClient.GetOutboundReadTimeStatsAsync` |
 | ✅ | [Get click counts](https://postmarkapp.com/developer/api/stats-api#get-click-counts)                     | `IPostKitClient.GetOutboundClickStatsAsync`         |
 | ✅ | [Get browser usage](https://postmarkapp.com/developer/api/stats-api#get-browser-usage)                   | `IPostKitClient.GetOutboundClickBrowserStatsAsync`  |
 | ✅ | [Get browser platform usage](https://postmarkapp.com/developer/api/stats-api#get-browser-platform-usage) | `IPostKitClient.GetOutboundClickPlatformStatsAsync` |
