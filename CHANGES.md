@@ -2,6 +2,17 @@
 
 This file contains PostKit release notes and upgrade guidance. General installation, configuration, and usage documentation remains in the [README](README.md).
 
+## Version 11.0.0 .NET 11 Support
+
+Added a `net11.0` target alongside `net8.0`, `net9.0`, and `net10.0`. Building the repository requires the stable .NET 11 SDK selected by `global.json`.
+
+Updated direct package dependencies and test infrastructure to their latest supported stable releases. The .NET 8 and 9 targets use Microsoft 10.0 packages because Microsoft 11.0 packages support .NET 10 and later.
+LightResults is now version 11.0.0 across all supported targets.
+
+Replaced the full MimeKit package with `MimeKit.Core` 5.0, removing the unused cryptography, BouncyCastle, and explicit `System.Security.Cryptography.Pkcs` dependencies.
+Its core types, including `MailboxAddress` exposed by PostKit, moved from `MimeKit.dll` to `MimeKit.Core.dll`; recompile applications when upgrading. Applications using MimeKit's cryptography APIs must now reference `MimeKit.Cryptography` explicitly.
+Address parsing also preserves punycode domains and trims ASCII whitespace from display names. See the [MimeKit 5 porting guide](https://github.com/jstedfast/MimeKit/blob/master/PortingGuide.md) for dependency migration details.
+
 ## Version 10.4.0 Webhook And Bulk API Additions
 
 Added webhook statistics, explicit webhook verification, and cursor-based bulk request listing. Webhook create/edit parameters accept an optional `Verify` choice; verification failures expose typed per-trigger details through

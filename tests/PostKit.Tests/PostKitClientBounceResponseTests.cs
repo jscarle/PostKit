@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using LightResults;
 using Microsoft.Extensions.Logging;
@@ -935,7 +936,7 @@ public class PostKitClientBounceResponseTests
                 Details = "smtp;550 mailbox unavailable",
                 Email = "HardBounce@bounce-testing.postmarkapp.com",
                 From = "from@publi-7.com",
-                BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z"),
+                BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z", CultureInfo.InvariantCulture),
                 DumpAvailable = true,
                 Inactive = false,
                 CanActivate = true,
@@ -966,7 +967,7 @@ public class PostKitClientBounceResponseTests
                     Details = "smtp;550 mailbox unavailable",
                     Email = "HardBounce@bounce-testing.postmarkapp.com",
                     From = "from@publi-7.com",
-                    BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z"),
+                    BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z", CultureInfo.InvariantCulture),
                     DumpAvailable = true,
                     Inactive = true,
                     CanActivate = true,
@@ -1004,7 +1005,7 @@ public class PostKitClientBounceResponseTests
                 Details = "smtp;550 mailbox unavailable",
                 Email = "HardBounce@bounce-testing.postmarkapp.com",
                 From = "from@publi-7.com",
-                BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z"),
+                BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z", CultureInfo.InvariantCulture),
                 DumpAvailable = true,
                 Inactive = true,
                 CanActivate = true,
@@ -1035,7 +1036,7 @@ public class PostKitClientBounceResponseTests
                     Details = "smtp;550 mailbox unavailable",
                     Email = "HardBounce@bounce-testing.postmarkapp.com",
                     From = "from@publi-7.com",
-                    BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z"),
+                    BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z", CultureInfo.InvariantCulture),
                     DumpAvailable = true,
                     Inactive = true,
                     CanActivate = true,

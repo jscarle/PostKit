@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using LightResults;
 using Microsoft.Extensions.Logging;
@@ -60,7 +61,7 @@ public class PostKitClientSuppressionResponseTests
             Assert.Equal("manual@example.com", first.EmailAddress);
             Assert.Equal(SuppressionReason.ManualSuppression, first.Reason);
             Assert.Equal(SuppressionOrigin.Recipient, first.Origin);
-            Assert.Equal(DateTimeOffset.Parse("2026-03-12T09:30:00-05:00"), first.CreatedAt);
+            Assert.Equal(DateTimeOffset.Parse("2026-03-12T09:30:00-05:00", CultureInfo.InvariantCulture), first.CreatedAt);
         }, second =>
         {
             Assert.Equal("bounce@example.com", second.EmailAddress);
