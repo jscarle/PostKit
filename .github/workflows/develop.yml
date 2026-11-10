@@ -23,10 +23,14 @@ jobs:
           languages: 'csharp'
           build-mode: none
 
-      - name: Setup .NET 10.0
-        uses: actions/setup-dotnet@v5
+      - name: Setup .NET SDKs
+        uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.x
+          global-json-file: global.json
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
 
       - name: Restore dependencies
         run: dotnet restore

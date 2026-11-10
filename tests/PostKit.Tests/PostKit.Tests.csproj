@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+        <TargetFrameworks>net8.0;net9.0;net10.0;net11.0</TargetFrameworks>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
@@ -18,7 +18,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <!-- Preserve the existing VSTest commands used by CI and local test runners. -->
-        <PackageReference Include="xunit.v3.mtp-off" Version="4.0.2" />
+        <PackageReference Include="xunit.v3.mtp-off" Version="4.0.3" />
     </ItemGroup>
 
     <ItemGroup>

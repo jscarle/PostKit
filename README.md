@@ -26,7 +26,7 @@ Install PostKit via NuGet:
 dotnet add package PostKit
 ```
 
-Current package targets `net8.0`, `net9.0`, and `net10.0`.
+Current package targets `net8.0`, `net9.0`, `net10.0`, and `net11.0`.
 
 ### Configuration
 
@@ -706,7 +706,7 @@ Set `POSTKIT_LIVE_WEBHOOK_URL` to an inbox receiving endpoint you control. The f
 Run only the new fixture, leaving the broader live integration suite opt-in separately:
 
 ```powershell
-dotnet test tests/PostKit.IntegrationTests/PostKit.IntegrationTests.csproj --configuration Release --framework net10.0 --filter FullyQualifiedName~NewApiIntegrationTests --logger "console;verbosity=detailed"
+dotnet test tests/PostKit.IntegrationTests/PostKit.IntegrationTests.csproj --configuration Release --framework net11.0 --filter FullyQualifiedName~NewApiIntegrationTests --logger "console;verbosity=detailed"
 ```
 
 Bulk pagination uses existing jobs. If necessary, optional process-local `POSTKIT_LIVE_FROM_EMAIL` and `POSTKIT_LIVE_TO_EMAIL` may identify established test fixtures; the test submits at most two one-recipient broadcast jobs.

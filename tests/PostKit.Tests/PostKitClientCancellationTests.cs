@@ -1,3 +1,4 @@
+using System.Globalization;
 using LightResults;
 using Microsoft.Extensions.Logging;
 using PostKit.BulkEmails;
@@ -206,7 +207,7 @@ public class PostKitClientCancellationTests
                 Details = "smtp;550 mailbox unavailable",
                 Email = "HardBounce@bounce-testing.postmarkapp.com",
                 From = "from@postkit.com",
-                BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z"),
+                BouncedAt = DateTimeOffset.Parse("2026-03-11T17:33:38Z", CultureInfo.InvariantCulture),
                 DumpAvailable = true,
                 Inactive = inactive,
                 CanActivate = true,

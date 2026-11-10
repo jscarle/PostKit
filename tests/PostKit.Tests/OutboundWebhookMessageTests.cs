@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO.Pipelines;
 using System.Text;
 using System.Text.Json;
@@ -173,7 +174,7 @@ public class OutboundWebhookMessageTests
         Assert.Equal("Delivery", message.RecordType);
         Assert.Equal(Guid.Parse("883953f4-6105-42a2-a16a-77a8eac79483"), message.MessageId);
         Assert.Equal("john@example.com", message.Recipient);
-        Assert.Equal(DateTimeOffset.Parse("2019-11-05T16:33:54.9070259Z"), message.DeliveredAt);
+        Assert.Equal(DateTimeOffset.Parse("2019-11-05T16:33:54.9070259Z", CultureInfo.InvariantCulture), message.DeliveredAt);
         Assert.Equal("Test delivery webhook details", message.Details);
         Assert.Equal("welcome-email", message.Tag);
         Assert.Equal(23, message.ServerId);
@@ -192,7 +193,7 @@ public class OutboundWebhookMessageTests
         Assert.Equal("HardBounce", message.Type);
         Assert.Equal(1, message.TypeCode);
         Assert.Equal(Guid.Parse("883953f4-6105-42a2-a16a-77a8eac79483"), message.MessageId);
-        Assert.Equal(DateTimeOffset.Parse("2019-11-05T16:33:54.9070259Z"), message.BouncedAt);
+        Assert.Equal(DateTimeOffset.Parse("2019-11-05T16:33:54.9070259Z", CultureInfo.InvariantCulture), message.BouncedAt);
         Assert.True(message.DumpAvailable);
         Assert.True(message.Inactive);
         Assert.True(message.CanActivate);
@@ -213,7 +214,7 @@ public class OutboundWebhookMessageTests
         Assert.Equal("RS", message.Geo?.CountryIsoCode);
         Assert.Equal("188.2.95.4", message.Geo?.Ip);
         Assert.Equal(Guid.Parse("883953f4-6105-42a2-a16a-77a8eac79483"), message.MessageId);
-        Assert.Equal(DateTimeOffset.Parse("2019-11-05T16:33:54.9070259Z"), message.ReceivedAt);
+        Assert.Equal(DateTimeOffset.Parse("2019-11-05T16:33:54.9070259Z", CultureInfo.InvariantCulture), message.ReceivedAt);
     }
 
     [Fact]
@@ -229,7 +230,7 @@ public class OutboundWebhookMessageTests
         Assert.Equal("OS X 10", message.Os?.Family);
         Assert.Equal("8.8.8.8", message.Geo?.Ip);
         Assert.Equal(Guid.Empty, message.MessageId);
-        Assert.Equal(DateTimeOffset.Parse("2017-10-25T15:21:11.9065619Z"), message.ReceivedAt);
+        Assert.Equal(DateTimeOffset.Parse("2017-10-25T15:21:11.9065619Z", CultureInfo.InvariantCulture), message.ReceivedAt);
     }
 
     [Fact]
@@ -257,7 +258,7 @@ public class OutboundWebhookMessageTests
         Assert.Equal("SubscriptionChange", message.RecordType);
         Assert.Equal(Guid.Parse("883953f4-6105-42a2-a16a-77a8eac79483"), message.MessageId);
         Assert.Equal(123456, message.ServerId);
-        Assert.Equal(DateTimeOffset.Parse("2020-02-01T10:53:34.416071Z"), message.ChangedAt);
+        Assert.Equal(DateTimeOffset.Parse("2020-02-01T10:53:34.416071Z", CultureInfo.InvariantCulture), message.ChangedAt);
         Assert.True(message.SuppressSending);
         Assert.Equal("HardBounce", message.SuppressionReason);
         Assert.Equal("value", message.Metadata["example"]);

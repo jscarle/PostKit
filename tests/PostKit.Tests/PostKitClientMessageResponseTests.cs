@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using LightResults;
 using Microsoft.Extensions.Logging;
@@ -154,7 +155,7 @@ public class PostKitClientMessageResponseTests
         Assert.Equal("Invitation", message.Tag);
         Assert.Equal(Guid.Parse("0ac29aee-e1cd-480d-b08d-4f48548ff48d"), message.MessageId);
         Assert.Equal("outbound", message.MessageStream);
-        Assert.Equal(DateTimeOffset.Parse("2014-02-20T07:25:02.8782715-05:00"), message.ReceivedAt);
+        Assert.Equal(DateTimeOffset.Parse("2014-02-20T07:25:02.8782715-05:00", CultureInfo.InvariantCulture), message.ReceivedAt);
         Assert.Equal("\"Joe\" <joe@domain.com>", message.From);
         Assert.Equal("staging", message.Subject);
         Assert.Equal(OutboundMessageStatus.Sent, message.Status);
@@ -197,7 +198,7 @@ public class PostKitClientMessageResponseTests
         Assert.Equal("product-orders", response.Tag);
         Assert.Equal(messageId, response.MessageId);
         Assert.Equal("outbound", response.MessageStream);
-        Assert.Equal(DateTimeOffset.Parse("2014-02-14T11:12:54.8054242-05:00"), response.ReceivedAt);
+        Assert.Equal(DateTimeOffset.Parse("2014-02-14T11:12:54.8054242-05:00", CultureInfo.InvariantCulture), response.ReceivedAt);
         Assert.Equal("\"Joe\" <joe@domain.com>", response.From);
         Assert.Equal("Parts Order #5454", response.Subject);
         Assert.Equal(OutboundMessageStatus.Sent, response.Status);
@@ -217,7 +218,7 @@ public class PostKitClientMessageResponseTests
         var delivered = response.MessageEvents.ElementAt(0);
         Assert.Equal("john.doe@yahoo.com", delivered.Recipient);
         Assert.Equal(OutboundMessageEventType.Delivered, delivered.Type);
-        Assert.Equal(DateTimeOffset.Parse("2014-02-14T11:13:10.8054242-05:00"), delivered.ReceivedAt);
+        Assert.Equal(DateTimeOffset.Parse("2014-02-14T11:13:10.8054242-05:00", CultureInfo.InvariantCulture), delivered.ReceivedAt);
         Assert.Equal("smtp;250 2.0.0 OK", delivered.Details.DeliveryMessage);
         Assert.Equal("yahoo-smtp-in.l.yahoo.com", delivered.Details.DestinationServer);
         Assert.Equal("173.194.74.256", delivered.Details.DestinationIp);
