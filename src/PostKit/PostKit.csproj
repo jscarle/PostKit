@@ -58,7 +58,7 @@
         <RepositoryUrl>https://github.com/jscarle/PostKit</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <Authors>Jean-Sebastien Carle</Authors>
-        <Copyright>Copyright © Jean-Sebastien Carle 2025</Copyright>
+        <Copyright>Copyright © Jean-Sebastien Carle 2026</Copyright>
         <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
         <PackageIcon>Icon.png</PackageIcon>
         <IncludeSymbols>true</IncludeSymbols>
