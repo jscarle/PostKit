@@ -40,12 +40,13 @@ public sealed class Attachment
         "mst"
     };
 
-    private Attachment(string name, string contentType, string content, string? contentId)
+    private Attachment(string name, string contentType, string content, string? contentId, int contentSizeInBytes)
     {
         Name = name;
         ContentType = contentType;
         Content = content;
         ContentId = contentId;
+        ContentSizeInBytes = contentSizeInBytes;
     }
 
     /// <summary>Gets the file name that will be presented to the email recipient.</summary>
@@ -56,6 +57,8 @@ public sealed class Attachment
 
     /// <summary>Gets the Base64 encoded contents of the attachment.</summary>
     public string Content { get; }
+
+    internal int ContentSizeInBytes { get; }
 
     /// <summary>Gets the optional content identifier of the attachment when it should be embedded in the message body.</summary>
     public string? ContentId { get; }
@@ -96,7 +99,7 @@ public sealed class Attachment
         var encodedContent = Convert.ToBase64String(content);
 
         if (contentId is null)
-            return new Attachment(name, parsedContentType.MimeType, encodedContent, contentId);
+            return new Attachment(name, parsedContentType.MimeType, encodedContent, contentId, content.Length);
 
         var contentIdStartIndex = 0;
         var contentIdEndIndex = contentId.Length;
@@ -132,7 +135,7 @@ public sealed class Attachment
         var contentIdValue = contentId[contentIdStartIndex..contentIdEndIndex];
         var normalizedContentId = $"cid:{contentIdValue}";
 
-        return new Attachment(name, parsedContentType.MimeType, encodedContent, normalizedContentId);
+        return new Attachment(name, parsedContentType.MimeType, encodedContent, normalizedContentId, content.Length);
     }
 
     private static bool TryGetInvalidNameCharacter(string name, out char invalidCharacter, out int invalidCharacterIndex)

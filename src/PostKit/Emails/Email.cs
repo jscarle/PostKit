@@ -70,8 +70,6 @@ public sealed class Email
 
     internal JsonNode? TemplateModelNode { get; init; }
 
-    internal int TemplateModelSizeInBytes { get; init; }
-
     /// <summary>Creates a new <see cref="ComposedEmailBuilder" /> for composing an <see cref="Email" />.</summary>
     /// <returns>A builder that can be used to configure an email.</returns>
     public static ComposedEmailBuilder Compose()

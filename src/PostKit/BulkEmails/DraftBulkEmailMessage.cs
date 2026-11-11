@@ -12,7 +12,6 @@ internal sealed class DraftBulkEmailMessage
     private Dictionary<string, string>? _headers;
     private Dictionary<string, string>? _metadata;
     private object? _templateModel;
-    private int _templateModelSizeInBytes;
     private JsonNode? _templateModelSnapshot;
     private IList<MailboxAddress>? _to;
 
@@ -217,7 +216,6 @@ internal sealed class DraftBulkEmailMessage
             Bcc = _bcc?.SnapshotReadOnly(),
             TemplateModel = _templateModelSnapshot?.DeepClone(),
             TemplateModelNode = _templateModelSnapshot?.DeepClone(),
-            TemplateModelSizeInBytes = _templateModelSizeInBytes,
             Metadata = _metadata?.SnapshotReadOnly(),
             Headers = _headers?.SnapshotReadOnly()
         };
@@ -239,11 +237,10 @@ internal sealed class DraftBulkEmailMessage
     {
         _templateModel.EnsureNotSet(nameof(BulkEmailMessage.TemplateModel));
 
-        var (snapshot, serializedSizeInBytes) = templateModel.SnapshotTemplateModel(nameof(templateModel), serializerOptions);
+        var snapshot = templateModel.SnapshotTemplateModel(nameof(templateModel), serializerOptions);
 
         _templateModel = templateModel;
         _templateModelSnapshot = snapshot;
-        _templateModelSizeInBytes = serializedSizeInBytes;
 
         return this;
     }

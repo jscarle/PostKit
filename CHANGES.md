@@ -2,6 +2,14 @@
 
 This file contains PostKit release notes and upgrade guidance. General installation, configuration, and usage documentation remains in the [README](README.md).
 
+## Version 11.0.2 Size Validation
+
+Attachment validation now counts combined raw bytes instead of Base64 content plus bodies, headers, and template models. Email and Batch accept 10,485,760 raw bytes; Bulk accepts 10,485,759 raw bytes, matching the live-observed endpoint boundaries.
+
+`TextBody` and `HtmlBody` each allow 5,242,880 UTF-16 code units, including Unicode bodies whose UTF-8 representation exceeds 5 MiB. Complete JSON request payloads are measured with the sending serializer and limited to 52,428,800 UTF-8 bytes (50 MiB), including escaping, metadata, property names, and batch/template wrappers.
+
+Validation errors identify the affected content, actual size or length, limit, and suggested fix. No public API changes are required. Postmark still applies rendering and delivery checks after submission; live Bulk tests at the maximum HTML length passed submission validation but later failed processing without detailed diagnostics. See the README's size-limit notes.
+
 ## Version 11.0.1 API Accuracy And Usability
 
 Added `GetOutboundReadTimeStatsAsync` for `/stats/outbound/opens/readTimes`, with owned read-only totals and daily counts keyed by provider bucket names. Custom `IPostKitClient` implementations and hand-written test doubles must add this member.

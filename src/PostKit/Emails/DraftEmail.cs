@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using MimeKit;
 using PostKit.Common;
+using PostKit.Postmark.Common;
 
 namespace PostKit.Emails;
 
@@ -40,7 +41,6 @@ internal sealed partial class DraftEmail
     private string? _templateAlias;
     private object? _templateModel;
     private JsonNode? _templateModelSnapshot;
-    private int _templateModelSizeInBytes;
     private bool? _inlineCss;
 
     public DraftEmail From(string address)
@@ -357,8 +357,7 @@ internal sealed partial class DraftEmail
         if (attachment is null)
             throw new ArgumentNullException(nameof(attachment), "The attachment cannot be null.");
 
-        var estimatedSize = PostmarkSizeEstimator.EstimateBase64SizeLowerBound(attachment.Content);
-        EnsureAttachmentsWithinLimit(estimatedSize);
+        EnsureAttachmentsWithinLimit(attachment.ContentSizeInBytes);
 
         (_attachments ??= []).Add(attachment);
 
@@ -381,7 +380,7 @@ internal sealed partial class DraftEmail
             if (attachment is null)
                 throw new ArgumentException($"The attachment at index {index} cannot be null.", nameof(attachments));
 
-            additionalBytes += PostmarkSizeEstimator.EstimateBase64SizeLowerBound(attachment.Content);
+            additionalBytes += attachment.ContentSizeInBytes;
             index++;
         }
 
@@ -534,15 +533,11 @@ internal sealed partial class DraftEmail
         if (!_templateId.HasValue && _templateAlias is null && _templateModel is not null)
             throw new InvalidOperationException("TemplateId or TemplateAlias is required when TemplateModel is set. Call SetTemplate(...).");
 
-        var textBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_textBody);
-        if (textBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
-            throw new InvalidOperationException(PostmarkSizeEstimator.FormatActualSizeLimitMessage("Text body exceeds Postmark's 5 MB limit.", textBodySize, PostmarkSizeEstimator.BodySizeLimitInBytes));
+        if (_textBody?.Length > PostmarkSizeLimits.BodyCharacterLimit)
+            throw new InvalidOperationException(PostmarkSizeLimits.FormatBodyLengthLimitMessage(nameof(Email.TextBody), _textBody.Length));
 
-        var htmlBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_htmlBody);
-        if (htmlBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
-            throw new InvalidOperationException(PostmarkSizeEstimator.FormatActualSizeLimitMessage("HTML body exceeds Postmark's 5 MB limit.", htmlBodySize, PostmarkSizeEstimator.BodySizeLimitInBytes));
-
-        EnsureMessageContentWithinLimit();
+        if (_htmlBody?.Length > PostmarkSizeLimits.BodyCharacterLimit)
+            throw new InvalidOperationException(PostmarkSizeLimits.FormatBodyLengthLimitMessage(nameof(Email.HtmlBody), _htmlBody.Length));
 
         var email = new Email
         {
@@ -566,9 +561,13 @@ internal sealed partial class DraftEmail
             TemplateAlias = _templateAlias,
             TemplateModel = _templateModelSnapshot?.DeepClone(),
             TemplateModelNode = _templateModelSnapshot?.DeepClone(),
-            TemplateModelSizeInBytes = _templateModelSizeInBytes,
             InlineCss = _inlineCss
         };
+
+        var request = email.ToEmailRequest();
+        var payloadSize = JsonSizeEstimator.GetSerializedSize(request, PostmarkConfiguration.JsonSerializerOptions);
+        if (payloadSize > PostmarkSizeLimits.PayloadSizeLimitInBytes)
+            throw new InvalidOperationException(PostmarkSizeLimits.FormatSizeLimitMessage("Email JSON payload exceeds Postmark's 50 MiB limit. Reduce the email content.", payloadSize, PostmarkSizeLimits.PayloadSizeLimitInBytes));
 
         return email;
     }
@@ -636,27 +635,19 @@ internal sealed partial class DraftEmail
     {
         ArgumentOutOfRangeException.ThrowIfNegative(additionalBytes);
 
-        var projectedTotal = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, _templateModelSizeInBytes, _attachments, _headers) + additionalBytes;
-        if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage("Estimated message content exceeds Postmark's 10 MB limit.", projectedTotal, PostmarkSizeEstimator.MessageSizeLimitInBytes));
-    }
-
-    private void EnsureMessageContentWithinLimit()
-    {
-        var projectedTotal = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, _templateModelSizeInBytes, _attachments, _headers);
-        if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage("Estimated message content exceeds Postmark's 10 MB limit.", projectedTotal, PostmarkSizeEstimator.MessageSizeLimitInBytes));
+        var projectedTotal = PostmarkSizeLimits.GetAttachmentContentSize(_attachments) + additionalBytes;
+        if (projectedTotal > PostmarkSizeLimits.AttachmentSizeLimitInBytes)
+            throw new InvalidOperationException(PostmarkSizeLimits.FormatSizeLimitMessage("Attachments exceed Postmark's 10 MiB limit. Reduce the combined raw attachment size.", projectedTotal, PostmarkSizeLimits.AttachmentSizeLimitInBytes));
     }
 
     private DraftEmail SetTemplateModel(object templateModel, JsonSerializerOptions? serializerOptions = null)
     {
         _templateModel.EnsureNotSet(nameof(Email.TemplateModel));
 
-        var (snapshot, serializedSizeInBytes) = templateModel.SnapshotTemplateModel(nameof(templateModel), serializerOptions);
+        var snapshot = templateModel.SnapshotTemplateModel(nameof(templateModel), serializerOptions);
 
         _templateModel = templateModel;
         _templateModelSnapshot = snapshot;
-        _templateModelSizeInBytes = serializedSizeInBytes;
 
         return this;
     }

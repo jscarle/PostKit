@@ -1,7 +1,9 @@
 using LightResults;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using PostKit.Emails;
 using PostKit.Postmark;
+using PostKit.Postmark.Common;
 using PostKit.Postmark.Email;
 
 namespace PostKit.Tests;
@@ -56,7 +58,7 @@ public class PostKitClientBatchSizeLimitTests
         var result = await client.SendEmailBatchAsync(emails, CancellationToken.None);
 
         Assert.True(result.IsFailure(out var error, out _), result.ToString());
-        Assert.StartsWith("Estimated batch payload size exceeds Postmark's 50 MB limit. Estimated size: ", error.Message, StringComparison.Ordinal);
+        Assert.StartsWith("Batch JSON payload exceeds Postmark's 50 MiB limit.", error.Message, StringComparison.Ordinal);
         Assert.Contains("Limit: 52,428,800 bytes.", error.Message, StringComparison.Ordinal);
         Assert.Equal(0, postmark.CallCount);
     }
@@ -84,13 +86,13 @@ public class PostKitClientBatchSizeLimitTests
 
         Assert.False(result.IsSuccess());
         Assert.Equal(0, postmark.CallCount);
-        Assert.Contains("Estimated batch payload size exceeds", result.ToString(), StringComparison.Ordinal);
-        Assert.Contains("Estimated size:", result.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Batch JSON payload exceeds", result.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Actual size:", result.ToString(), StringComparison.Ordinal);
         Assert.Contains("Limit: 52,428,800 bytes.", result.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task SendEmailBatchAsync_WithLargeTemplateModelsPushingPastEstimatedBatchLimit_ReturnsFailure()
+    public async Task SendEmailBatchAsync_WithLargeTemplateModelsPushingPastBatchPayloadLimit_ReturnsFailure()
     {
         var emails = Enumerable.Range(0, 11)
             .Select(index => Email.FromTemplate(42)
@@ -108,9 +110,45 @@ public class PostKitClientBatchSizeLimitTests
 
         Assert.False(result.IsSuccess());
         Assert.Equal(0, postmark.CallCount);
-        Assert.Contains("Estimated batch payload size exceeds", result.ToString(), StringComparison.Ordinal);
-        Assert.Contains("Estimated size:", result.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Batch JSON payload exceeds", result.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Actual size:", result.ToString(), StringComparison.Ordinal);
         Assert.Contains("Limit: 52,428,800 bytes.", result.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(false, 1)]
+    [InlineData(true, 0)]
+    [InlineData(true, 1)]
+    public async Task SendEmailBatchAsync_WithJsonPayloadAtOrAboveLimit_IncludesArrayAndTemplateWrapper(bool template, int excessBytes)
+    {
+        var baseline = template
+            ? Email.FromTemplate(42).From("sender@postkit.com").To("recipient@postkit.com").WithModel(new { Name = "Alice" }).AddHeader("X-Padding", "p").Build()
+            : Email.Compose().From("sender@postkit.com").To("recipient@postkit.com").Subject("JSON boundary").TextBody("Hello").AddHeader("X-Padding", "p").Build();
+        var requests = new List<EmailRequest> { baseline.ToEmailRequest() };
+        var baselineSize = template
+            ? JsonSerializer.SerializeToUtf8Bytes(new EmailBatchRequest { Messages = requests }, PostmarkConfiguration.JsonSerializerOptions).Length
+            : JsonSerializer.SerializeToUtf8Bytes(requests, PostmarkConfiguration.JsonSerializerOptions).Length;
+        var padding = new string('p', 50 * 1024 * 1024 - baselineSize + 1 + excessBytes);
+        var email = template
+            ? Email.FromTemplate(42).From("sender@postkit.com").To("recipient@postkit.com").WithModel(new { Name = "Alice" }).AddHeader("X-Padding", padding).Build()
+            : Email.Compose().From("sender@postkit.com").To("recipient@postkit.com").Subject("JSON boundary").TextBody("Hello").AddHeader("X-Padding", padding).Build();
+        var postmark = new RecordingPostmarkClient([new EmailResponse { ErrorCode = 0, Message = "OK", MessageId = Guid.NewGuid().ToString(), SubmittedAt = DateTimeOffset.UtcNow, To = "recipient@postkit.com" }]);
+        var client = new PostKitClient(postmark, new TestLogger());
+
+        var result = await client.SendEmailBatchAsync([email], CancellationToken.None);
+
+        if (excessBytes == 0)
+        {
+            Assert.True(result.IsSuccess(out _), result.ToString());
+            Assert.Equal(1, postmark.CallCount);
+        }
+        else
+        {
+            Assert.True(result.IsFailure(out var error, out _), result.ToString());
+            Assert.Contains("Actual size: 52,428,801 bytes. Limit: 52,428,800 bytes.", error.Message, StringComparison.Ordinal);
+            Assert.Equal(0, postmark.CallCount);
+        }
     }
 
     private sealed class RecordingPostmarkClient(List<EmailResponse>? responses = null) : IPostmarkClient
