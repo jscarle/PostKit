@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 using JetBrains.Annotations;
+using PostKit.Common;
+using PostKit.Postmark.Common;
 
 namespace PostKit.Webhooks;
 
@@ -20,11 +22,16 @@ public sealed record OpenWebhookMessage : OutboundWebhookMessage
 
     /// <summary>Gets the identified platform when available.</summary>
     [JsonPropertyName("Platform")]
-    public string? Platform { [UsedImplicitly] get; init; }
+    public MessagePlatform? Platform { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the user agent supplied by the opening client.</summary>
     [JsonPropertyName("UserAgent")]
     public required string UserAgent { [UsedImplicitly] get; init; }
+
+    /// <summary>Gets the recorded reading time, when Postmark supplies it.</summary>
+    [JsonPropertyName("ReadSeconds")]
+    [JsonConverter(typeof(ReadTimeJsonConverter))]
+    public TimeSpan? ReadTime { [UsedImplicitly] get; init; }
 
     /// <summary>Gets the identified geographic information when available.</summary>
     [JsonPropertyName("Geo")]

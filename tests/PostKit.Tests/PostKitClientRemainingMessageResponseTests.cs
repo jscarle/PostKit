@@ -222,7 +222,7 @@ public class PostKitClientRemainingMessageResponseTests
     public async Task SearchMessageOpensAsync_UsesOpenSearchEndpointAndMapsResponse()
     {
         const string endpoint =
-            "/messages/outbound/opens?count=50&offset=0&recipient=john.doe%40example.com&tag=welcome&messagestream=outbound&client_name=Chrome&client_company=Google&client_family=Chrome&os_name=OS%20X&os_family=OS%20X&os_company=Apple&platform=WebMail&country=Serbia&region=Vojvodina&city=Novi%20Sad";
+            "/messages/outbound/opens?count=50&offset=0&recipient=john.doe%40example.com&tag=welcome&messagestream=outbound&client_name=Chrome&client_company=Google&client_family=Chrome&os_name=OS%20X&os_family=OS%20X&os_company=Apple&platform=webmail&country=Serbia&region=Vojvodina&city=Novi%20Sad";
         var postmark = new RecordingPostmarkClient(new Dictionary<string, string>
         {
             [endpoint] = """
@@ -257,7 +257,7 @@ public class PostKitClientRemainingMessageResponseTests
             OsName = "OS X",
             OsFamily = "OS X",
             OsCompany = "Apple",
-            Platform = "WebMail",
+            Platform = MessagePlatform.WebMail,
             Country = "Serbia",
             Region = "Vojvodina",
             City = "Novi Sad"
@@ -313,7 +313,7 @@ public class PostKitClientRemainingMessageResponseTests
         Assert.Equal(endpoint, postmark.LastGetEndpoint);
         var click = Assert.Single(page.Clicks);
         Assert.Null(click.RecordType);
-        Assert.Equal("HTML", click.ClickLocation);
+        Assert.Equal(LinkClickLocation.Html, click.ClickLocation);
         Assert.Equal("https://example.com", click.OriginalLink);
         Assert.Equal("welcome", click.Tag);
         Assert.Equal("john.doe@example.com", click.Recipient);

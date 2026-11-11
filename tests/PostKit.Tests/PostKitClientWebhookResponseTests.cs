@@ -128,7 +128,7 @@ public class PostKitClientWebhookResponseTests
     [Fact]
     public async Task EditWebhookAsync_SendsPutRequest()
     {
-        var postmark = new RecordingPostmarkClient(putResponses: new Dictionary<string, string> { ["/webhooks/1234567"] = WebhookJson });
+        var postmark = new RecordingPostmarkClient(getResponses: new Dictionary<string, string> { ["/webhooks/1234567"] = WebhookJson }, putResponses: new Dictionary<string, string> { ["/webhooks/1234567"] = WebhookJson });
         var client = new PostKitClient(postmark, new TestLogger());
 
         var result = await client.EditWebhookAsync(1234567, new WebhookEditParameters

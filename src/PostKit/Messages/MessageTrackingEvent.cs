@@ -1,11 +1,12 @@
-﻿using JetBrains.Annotations;
+using JetBrains.Annotations;
+using PostKit.Common;
 
 namespace PostKit.Messages;
 
 /// <summary>Represents the common details of a tracked message event.</summary>
 public abstract record MessageTrackingEvent
 {
-    private protected MessageTrackingEvent(string? recordType, MessageTrackingClient? client, MessageTrackingOperatingSystem? os, string? platform, string userAgent, MessageTrackingGeo? geo, Guid messageId, string messageStream,
+    private protected MessageTrackingEvent(string? recordType, MessageTrackingClient? client, MessageTrackingOperatingSystem? os, MessagePlatform? platform, string userAgent, MessageTrackingGeo? geo, Guid messageId, string messageStream,
         DateTimeOffset receivedAt, string? tag, string? recipient)
     {
         RecordType = recordType;
@@ -31,7 +32,7 @@ public abstract record MessageTrackingEvent
     public MessageTrackingOperatingSystem? Os { [UsedImplicitly] get; }
 
     /// <summary>Gets the platform, when Postmark could determine it.</summary>
-    public string? Platform { [UsedImplicitly] get; }
+    public MessagePlatform? Platform { [UsedImplicitly] get; }
 
     /// <summary>Gets the user-agent string.</summary>
     public string UserAgent { [UsedImplicitly] get; }

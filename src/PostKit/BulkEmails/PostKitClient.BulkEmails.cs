@@ -126,8 +126,8 @@ internal sealed partial class PostKitClient
         if (response.PercentageCompleted is null)
             return Result.Failure<BulkEmailJob>("PercentageCompleted was not returned from the Postmark Bulk API.");
 
-        if (response.PercentageCompleted.Value is < 0 or > 100)
-            return Result.Failure<BulkEmailJob>("PercentageCompleted returned from the Postmark Bulk API was invalid.");
+        if (!double.IsFinite(response.PercentageCompleted.Value) || response.PercentageCompleted is < 0 or > 100)
+            return Result.Failure<BulkEmailJob>($"PercentageCompleted returned from the Postmark Bulk API must be a finite percentage between 0 and 100. Received {response.PercentageCompleted.Value}.");
 
         if (response.Subject is null)
             return Result.Failure<BulkEmailJob>("Subject was not returned from the Postmark Bulk API.");
@@ -145,8 +145,8 @@ internal sealed partial class PostKitClient
         if (response.Id is null)
             return Result.Failure<BulkEmailResponseCore>("Id was not returned from the Postmark Bulk API.");
 
-        if (!Guid.TryParse(response.Id, out var bulkRequestId))
-            return Result.Failure<BulkEmailResponseCore>("Id returned from the Postmark Bulk API was not a valid GUID.");
+        if (!Guid.TryParse(response.Id, out var bulkRequestId) || bulkRequestId == Guid.Empty)
+            return Result.Failure<BulkEmailResponseCore>("Id returned from the Postmark Bulk API must be a nonempty GUID.");
 
         if (response.SubmittedAt is null)
             return Result.Failure<BulkEmailResponseCore>("SubmittedAt was not returned from the Postmark Bulk API.");

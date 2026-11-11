@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using JetBrains.Annotations;
 
 namespace PostKit.Postmark.Webhooks;
@@ -10,4 +10,7 @@ internal sealed class WebhookOpenTriggerModel
 
     [JsonPropertyName("PostFirstOpenOnly")]
     public bool? PostFirstOpenOnly { get; [UsedImplicitly] init; }
+
+    [JsonPropertyName("Status")]
+    public string? Status { get; [UsedImplicitly] init; }
 }

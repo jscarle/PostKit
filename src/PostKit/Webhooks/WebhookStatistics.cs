@@ -5,7 +5,7 @@ namespace PostKit.Webhooks;
 /// <summary>Represents delivery statistics for a webhook.</summary>
 public sealed record WebhookStatistics
 {
-    internal WebhookStatistics(long webhookId, long serverId, string messageStreamId, string url, IReadOnlyDictionary<string, string> statuses, WebhookStatisticsTimeRange timeRange, WebhookStatisticsMetrics metrics, IReadOnlyDictionary<string, WebhookStatisticsMetrics> metricsByTrigger)
+    internal WebhookStatistics(long webhookId, long serverId, string messageStreamId, string url, IReadOnlyDictionary<WebhookTriggerType, WebhookVerificationStatus> statuses, WebhookStatisticsTimeRange timeRange, WebhookStatisticsMetrics metrics, IReadOnlyDictionary<WebhookTriggerType, WebhookStatisticsMetrics> metricsByTrigger)
     {
         WebhookId = webhookId;
         ServerId = serverId;
@@ -30,7 +30,7 @@ public sealed record WebhookStatistics
     public string Url { [UsedImplicitly] get; }
 
     /// <summary>Gets the provider's verification status for each trigger.</summary>
-    public IReadOnlyDictionary<string, string> Statuses { [UsedImplicitly] get; }
+    public IReadOnlyDictionary<WebhookTriggerType, WebhookVerificationStatus> Statuses { [UsedImplicitly] get; }
 
     /// <summary>Gets the statistics window.</summary>
     public WebhookStatisticsTimeRange TimeRange { [UsedImplicitly] get; }
@@ -39,5 +39,5 @@ public sealed record WebhookStatistics
     public WebhookStatisticsMetrics Metrics { [UsedImplicitly] get; }
 
     /// <summary>Gets the delivery metrics for each trigger.</summary>
-    public IReadOnlyDictionary<string, WebhookStatisticsMetrics> MetricsByTrigger { [UsedImplicitly] get; }
+    public IReadOnlyDictionary<WebhookTriggerType, WebhookStatisticsMetrics> MetricsByTrigger { [UsedImplicitly] get; }
 }

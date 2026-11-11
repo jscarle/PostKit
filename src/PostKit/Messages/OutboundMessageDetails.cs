@@ -6,7 +6,7 @@ namespace PostKit.Messages;
 /// <summary>Represents a single outbound message returned from the Postmark outbound message details endpoint.</summary>
 public sealed record OutboundMessageDetails : OutboundMessage
 {
-    internal OutboundMessageDetails(string tag, Guid messageId, string messageStream, IReadOnlyCollection<OutboundMessageRecipient> to, IReadOnlyCollection<OutboundMessageRecipient> cc, IReadOnlyCollection<OutboundMessageRecipient> bcc,
+    internal OutboundMessageDetails(string? tag, Guid messageId, string messageStream, IReadOnlyCollection<OutboundMessageRecipient> to, IReadOnlyCollection<OutboundMessageRecipient> cc, IReadOnlyCollection<OutboundMessageRecipient> bcc,
         IReadOnlyCollection<string> recipients, DateTimeOffset receivedAt, string from, string subject, IReadOnlyCollection<OutboundMessageAttachment> attachments, OutboundMessageStatus status, bool trackOpens, LinkTracking trackLinks,
         IReadOnlyDictionary<string, string> metadata, bool sandboxed, string? textBody, string? htmlBody, string? body, IReadOnlyCollection<OutboundMessageEvent> messageEvents) : base(tag, messageId, messageStream, to, cc, bcc, recipients,
         receivedAt, from, subject, attachments, status, trackOpens, trackLinks, metadata, sandboxed)

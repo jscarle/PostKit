@@ -401,6 +401,15 @@ internal sealed partial class DraftEmail
         return this;
     }
 
+    public DraftEmail DisableOpenTracking()
+    {
+        _openTracking.EnsureNotSet(nameof(Email.OpenTracking));
+
+        _openTracking = false;
+
+        return this;
+    }
+
     public DraftEmail UseLinkTracking(LinkTracking linkTracking = LinkTracking.HtmlAndText)
     {
         _linkTracking.EnsureNotSet(nameof(Email.LinkTracking));

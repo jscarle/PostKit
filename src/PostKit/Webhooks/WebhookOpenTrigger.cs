@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+using JetBrains.Annotations;
 
 namespace PostKit.Webhooks;
 
@@ -10,4 +10,7 @@ public sealed record WebhookOpenTrigger
 
     /// <summary>Gets whether Postmark should POST only the first open.</summary>
     public required bool PostFirstOpenOnly { [UsedImplicitly] get; init; }
+
+    /// <summary>Gets the verification state returned by Postmark. This read-only provider field is excluded from mutations.</summary>
+    public WebhookVerificationStatus? Status { [UsedImplicitly] get; init; }
 }

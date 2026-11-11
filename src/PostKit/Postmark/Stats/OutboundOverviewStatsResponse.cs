@@ -50,6 +50,9 @@ internal sealed class OutboundOverviewStatsResponse
     [JsonPropertyName("WithClientRecorded")]
     public int? WithClientRecorded { get; [UsedImplicitly] init; }
 
+    [JsonPropertyName("WithReadTimeRecorded")]
+    public int? WithReadTimeRecorded { get; [UsedImplicitly] init; }
+
     [JsonPropertyName("WithPlatformRecorded")]
     public int? WithPlatformRecorded { get; [UsedImplicitly] init; }
 }

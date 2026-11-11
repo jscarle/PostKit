@@ -192,6 +192,14 @@ public sealed class TemplatedBulkEmailBuilder
         return this;
     }
 
+    /// <summary>Disables open tracking, overriding the server default.</summary>
+    /// <returns>The same builder instance so calls can be chained.</returns>
+    public TemplatedBulkEmailBuilder DisableOpenTracking()
+    {
+        _draft.DisableOpenTracking();
+        return this;
+    }
+
     /// <summary>Sets the link tracking mode for the bulk email request.</summary>
     /// <param name="linkTracking">The link tracking mode to use.</param>
     /// <returns>The same builder instance so calls can be chained.</returns>

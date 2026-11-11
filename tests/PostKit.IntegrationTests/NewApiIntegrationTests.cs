@@ -107,7 +107,7 @@ public sealed class NewApiIntegrationTests(ITestOutputHelper output) : IAsyncLif
             }, TestContext.Current.CancellationToken);
             Assert.True(createResult.IsSuccess(out var webhook), createResult.ToString());
             createdIds.Add(webhook.Id);
-            output.WriteLine($"Created disposable webhook {webhook.Id}; status: {webhook.Status ?? "omitted"}.");
+            output.WriteLine($"Created disposable webhook {webhook.Id}; status: {webhook.Status?.ToString() ?? "omitted"}.");
 
             var unverifiedEdit = await _client.EditWebhookAsync(webhook.Id, new WebhookEditParameters { Verify = false }, TestContext.Current.CancellationToken);
             Assert.True(unverifiedEdit.IsSuccess(out var editedWebhook), unverifiedEdit.ToString());
@@ -209,7 +209,7 @@ public sealed class NewApiIntegrationTests(ITestOutputHelper output) : IAsyncLif
 
         foreach (var request in first.Requests)
         {
-            // The list contract permits an absent subject; the existing status method intentionally retains its older contract.
+            // The list contract permits an absent subject; the status method retains its established live-validated subject requirement.
             if (request.Subject is null)
                 continue;
             var status = await _client.GetBulkEmailStatusAsync(request.Id, TestContext.Current.CancellationToken);

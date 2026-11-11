@@ -244,7 +244,7 @@ public static class OpenWebhookDeserializer
 
     private static Result<OpenWebhookMessage> CreateDeserializationFailure(Exception exception)
     {
-        return Result.Failure<OpenWebhookMessage>(DeserializationFailureMessage, exception);
+        return Result.Failure<OpenWebhookMessage>($"{DeserializationFailureMessage} {exception.Message}", exception);
     }
     // ReSharper restore ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
 }

@@ -258,6 +258,15 @@ internal sealed partial class DraftBulkEmail
         return this;
     }
 
+    public DraftBulkEmail DisableOpenTracking()
+    {
+        _openTracking.EnsureNotSet(nameof(BulkEmail.OpenTracking));
+
+        _openTracking = false;
+
+        return this;
+    }
+
     public DraftBulkEmail UseLinkTracking(LinkTracking linkTracking = LinkTracking.HtmlAndText)
     {
         _linkTracking.EnsureNotSet(nameof(BulkEmail.LinkTracking));

@@ -216,9 +216,6 @@ public static class ClickWebhookDeserializer
         if (!string.Equals(message.RecordType, "Click", StringComparison.Ordinal))
             return Result.Failure<ClickWebhookMessage>($"The Postmark click webhook property 'RecordType' must be 'Click'. Received '{message.RecordType}'.");
 
-        if (message.ClickLocation is null)
-            return MissingRequiredProperty(nameof(ClickWebhookMessage.ClickLocation));
-
         if (message.UserAgent is null)
             return MissingRequiredProperty(nameof(ClickWebhookMessage.UserAgent));
 
@@ -250,7 +247,7 @@ public static class ClickWebhookDeserializer
 
     private static Result<ClickWebhookMessage> CreateDeserializationFailure(Exception exception)
     {
-        return Result.Failure<ClickWebhookMessage>(DeserializationFailureMessage, exception);
+        return Result.Failure<ClickWebhookMessage>($"{DeserializationFailureMessage} {exception.Message}", exception);
     }
     // ReSharper restore ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
 }

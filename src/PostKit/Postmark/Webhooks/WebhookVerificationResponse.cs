@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using JetBrains.Annotations;
 using LightResults;
+using PostKit.Postmark.Common;
 using PostKit.Webhooks;
 
 namespace PostKit.Postmark.Webhooks;
@@ -44,7 +45,11 @@ internal sealed class WebhookVerificationResponse
             if (result is null || string.IsNullOrWhiteSpace(result.TriggerType) || result.Success is null || result.StatusCode is null or < 0 || result.Message is null)
                 return Result.Failure<WebhookVerification>($"Webhook verification Results[{index}] must contain TriggerType, Success, a nonnegative StatusCode, and Message.");
 
-            results[index] = new WebhookVerificationTriggerResult(result.TriggerType, result.Success.Value, result.StatusCode.Value, result.Message);
+            var triggerResult = WebhookTriggerTypeJsonConverter.FromPostmark(result.TriggerType);
+            if (triggerResult.IsFailure(out var triggerError, out var trigger))
+                return Result.Failure<WebhookVerification>($"Webhook verification Results[{index}]: {triggerError.Message}");
+
+            results[index] = new WebhookVerificationTriggerResult(trigger, result.Success.Value, result.StatusCode.Value, result.Message);
         }
 
         var verification = new WebhookVerification(Id is > 0 ? Id : null, Url, Success.Value, Array.AsReadOnly(results), Message);

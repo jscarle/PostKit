@@ -13,9 +13,9 @@ internal sealed class PostmarkEndpointTestSession : IDisposable
     private readonly RecordingHandler _handler;
     private readonly HttpClient _httpClient;
 
-    internal PostmarkEndpointTestSession(string response, HttpStatusCode status = HttpStatusCode.OK, string? errorCode = null, IReadOnlyList<string>? subsequentResponses = null)
+    internal PostmarkEndpointTestSession(string response, HttpStatusCode status = HttpStatusCode.OK, string? errorCode = null, IReadOnlyList<string>? subsequentResponses = null, HttpStatusCode? subsequentStatus = null)
     {
-        _handler = new RecordingHandler(response, status, errorCode, subsequentResponses);
+        _handler = new RecordingHandler(response, status, errorCode, subsequentResponses, subsequentStatus);
         _httpClient = new HttpClient(_handler);
         var options = Options.Create(new PostKitOptions { ServerApiToken = "test-server-token", AccountApiToken = "test-account-token" });
         var transport = new PostmarkClient(_httpClient, options, NullLogger<PostmarkClient>.Instance);
@@ -36,7 +36,7 @@ internal sealed class PostmarkEndpointTestSession : IDisposable
         _httpClient.Dispose();
     }
 
-    private sealed class RecordingHandler(string response, HttpStatusCode status, string? errorCode, IReadOnlyList<string>? subsequentResponses) : HttpMessageHandler
+    private sealed class RecordingHandler(string response, HttpStatusCode status, string? errorCode, IReadOnlyList<string>? subsequentResponses, HttpStatusCode? subsequentStatus) : HttpMessageHandler
     {
         internal int RequestCount { get; private set; }
         internal HttpMethod? Method { get; private set; }
@@ -59,7 +59,8 @@ internal sealed class PostmarkEndpointTestSession : IDisposable
                 throw Failure;
 
             var responseBody = RequestCount > 1 && subsequentResponses is not null ? subsequentResponses[RequestCount - 2] : response;
-            var message = new HttpResponseMessage(status) { Content = new StringContent(responseBody, Encoding.UTF8, "application/json") };
+            var responseStatus = RequestCount > 1 ? subsequentStatus ?? status : status;
+            var message = new HttpResponseMessage(responseStatus) { Content = new StringContent(responseBody, Encoding.UTF8, "application/json") };
             if (errorCode is not null)
                 message.Headers.Add("X-PM-ApiErrorCode", errorCode);
             return message;

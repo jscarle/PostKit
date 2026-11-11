@@ -6,6 +6,7 @@ using PostKit.Common;
 using PostKit.Messages;
 using PostKit.Postmark;
 using PostKit.Postmark.Common;
+using PostKit.Suppressions;
 using OutboundMessageAttachmentModel = PostKit.Postmark.Messages.OutboundMessageAttachmentResponse;
 using OutboundMessageDetailsModel = PostKit.Postmark.Messages.OutboundMessageDetailsResponse;
 using OutboundMessageDumpModel = PostKit.Postmark.Messages.OutboundMessageDumpResponse;
@@ -245,9 +246,6 @@ internal sealed partial class PostKitClient
 
     private static Result<OutboundMessageCore> CreateOutboundMessageCore(OutboundMessageModel response)
     {
-        if (response.Tag is null)
-            return Result.Failure<OutboundMessageCore>("Tag was not returned from the Postmark Messages API.");
-
         if (string.IsNullOrWhiteSpace(response.MessageId))
             return Result.Failure<OutboundMessageCore>("MessageID was not returned from the Postmark Messages API.");
 
@@ -489,7 +487,41 @@ internal sealed partial class PostKitClient
             values.Add(entry.Key, FormatOutboundMessageEventDetailValue(entry.Value));
         }
 
-        return Result.Success(new OutboundMessageEventDetails(values));
+        long? bounceId = null;
+        if (response.TryGetValue("BounceID", out var bounceValue) && bounceValue.ValueKind != JsonValueKind.Null)
+        {
+            if (!long.TryParse(values["BounceID"], NumberStyles.None, CultureInfo.InvariantCulture, out var parsedBounceId) || parsedBounceId <= 0)
+                return Result.Failure<OutboundMessageEventDetails>($"BounceID returned for MessageEvents item {eventIndex} must be a positive identifier. Received '{values["BounceID"]}'.");
+            bounceId = parsedBounceId;
+        }
+
+        bool? suppressSending = null;
+        if (response.TryGetValue("SuppressSending", out var suppressValue) && suppressValue.ValueKind != JsonValueKind.Null)
+        {
+            if (!bool.TryParse(values["SuppressSending"], out var parsedSuppressSending))
+                return Result.Failure<OutboundMessageEventDetails>($"SuppressSending returned for MessageEvents item {eventIndex} must be True or False. Received '{values["SuppressSending"]}'.");
+            suppressSending = parsedSuppressSending;
+        }
+
+        SuppressionOrigin? origin = null;
+        if (response.TryGetValue("Origin", out var originValue) && originValue.ValueKind != JsonValueKind.Null)
+        {
+            var originResult = TryMapSuppressionOrigin(values["Origin"]);
+            if (originResult.IsFailure(out var originError, out var mappedOrigin))
+                return Result.Failure<OutboundMessageEventDetails>($"MessageEvents item {eventIndex}: {originError.Message} Please open an issue in the PostKit repository (https://github.com/jscarle/PostKit/issues).");
+            origin = mappedOrigin;
+        }
+
+        LinkClickLocation? clickLocation = null;
+        if (response.TryGetValue("ClickLocation", out var locationValue) && locationValue.ValueKind != JsonValueKind.Null)
+        {
+            var locationResult = LinkClickLocationJsonConverter.FromPostmark(values["ClickLocation"]);
+            if (locationResult.IsFailure(out var locationError, out var mappedLocation))
+                return Result.Failure<OutboundMessageEventDetails>($"MessageEvents item {eventIndex}: {locationError.Message}");
+            clickLocation = mappedLocation;
+        }
+
+        return Result.Success(new OutboundMessageEventDetails(values, bounceId, suppressSending, origin, clickLocation));
     }
 
     private static string FormatOutboundMessageEventDetailValue(JsonElement value)
@@ -580,7 +612,7 @@ internal sealed partial class PostKitClient
     private partial void LogOutboundMessageDumpError(string message, [LogProperties] IError error);
 
     private readonly record struct OutboundMessageCore(
-        string Tag,
+        string? Tag,
         Guid MessageId,
         string MessageStream,
         IReadOnlyCollection<OutboundMessageRecipient> To,
