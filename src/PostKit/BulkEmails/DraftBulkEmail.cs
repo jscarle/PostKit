@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using MimeKit;
 using PostKit.Common;
+using PostKit.Postmark.Common;
 
 namespace PostKit.BulkEmails;
 
@@ -309,8 +310,7 @@ internal sealed partial class DraftBulkEmail
         if (attachment is null)
             throw new ArgumentNullException(nameof(attachment), "The attachment cannot be null.");
 
-        var estimatedSize = PostmarkSizeEstimator.EstimateBase64SizeLowerBound(attachment.Content);
-        EnsureAttachmentsWithinLimit(estimatedSize);
+        EnsureAttachmentsWithinLimit(attachment.ContentSizeInBytes);
 
         (_attachments ??= []).Add(attachment);
 
@@ -333,7 +333,7 @@ internal sealed partial class DraftBulkEmail
             if (attachment is null)
                 throw new ArgumentException($"The attachment at index {index} cannot be null.", nameof(attachments));
 
-            additionalBytes += PostmarkSizeEstimator.EstimateBase64SizeLowerBound(attachment.Content);
+            additionalBytes += attachment.ContentSizeInBytes;
             index++;
         }
 
@@ -446,15 +446,11 @@ internal sealed partial class DraftBulkEmail
         EnsureMergedHeadersDoNotDuplicate();
         EnsureMergedMetadataWithinLimit();
 
-        var textBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_textBody);
-        if (textBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
-            throw new InvalidOperationException(PostmarkSizeEstimator.FormatActualSizeLimitMessage("Text body exceeds Postmark's 5 MB limit.", textBodySize, PostmarkSizeEstimator.BodySizeLimitInBytes));
+        if (_textBody?.Length > PostmarkSizeLimits.BodyCharacterLimit)
+            throw new InvalidOperationException(PostmarkSizeLimits.FormatBodyLengthLimitMessage(nameof(BulkEmail.TextBody), _textBody.Length));
 
-        var htmlBodySize = PostmarkSizeEstimator.EstimateBodySizeLowerBound(_htmlBody);
-        if (htmlBodySize > PostmarkSizeEstimator.BodySizeLimitInBytes)
-            throw new InvalidOperationException(PostmarkSizeEstimator.FormatActualSizeLimitMessage("HTML body exceeds Postmark's 5 MB limit.", htmlBodySize, PostmarkSizeEstimator.BodySizeLimitInBytes));
-
-        EnsureMessageContentWithinLimit();
+        if (_htmlBody?.Length > PostmarkSizeLimits.BodyCharacterLimit)
+            throw new InvalidOperationException(PostmarkSizeLimits.FormatBodyLengthLimitMessage(nameof(BulkEmail.HtmlBody), _htmlBody.Length));
 
         var bulkEmail = new BulkEmail
         {
@@ -478,9 +474,11 @@ internal sealed partial class DraftBulkEmail
                 .AsReadOnly()
         };
 
-        var estimatedTotal = PostmarkSizeEstimator.EstimateBulkEmailPayloadSizeLowerBound(bulkEmail);
-        if (estimatedTotal > PostmarkSizeEstimator.BulkPayloadSizeLimitInBytes)
-            throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage("Estimated bulk request size exceeds Postmark's 50 MB limit.", estimatedTotal, PostmarkSizeEstimator.BulkPayloadSizeLimitInBytes));
+        var request = bulkEmail.ToBulkEmailRequest();
+        var payloadSize = JsonSizeEstimator.GetSerializedSize(request, PostmarkConfiguration.JsonSerializerOptions);
+        if (payloadSize > PostmarkSizeLimits.PayloadSizeLimitInBytes)
+            throw new InvalidOperationException(PostmarkSizeLimits.FormatSizeLimitMessage(
+                "Bulk email JSON payload exceeds Postmark's 50 MiB limit. Reduce the content or split the messages into smaller requests.", payloadSize, PostmarkSizeLimits.PayloadSizeLimitInBytes));
 
         return bulkEmail;
     }
@@ -548,25 +546,10 @@ internal sealed partial class DraftBulkEmail
     {
         ArgumentOutOfRangeException.ThrowIfNegative(additionalBytes);
 
-        var projectedTotal = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, 0, _attachments, _headers) + additionalBytes;
-        if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage("Estimated message content exceeds Postmark's 10 MB limit.", projectedTotal, PostmarkSizeEstimator.MessageSizeLimitInBytes));
-    }
-
-    private void EnsureMessageContentWithinLimit()
-    {
-        var sharedContentSize = PostmarkSizeEstimator.EstimateMessageContentSizeLowerBound(_textBody, _htmlBody, 0, _attachments, _headers);
-        if (sharedContentSize > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-            throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage("Estimated message content exceeds Postmark's 10 MB limit.", sharedContentSize, PostmarkSizeEstimator.MessageSizeLimitInBytes));
-
-        for (var index = 0; index < _messages.Count; index++)
-        {
-            var message = _messages[index];
-            var projectedTotal = sharedContentSize + message.TemplateModelSizeInBytes + PostmarkSizeEstimator.EstimateHeaderSizeLowerBound(message.Headers);
-            if (projectedTotal > PostmarkSizeEstimator.MessageSizeLimitInBytes)
-                throw new InvalidOperationException(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage($"Estimated message content for bulk message at index {index} exceeds Postmark's 10 MB limit.", projectedTotal,
-                    PostmarkSizeEstimator.MessageSizeLimitInBytes));
-        }
+        var projectedTotal = PostmarkSizeLimits.GetAttachmentContentSize(_attachments) + additionalBytes;
+        if (projectedTotal > PostmarkSizeLimits.BulkAttachmentSizeLimitInBytes)
+            throw new InvalidOperationException(PostmarkSizeLimits.FormatSizeLimitMessage(
+                "Attachments exceed Postmark's Bulk API limit. Reduce the combined raw attachment size to less than 10 MiB.", projectedTotal, PostmarkSizeLimits.BulkAttachmentSizeLimitInBytes));
     }
 
     private void EnsureMergedMetadataWithinLimit()

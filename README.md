@@ -836,10 +836,21 @@ var email = Email.FromTemplate("welcome-email")
 
 ### Size Limits
 
-Postmark limits `TextBody` and `HtmlBody` to 5 MB each, email message size to 10 MB, bulk email payloads to 50 MB, and email batches to 500 items / 50 MB. PostKit uses conservative lower-bound estimates based on already-materialized values
-to
-prevent grossly oversized requests without doing expensive serialization. The local pre-checks count template-model bytes, body bytes, Base64 attachment bytes, and custom-header bytes, and the batch/bulk payload checks also include metadata
-bytes; Postmark remains the authoritative source of truth for the final server-side size checks.
+PostKit follows the API validator boundaries verified against Postmark on November 11, 2026:
+
+| Content | Limit |
+| --- | --- |
+| `TextBody` | 5,242,880 UTF-16 code units |
+| `HtmlBody` | 5,242,880 UTF-16 code units |
+| Attachments in Email and Batch | 10,485,760 combined raw bytes (10 MiB), inclusive |
+| Shared attachments in Bulk | 10,485,759 combined raw bytes; Bulk rejects exactly 10 MiB |
+| JSON request payload in Email, Batch, and Bulk | 52,428,800 UTF-8 bytes (50 MiB), inclusive |
+| Messages in Batch | 500 |
+
+Attachment limits count decoded content, excluding Base64 expansion, bodies, headers, and template models. Body limits count characters rather than UTF-8 bytes: 5,242,880 `é` characters are valid even though they occupy 10 MiB in UTF-8.
+PostKit measures the complete serialized JSON payload with the same serialization settings used for sending, including escaping, property names, metadata, and array/template wrappers. These request limits do not predict the size of a rendered template or final MIME email; Postmark remains authoritative for rendering and delivery validation.
+
+In live Bulk tests, maximum-length `HtmlBody` values passed submission validation but later reported `FailedCount = 1`, without further diagnostics. An HTML request 1,024 characters below that limit completed successfully. The table describes submission validation; applications should also check the final Bulk job status.
 
 ### Error Handling
 

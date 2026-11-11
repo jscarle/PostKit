@@ -206,7 +206,7 @@ public class EmailBuilderValidationTests
     [Fact]
     public void EmailBuilder_WithVeryLargeTextBody_ThrowsException()
     {
-        // Arrange - Create a text body larger than 5 MB
+        // Arrange - Create a text body longer than 5,242,880 characters.
         var largeText = new string('A', 6 * 1024 * 1024); // 6 MB
 
         // Act & Assert
@@ -220,15 +220,15 @@ public class EmailBuilderValidationTests
                 .Build();
         });
 
-        Assert.Contains("5 MB", exception.Message);
+        Assert.Contains("5,242,880 characters", exception.Message);
     }
 
     [Fact]
     public void EmailBuilder_WithVeryLargeHtmlBody_ThrowsException()
     {
-        // Arrange - Create an HTML body larger than 5 MB
+        // Arrange - Create an HTML body longer than 5,242,880 characters.
         var largeText = new string('A', 6 * 1024 * 1024); // 6 MB
-        var largeHtml = $"<html><body>{largeText}</body></html>"; // > 5 MB
+        var largeHtml = $"<html><body>{largeText}</body></html>";
 
         // Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
@@ -241,31 +241,27 @@ public class EmailBuilderValidationTests
                 .Build();
         });
 
-        Assert.Contains("5 MB", exception.Message);
+        Assert.Contains("5,242,880 characters", exception.Message);
     }
 
     [Fact]
-    public void EmailBuilder_WithLargeBodyAndAttachmentCombination_ThrowsException()
+    public void EmailBuilder_WithLargeBodyAndAttachmentCombination_Succeeds()
     {
-        // Arrange - Build still enforces the limit when attachments are added before the bodies.
-        var text = new string('A', 5 * 1024 * 1024); // 5 MB
-        var attachmentData = new byte[6 * 1024 * 1024]; // 6 MB
+        // Bodies and decoded attachments have independent limits.
+        var text = new string('A', 5 * 1024 * 1024);
+        var attachmentData = new byte[6 * 1024 * 1024]; // 6 MiB
         Array.Fill(attachmentData, (byte)'C');
         var attachment = Attachment.Create("large.dat", "application/octet-stream", attachmentData);
 
-        // Act & Assert
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-        {
-            Email.Compose()
-                .From("sender@postkit.com")
-                .To("recipient@postkit.com")
-                .Subject("Large Body And Attachment")
-                .AddAttachment(attachment)
-                .TextBody(text)
-                .Build();
-        });
+        var email = Email.Compose()
+            .From("sender@postkit.com")
+            .To("recipient@postkit.com")
+            .Subject("Large Body And Attachment")
+            .AddAttachment(attachment)
+            .TextBody(text)
+            .Build();
 
-        Assert.Contains("10 MB", exception.Message);
+        Assert.Same(attachment, Assert.Single(email.Attachments!));
     }
 
     [Fact]

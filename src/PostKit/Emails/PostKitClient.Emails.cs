@@ -102,7 +102,6 @@ internal sealed partial class PostKitClient
         var templateCount = 0;
         int? firstTemplatedIndex = null;
         int? firstNonTemplatedIndex = null;
-        long estimatedBatchSize = 0;
 
         for (var index = 0; index < emailList.Count; index++)
         {
@@ -121,7 +120,6 @@ internal sealed partial class PostKitClient
                 firstNonTemplatedIndex ??= index;
             }
 
-            estimatedBatchSize += PostmarkSizeEstimator.EstimateMessagePayloadSizeLowerBound(email);
             try
             {
                 requests.Add(email.ToEmailRequest());
@@ -140,17 +138,19 @@ internal sealed partial class PostKitClient
         var sendWithTemplates = templateCount > 0;
         var endpoint = sendWithTemplates ? "/email/batchWithTemplates" : "/email/batch";
 
-        if (estimatedBatchSize > PostmarkSizeEstimator.BatchPayloadSizeLimitInBytes)
-            return Result.Failure<EmailBatchSubmission>(PostmarkSizeEstimator.FormatEstimatedSizeLimitMessage("Estimated batch payload size exceeds Postmark's 50 MB limit.", estimatedBatchSize,
-                PostmarkSizeEstimator.BatchPayloadSizeLimitInBytes));
-
         Result<List<EmailResponse>> response;
         try
         {
+            var templateRequest = new EmailBatchRequest { Messages = requests };
+            var payloadSize = sendWithTemplates
+                ? JsonSizeEstimator.GetSerializedSize(templateRequest, PostmarkConfiguration.JsonSerializerOptions)
+                : JsonSizeEstimator.GetSerializedSize(requests, PostmarkConfiguration.JsonSerializerOptions);
+            if (payloadSize > PostmarkSizeLimits.PayloadSizeLimitInBytes)
+                return Result.Failure<EmailBatchSubmission>(PostmarkSizeLimits.FormatSizeLimitMessage("Batch JSON payload exceeds Postmark's 50 MiB limit. Split the emails into smaller batches.", payloadSize, PostmarkSizeLimits.PayloadSizeLimitInBytes));
+
             if (sendWithTemplates)
             {
-                var request = new EmailBatchRequest { Messages = requests };
-                response = await postmark.PostAsync<EmailBatchRequest, List<EmailResponse>>(PostmarkTokenScope.Server, endpoint, request, cancellationToken);
+                response = await postmark.PostAsync<EmailBatchRequest, List<EmailResponse>>(PostmarkTokenScope.Server, endpoint, templateRequest, cancellationToken);
             }
             else
             {

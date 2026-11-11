@@ -1269,7 +1269,7 @@ internal static partial class ValidationExtensions
         return $"Metadata names must be unique and are compared case-insensitively. {nameWithIndex} duplicates existing metadata name '{existingName}'.";
     }
 
-    public static (JsonNode Snapshot, int SerializedSizeInBytes) SnapshotTemplateModel(this object templateModel, string paramName, JsonSerializerOptions? serializerOptions = null)
+    public static JsonNode SnapshotTemplateModel(this object templateModel, string paramName, JsonSerializerOptions? serializerOptions = null)
     {
         if (templateModel is null)
             throw new ArgumentNullException(paramName, "The template model cannot be null.");
@@ -1289,8 +1289,7 @@ internal static partial class ValidationExtensions
             if (snapshot is not JsonObject)
                 throw new ArgumentException("The template model must serialize to a JSON object.", paramName);
 
-            var serializedSize = JsonSizeEstimator.GetSerializedSize(snapshot, effectiveSerializerOptions);
-            return (snapshot, serializedSize);
+            return snapshot;
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException or InvalidOperationException)
         {

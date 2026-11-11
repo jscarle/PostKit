@@ -1,6 +1,5 @@
 using System.Buffers;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace PostKit.Common;
 
@@ -18,13 +17,13 @@ internal sealed class CountingBufferWriter(int initialSize = 256) : IBufferWrite
     public Memory<byte> GetMemory(int sizeHint = 0)
     {
         EnsureCapacity(sizeHint);
-        return _buffer.AsMemory(BytesWritten);
+        return _buffer;
     }
 
     public Span<byte> GetSpan(int sizeHint = 0)
     {
         EnsureCapacity(sizeHint);
-        return _buffer.AsSpan(BytesWritten);
+        return _buffer;
     }
 
     public void Dispose()
@@ -36,23 +35,15 @@ internal sealed class CountingBufferWriter(int initialSize = 256) : IBufferWrite
         _buffer = Array.Empty<byte>();
     }
 
-    public void Reset()
-    {
-        BytesWritten = 0;
-    }
-
     private void EnsureCapacity(int sizeHint)
     {
         sizeHint = Math.Max(sizeHint, 1);
 
-        var requiredSize = BytesWritten + sizeHint;
-        if (_buffer.Length >= requiredSize)
+        if (_buffer.Length >= sizeHint)
             return;
 
-        var newBuffer = ArrayPool<byte>.Shared.Rent(requiredSize);
-        _buffer.AsSpan(0, BytesWritten)
-            .CopyTo(newBuffer);
-
+        // Committed JSON is only counted; retain storage for the current writer segment.
+        var newBuffer = ArrayPool<byte>.Shared.Rent(sizeHint);
         ArrayPool<byte>.Shared.Return(_buffer);
         _buffer = newBuffer;
     }
@@ -60,12 +51,12 @@ internal sealed class CountingBufferWriter(int initialSize = 256) : IBufferWrite
 
 internal static class JsonSizeEstimator
 {
-    public static int GetSerializedSize(JsonNode node, JsonSerializerOptions? options = null, bool indented = false)
+    public static int GetSerializedSize<T>(T value, JsonSerializerOptions options)
     {
         using var buffer = new CountingBufferWriter();
-        using var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = indented });
+        using var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = options.Encoder, Indented = options.WriteIndented, MaxDepth = options.MaxDepth });
 
-        node.WriteTo(writer, options);
+        JsonSerializer.Serialize(writer, value, options);
         writer.Flush();
 
         return buffer.BytesWritten;

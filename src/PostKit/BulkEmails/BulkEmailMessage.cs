@@ -30,8 +30,6 @@ public sealed class BulkEmailMessage
 
     internal JsonNode? TemplateModelNode { get; init; }
 
-    internal int TemplateModelSizeInBytes { get; init; }
-
     /// <summary>Creates a new <see cref="ComposedBulkEmailMessageBuilder" /> for composing a <see cref="BulkEmailMessage" />.</summary>
     public static ComposedBulkEmailMessageBuilder Compose()
     {

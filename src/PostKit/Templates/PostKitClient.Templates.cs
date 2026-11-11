@@ -425,8 +425,7 @@ internal sealed partial class PostKitClient
         if (parameters.TestRenderModel is not null)
             try
             {
-                testRenderModel = parameters.TestRenderModel.SnapshotTemplateModel(nameof(parameters.TestRenderModel))
-                    .Snapshot;
+                testRenderModel = parameters.TestRenderModel.SnapshotTemplateModel(nameof(parameters.TestRenderModel));
             }
             catch (Exception ex)
             {
